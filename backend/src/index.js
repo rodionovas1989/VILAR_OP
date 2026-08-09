@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
 import ExcelJS from 'exceljs';
-import { ensureCollections, COLLECTIONS, readAll } from './store.js';
+import { ensureCollections, COLLECTIONS, readAll, getById } from './store.js';
 import { crudRouter } from './routes/crud.js';
 import planningRouter from './routes/planning.js';
+import adminRouter from './routes/admin.js';
+import * as planning from './services/planning.js';
 
 ensureCollections();
 
@@ -13,11 +15,90 @@ app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+function assertPlannedVolumeUnique(item, excludeId) {
+  const materialId = item.materialId;
+  const workCenterId = item.workCenterId;
+  if (!materialId || !workCenterId) throw new Error('Укажите материал и рабочий центр');
+  if (!(Number(item.quantity) > 0)) throw new Error('Количество должно быть больше 0');
+  const dup = readAll('planned_series_volumes').find(
+    (r) => r.materialId === materialId && r.workCenterId === workCenterId && r.id !== excludeId
+  );
+  if (dup) throw new Error('Для этой пары материал + РЦ запись уже есть');
+  return item;
+}
+
+function assertProductionOrderLinks(item) {
+  const materialId = item.materialId;
+  if (!materialId) throw new Error('Укажите продукт заказа');
+
+  if (item.seriesId) {
+    const ser = getById('series', item.seriesId);
+    if (!ser || ser.materialId !== materialId) {
+      throw new Error('Серия должна относиться к выбранному продукту');
+    }
+  }
+
+  if (item.specificationId) {
+    const spec = getById('specifications', item.specificationId);
+    if (!spec || spec.productMaterialId !== materialId) {
+      throw new Error('Спецификация должна относиться к выбранному продукту');
+    }
+  }
+
+  if (!item.status) item.status = 'новый';
+  if (!Array.isArray(item.lines)) item.lines = [];
+
+  return item;
+}
+
+/** Переход в «завершен»/«отменен» — через складскую логику, а не голый статус */
+function applyProductionOrderUpdate(merged, current) {
+  assertProductionOrderLinks(merged);
+
+  if (merged.status === 'завершен') {
+    const hasOpenReservations = readAll('reservations').some((r) => r.productionOrderId === current.id);
+    const hasIssue = readAll('material_movements').some(
+      (m) => m.productionOrderId === current.id && m.type === 'issue'
+    );
+    const needsComplete = current.status !== 'завершен' || hasOpenReservations || !hasIssue;
+    if (needsComplete) {
+      const { order } = planning.completeOrder(current.id);
+      return { ...merged, status: order.status, lines: order.lines };
+    }
+  }
+
+  if (merged.status === 'отменен' && current.status !== 'отменен') {
+    const order = planning.cancelOrder(current.id);
+    return { ...merged, status: order.status, lines: order.lines };
+  }
+
+  return merged;
+}
+
 for (const name of COLLECTIONS) {
-  app.use(`/api/${name}`, crudRouter(name));
+  if (name === 'production_orders') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: assertProductionOrderLinks,
+        beforeUpdate: applyProductionOrderUpdate,
+      })
+    );
+  } else if (name === 'planned_series_volumes') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => assertPlannedVolumeUnique(item, item.id),
+        beforeUpdate: (merged, current) => assertPlannedVolumeUnique(merged, current.id),
+      })
+    );
+  } else {
+    app.use(`/api/${name}`, crudRouter(name));
+  }
 }
 
 app.use('/api/planning', planningRouter);
+app.use('/api/admin', adminRouter);
 
 app.get('/api/export/:collection.xlsx', async (req, res) => {
   const name = req.params.collection;

@@ -1,20 +1,39 @@
 # DEPLOYMENT
 
 ## Требования
-- Node.js 20+ (в репозитории также можно использовать portable `.tools/node`)
+- Node.js 20+ (портативный `.tools/node` или системный)
 - npm
 
-## Первый запуск
+## Для пользователя (Windows, без командной строки)
+
+Только ASCII-имена (кириллические `.bat` удалены — ломают `cmd.exe`):
+
+1. `install.bat` — один раз
+2. `start-all.bat` — каждый рабочий день  
+   Либо: `start-backend.bat` + `start-frontend.bat`
+
+- API: http://localhost:3001  
+- UI: http://localhost:5173  
+
+Скрипты: `scripts/install.ps1`, `scripts/start-backend.ps1`, `scripts/start-frontend.ps1`.
+
+## Из корня репозитория
 
 ```powershell
-# Backend
+npm run setup       # зависимости + демо-данные
+npm run backend     # Express API (watch)
+npm run frontend    # Vite UI
+```
+
+## Классический запуск
+
+```powershell
 cd backend
 npm install
 npm run seed
 npm run dev
 # API: http://localhost:3001
 
-# Frontend (второй терминал)
 cd frontend
 npm install
 npm run dev
@@ -27,11 +46,12 @@ npm run dev
 
 ## Данные
 - JSON в `backend/data/*.json`
-- Перегенерация: `npm run seed` в `backend` (перезаписывает демо-данные)
-- Excel-выгрузка: `GET /api/export/{collection}.xlsx`
+- Перегенерация: `npm run backend:seed` из корня или `npm run seed` в `backend`
+- После обновления спецификаций (регистрация поставщиков) для демо-данных удобно пересидить; иначе заполните вкладку «Регистрация поставщиков» вручную
+- Excel-выгрузка одной коллекции: `GET /api/export/{collection}.xlsx`
+- Экспорт выбранных справочников: `POST /api/admin/export-dictionaries.xlsx` (тело `{ "collections": ["materials", ...] }`)
 
 ## Git
-На машине разработки `git` может быть не в PATH; при наличии Git:
 ```powershell
-git checkout -b feature/initial-ops-planning
+git checkout feature/planning-orders-matrix
 ```

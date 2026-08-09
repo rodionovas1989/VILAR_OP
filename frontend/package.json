@@ -10,12 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "frappe-gantt": "^1.2.2",
+    "echarts": "^6.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/frappe-gantt": "^0.9.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
     "@typescript-eslint/eslint-plugin": "^7.2.0",

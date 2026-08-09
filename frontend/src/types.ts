@@ -15,10 +15,16 @@ export interface Material {
 
 export interface SpecLine {
   materialId: string;
+  /** Норма расхода, кг на 1000 упаковок */
   qtyPerUnit: number;
   qtyMgPerTablet?: number;
-  note?: string;
   componentType?: string;
+}
+
+/** Одобренный поставщик компонента в спецификации */
+export interface ApprovedSupplier {
+  materialId: string;
+  counterpartyId: string;
 }
 
 export interface Specification {
@@ -26,7 +32,10 @@ export interface Specification {
   name: string;
   productMaterialId: string;
   batchSizeUnits: number;
+  /** Основная | Альтернативная | Испытания */
+  type?: string;
   lines: SpecLine[];
+  approvedSuppliers?: ApprovedSupplier[];
 }
 
 export interface Counterparty {
@@ -49,10 +58,18 @@ export interface Series {
   materialId: string;
 }
 
+export interface Warehouse {
+  id: string;
+  name: string;
+  /** компоненты | ГП */
+  type: string;
+}
+
 export interface Stock {
   id: string;
   materialId: string;
   lotId: string;
+  warehouseId?: string;
   quantity: number;
 }
 
@@ -70,6 +87,14 @@ export interface WorkCenter {
   name: string;
 }
 
+/** Плановый объём серии: материал × рабочий центр → количество */
+export interface PlannedSeriesVolume {
+  id: string;
+  materialId: string;
+  workCenterId: string;
+  quantity: number;
+}
+
 export interface OrderLine {
   materialId: string;
   lotId: string;
@@ -84,9 +109,15 @@ export interface ProductionOrder {
   workCenterId: string;
   startAt: string;
   endAt: string;
+  /** Плановый выпуск */
   quantity: number;
+  /** Фактический выпуск */
+  actualQuantity?: number | null;
   status: OrderStatus;
+  /** Плановый состав (резерв) */
   lines: OrderLine[];
+  /** Фактический состав */
+  actualLines?: OrderLine[];
   specificationId: string | null;
 }
 

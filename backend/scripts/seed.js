@@ -78,14 +78,14 @@ function buildMaterialsAndSpecs() {
         const mat = materialsByName.get(r.comp);
         let qtyMg = parseQty(r.qty);
         if (qtyMg == null) qtyMg = estimateQtyMg(r.comp, r.type);
-        // мг → кг на 1 упаковку (считаем 1 уп = 30 таблеток по умолчанию)
+        // мг → кг на 1000 упаковок (1 уп = 30 таблеток по умолчанию)
         const tabletsPerPack = 30;
         const qtyKgPerPack = (qtyMg * tabletsPerPack) / 1_000_000;
+        const qtyKgPer1000 = qtyKgPerPack * 1000;
         return {
           materialId: mat.id,
-          qtyPerUnit: Number(qtyKgPerPack.toFixed(8)),
+          qtyPerUnit: Number(qtyKgPer1000.toFixed(8)),
           qtyMgPerTablet: qtyMg,
-          note: r.note || (parseQty(r.qty) == null ? 'оценка (в источнике не указано)' : ''),
           componentType: r.type,
         };
       });
@@ -95,6 +95,7 @@ function buildMaterialsAndSpecs() {
       name: materialsByName.get([...materialsByName.values()].find((m) => m.id === productId).name)?.name || key,
       productMaterialId: productId,
       batchSizeUnits: 25000,
+      qtyBasis: 'per1000',
       lines,
       source: 'recipes_raw',
     });
@@ -104,10 +105,23 @@ function buildMaterialsAndSpecs() {
   const mats = [...materialsByName.values()];
   for (const spec of specifications) {
     const p = mats.find((m) => m.id === spec.productMaterialId);
-    spec.name = `Спецификация: ${p.name}`;
+    spec.name = p.name;
+    spec.type = 'Основная';
   }
 
   return { materials: mats, specifications, products: mats.filter((m) => m.type === 'продукт') };
+}
+
+function attachApprovedSuppliers(specifications, materialCounterparties) {
+  for (const spec of specifications) {
+    const rows = [];
+    for (const line of spec.lines || []) {
+      const cps = materialCounterparties.get(line.materialId) || [];
+      // первый поставщик компонента — одобрен; при нескольких партиях часть будет жёлтой
+      if (cps[0]) rows.push({ materialId: line.materialId, counterpartyId: cps[0] });
+    }
+    spec.approvedSuppliers = rows;
+  }
 }
 
 function buildCounterparties(componentMaterials) {
@@ -144,9 +158,18 @@ function isoDate(d) {
   return d.toISOString().slice(0, 10);
 }
 
-function buildLotsAndStock(componentMaterials, materialCounterparties, products, monthStart) {
+function buildWarehouses() {
+  return [
+    { id: 'wh-components', name: 'Склад компонентов', type: 'компоненты' },
+    { id: 'wh-finished', name: 'Склад ГП', type: 'ГП' },
+  ];
+}
+
+function buildLotsAndStock(componentMaterials, materialCounterparties, products, monthStart, warehouses) {
   const lots = [];
   const stock = [];
+  const whComp = warehouses.find((w) => w.type === 'компоненты')?.id;
+  const whFg = warehouses.find((w) => w.type === 'ГП')?.id;
 
   for (const mat of componentMaterials) {
     const cps = materialCounterparties.get(mat.id) || [];
@@ -165,19 +188,18 @@ function buildLotsAndStock(componentMaterials, materialCounterparties, products,
         expiryDate: isoDate(expDate),
       };
       lots.push(lot);
-      // крупные партии: покрытие ~месяца при правиле «1 партия на компонент»
       const base = mat.type === 'основной компонент' ? rnd(400, 900) : rnd(600, 1400);
       const qty = Number((base + Math.random() * 100).toFixed(3));
       stock.push({
         id: uid(),
         materialId: mat.id,
         lotId: lot.id,
+        warehouseId: whComp,
         quantity: qty,
       });
     }
   }
 
-  // небольшие остатки ГП
   for (const p of products.slice(0, 8)) {
     const prodDate = new Date(monthStart);
     prodDate.setDate(prodDate.getDate() - rnd(5, 40));
@@ -190,7 +212,13 @@ function buildLotsAndStock(componentMaterials, materialCounterparties, products,
       expiryDate: isoDate(addMonths(prodDate, 24)),
     };
     lots.push(lot);
-    stock.push({ id: uid(), materialId: p.id, lotId: lot.id, quantity: rnd(500, 5000) });
+    stock.push({
+      id: uid(),
+      materialId: p.id,
+      lotId: lot.id,
+      warehouseId: whFg,
+      quantity: rnd(500, 5000),
+    });
   }
 
   return { lots, stock };
@@ -254,6 +282,25 @@ function buildOrdersAndSeries(products, workCenters, monthStart, days = 30) {
   return { series, orders };
 }
 
+function buildPlannedVolumes(products, workCenters, specifications) {
+  const rows = [];
+  for (const product of products) {
+    const spec = specifications.find((s) => s.productMaterialId === product.id);
+    const baseQty = Number(spec?.batchSizeUnits) || 25000;
+    for (const wc of workCenters) {
+      // линия 1 — полный плановый объём, линия 2 — чуть меньше (короткие серии)
+      const qty = wc.name.includes('№2') ? Math.round(baseQty * 0.5) : baseQty;
+      rows.push({
+        id: uid(),
+        materialId: product.id,
+        workCenterId: wc.id,
+        quantity: qty,
+      });
+    }
+  }
+  return rows;
+}
+
 function linkSpecs(orders, specifications) {
   for (const o of orders) {
     const spec = specifications.find((s) => s.productMaterialId === o.materialId);
@@ -268,10 +315,29 @@ function main() {
   const { materials, specifications, products } = buildMaterialsAndSpecs();
   const components = materials.filter((m) => m.type !== 'продукт');
   const { counterparties, materialCounterparties } = buildCounterparties(components);
-  const { lots, stock } = buildLotsAndStock(components, materialCounterparties, products, monthStart);
+  attachApprovedSuppliers(specifications, materialCounterparties);
+  const warehouses = buildWarehouses();
+  const { lots, stock } = buildLotsAndStock(
+    components,
+    materialCounterparties,
+    products,
+    monthStart,
+    warehouses
+  );
   const workCenters = buildWorkCenters();
+  const plannedSeriesVolumes = buildPlannedVolumes(products, workCenters, specifications);
   const { series, orders } = buildOrdersAndSeries(products, workCenters, monthStart, 31);
   linkSpecs(orders, specifications);
+
+  // количества заказов из плановых объёмов (если есть срез)
+  for (const o of orders) {
+    const plan = plannedSeriesVolumes.find(
+      (p) => p.materialId === o.materialId && p.workCenterId === o.workCenterId
+    );
+    if (plan) o.quantity = plan.quantity;
+    o.actualQuantity = null;
+    o.actualLines = [];
+  }
 
   const payload = {
     materials,
@@ -279,9 +345,11 @@ function main() {
     counterparties,
     lots,
     series,
+    warehouses,
     stock,
     reservations: [],
     work_centers: workCenters,
+    planned_series_volumes: plannedSeriesVolumes,
     production_orders: orders,
     material_movements: [],
   };
@@ -300,6 +368,7 @@ function main() {
     series: series.length,
     production_orders: orders.length,
     work_centers: workCenters.length,
+    planned_series_volumes: plannedSeriesVolumes.length,
   });
 }
 

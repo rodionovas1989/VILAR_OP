@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 type Props = {
   open: boolean;
@@ -10,19 +10,11 @@ type Props = {
 };
 
 export function Modal({ open, title, onClose, children, footer, wide }: Props) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-
   if (!open) return null;
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop">
       <div
         className={`modal ${wide ? 'modal-wide' : ''}`}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal
       >

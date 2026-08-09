@@ -16,18 +16,28 @@ export function crudRouter(collection, { beforeCreate, beforeUpdate } = {}) {
   });
 
   router.post('/', (req, res) => {
-    let item = { id: randomUUID(), ...req.body };
-    if (beforeCreate) item = beforeCreate(item) || item;
-    res.status(201).json(store.create(collection, item));
+    try {
+      let item = { id: randomUUID(), ...req.body };
+      if (beforeCreate) item = beforeCreate(item) || item;
+      res.status(201).json(store.create(collection, item));
+    } catch (e) {
+      res.status(400).json({ error: e.message || String(e) });
+    }
   });
 
   router.put('/:id', (req, res) => {
-    let patch = { ...req.body };
-    delete patch.id;
-    if (beforeUpdate) patch = beforeUpdate(patch) || patch;
-    const row = store.update(collection, req.params.id, patch);
-    if (!row) return res.status(404).json({ error: 'Не найдено' });
-    res.json(row);
+    try {
+      let patch = { ...req.body };
+      delete patch.id;
+      const current = store.getById(collection, req.params.id);
+      if (!current) return res.status(404).json({ error: 'Не найдено' });
+      if (beforeUpdate) patch = beforeUpdate({ ...current, ...patch }, current) || patch;
+      const row = store.update(collection, req.params.id, patch);
+      if (!row) return res.status(404).json({ error: 'Не найдено' });
+      res.json(row);
+    } catch (e) {
+      res.status(400).json({ error: e.message || String(e) });
+    }
   });
 
   router.post('/bulk-delete', (req, res) => {
