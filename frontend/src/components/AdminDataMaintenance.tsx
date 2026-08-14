@@ -11,6 +11,7 @@ type BackupRow = {
   label: string;
   reason: string;
   sizeBytes: number;
+  counts?: { materials?: number; lots?: number; production_orders?: number; users?: number } | null;
 };
 
 function formatBytes(n: number) {
@@ -114,6 +115,7 @@ export default function AdminDataMaintenance() {
                 <th>Когда</th>
                 <th>Подпись</th>
                 <th>Причина</th>
+                <th>Содержимое</th>
                 <th>Размер</th>
                 <th />
               </tr>
@@ -121,7 +123,7 @@ export default function AdminDataMaintenance() {
             <tbody>
               {!backups.length && (
                 <tr>
-                  <td colSpan={5}>Архивов пока нет</td>
+                  <td colSpan={6}>Архивов пока нет</td>
                 </tr>
               )}
               {backups.map((b) => (
@@ -129,6 +131,14 @@ export default function AdminDataMaintenance() {
                   <td>{new Date(b.createdAt).toLocaleString('ru-RU')}</td>
                   <td>{b.label}</td>
                   <td>{b.reason}</td>
+                  <td>
+                    {b.counts
+                      ? `мат. ${b.counts.materials ?? '—'}, парт. ${b.counts.lots ?? '—'}, зак. ${b.counts.production_orders ?? '—'}`
+                      : '—'}
+                    {b.counts && (b.counts.materials ?? 0) === 0 && (b.counts.lots ?? 0) === 0 ? (
+                      <span className="error"> (пусто)</span>
+                    ) : null}
+                  </td>
                   <td>{formatBytes(b.sizeBytes)}</td>
                   <td className="row-actions">
                     {canWrite && (
@@ -138,6 +148,14 @@ export default function AdminDataMaintenance() {
                           className="ghost"
                           disabled={busy}
                           onClick={() => {
+                            const empty =
+                              b.counts && (b.counts.materials ?? 0) === 0 && (b.counts.lots ?? 0) === 0;
+                            if (empty) {
+                              const ok = window.confirm(
+                                'Этот архив выглядит пустым (0 материалов). Всё равно восстановить?'
+                              );
+                              if (!ok) return;
+                            }
                             setRestoreId(b.id);
                             setRestoreConfirm('');
                             setError('');

@@ -121,9 +121,16 @@ export const api = {
     }),
   adminDictionaries: () => request<{ id: string; label: string }[]>('/admin/dictionaries'),
   listBackups: () =>
-    request<{ id: string; createdAt: string; label: string; reason: string; sizeBytes: number }[]>(
-      '/admin/backups'
-    ),
+    request<
+      {
+        id: string;
+        createdAt: string;
+        label: string;
+        reason: string;
+        sizeBytes: number;
+        counts?: { materials?: number; lots?: number; production_orders?: number; users?: number } | null;
+      }[]
+    >('/admin/backups'),
   createBackup: (label?: string) =>
     request('/admin/backups', { method: 'POST', body: JSON.stringify({ label: label || '' }) }),
   restoreBackup: (id: string, confirm: string) =>
