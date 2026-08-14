@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
+import { resetDatabase, ensureCollections, writeAll } from '../src/store.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '..', 'data');
@@ -347,15 +348,16 @@ function main() {
     series,
     warehouses,
     stock,
-    reservations: [],
     work_centers: workCenters,
     planned_series_volumes: plannedSeriesVolumes,
     production_orders: orders,
     material_movements: [],
   };
 
+  resetDatabase();
+  ensureCollections();
   for (const [name, rows] of Object.entries(payload)) {
-    fs.writeFileSync(path.join(dataDir, `${name}.json`), JSON.stringify(rows, null, 2), 'utf8');
+    writeAll(name, rows);
   }
 
   console.log('Seed OK');

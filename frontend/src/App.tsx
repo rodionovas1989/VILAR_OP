@@ -14,6 +14,10 @@ import { CrudPage, FieldDef } from './components/CrudPage';
 import ProductionOrderPage from './components/ProductionOrderPage';
 import ProductionDesktop from './components/ProductionDesktop';
 import PlanningDesktop from './components/PlanningDesktop';
+import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
+import StockReportPage from './components/StockReportPage';
+import FeedbackPage from './components/FeedbackPage';
+import UserGuidePage from './components/UserGuidePage';
 import RolesPage from './components/RolesPage';
 import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
@@ -39,15 +43,7 @@ function opt(list: { id: string; name?: string; number?: string }[]) {
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-    refs: true,
-    docs: true,
-    stock: false,
-    plan: true,
-    production: true,
-    admin: false,
-    quality: false,
-  });
+  const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [page, setPage] = useState('home');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
@@ -62,6 +58,10 @@ export default function App() {
 
   const navigateTo = (pageId: string) => {
     setPage(pageId);
+    if (pageId !== 'home') {
+      const group = NAV.find((g) => g.items.some((item) => item.id === pageId));
+      if (group) setOpenGroupId(group.id);
+    }
     requestAnimationFrame(() => {
       contentRef.current
         ?.querySelectorAll('.table-wrap, .matrix-wrap')
@@ -84,16 +84,17 @@ export default function App() {
   }, [authLoading, user, page, visibleNav]);
 
   const reloadDicts = async () => {
+    const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
     const [m, c, l, s, w, wh, sp, pv, rl] = await Promise.all([
-      api.list<Material>('materials'),
-      api.list<Counterparty>('counterparties'),
-      api.list<Lot>('lots'),
-      api.list<Series>('series'),
-      api.list<WorkCenter>('work_centers'),
-      api.list<Warehouse>('warehouses'),
-      api.list<Specification>('specifications'),
-      api.list<PlannedSeriesVolume>('planned_series_volumes'),
-      api.list<Role>('roles'),
+      listOrEmpty<Material>('materials'),
+      listOrEmpty<Counterparty>('counterparties'),
+      listOrEmpty<Lot>('lots'),
+      listOrEmpty<Series>('series'),
+      listOrEmpty<WorkCenter>('work_centers'),
+      listOrEmpty<Warehouse>('warehouses'),
+      listOrEmpty<Specification>('specifications'),
+      listOrEmpty<PlannedSeriesVolume>('planned_series_volumes'),
+      listOrEmpty<Role>('roles'),
     ]);
     setMaterials(m);
     setCounterparties(c);
@@ -107,8 +108,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
     reloadDicts().catch(console.error);
-  }, [page]);
+  }, [page, user, authLoading]);
 
   const matName = (id: string) => materials.find((m) => m.id === id)?.name || id;
   const lotById = (id: string) => lots.find((l) => l.id === id);
@@ -392,6 +394,7 @@ export default function App() {
           <CrudPage
             title="Запасы"
             collection="stock"
+            readOnly
             fields={[
               { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
               { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
@@ -437,6 +440,7 @@ export default function App() {
           <CrudPage
             title="Активные резервы (регистр)"
             collection="active_reservations"
+            readOnly
             fields={[
               { key: 'documentId', label: 'Документ', required: true },
               { key: 'productionOrderId', label: 'Заказ' },
@@ -458,6 +462,7 @@ export default function App() {
           <CrudPage
             title="История резервирования"
             collection="reservation_history"
+            readOnly
             fields={[
               { key: 'documentNumber', label: 'Номер документа', required: true },
               { key: 'documentStatus', label: 'Статус документа', required: true },
@@ -483,6 +488,7 @@ export default function App() {
           <CrudPage
             title="Движение материалов"
             collection="material_movements"
+            readOnly
             fields={[
               { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
               { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
@@ -513,6 +519,7 @@ export default function App() {
           <CrudPage
             title="Регистр качества (активные статусы партий)"
             collection="quality_register"
+            readOnly
             fields={[
               { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
               { key: 'materialId', label: 'Материал', type: 'select', options: opt(materials) },
@@ -533,6 +540,7 @@ export default function App() {
           <CrudPage
             title="История качества"
             collection="quality_history"
+            readOnly
             fields={[
               { key: 'documentNumber', label: 'Документ', required: true },
               { key: 'action', label: 'Действие', required: true },
@@ -549,6 +557,10 @@ export default function App() {
         );
       case 'roles':
         return <RolesPage />;
+      case 'admin_feedback':
+        return <FeedbackPage />;
+      case 'admin_user_guide':
+        return <UserGuidePage />;
       case 'users':
         return (
           <CrudPage
@@ -620,8 +632,13 @@ export default function App() {
             specs={specs}
             plannedVolumes={plannedVolumes}
             lots={lots}
+            warehouses={warehouses}
           />
         );
+      case 'report_released_series':
+        return <ReleasedSeriesReportPage />;
+      case 'report_stock':
+        return <StockReportPage />;
       case 'admin_export_dictionaries':
         return <AdminExportDictionaries />;
       case 'production_desktop':
@@ -691,12 +708,12 @@ export default function App() {
               <button
                 type="button"
                 className="nav-group-title"
-                onClick={() => setOpenGroups((s) => ({ ...s, [g.id]: !s[g.id] }))}
+                onClick={() => setOpenGroupId((current) => (current === g.id ? null : g.id))}
               >
                 <span>{g.label}</span>
-                <span>{openGroups[g.id] ? '▾' : '▸'}</span>
+                <span>{openGroupId === g.id ? '▾' : '▸'}</span>
               </button>
-              {openGroups[g.id] && (
+              {openGroupId === g.id && (
                 <ul>
                   {g.items.map((item) => (
                     <li key={item.id}>

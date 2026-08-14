@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 import { ensureCollections, COLLECTIONS, readAll, getById } from './store.js';
 import { crudRouter } from './routes/crud.js';
@@ -7,8 +10,13 @@ import planningRouter from './routes/planning.js';
 import adminRouter from './routes/admin.js';
 import documentsRouter from './routes/documents.js';
 import qualityRouter from './routes/quality.js';
+import reportsRouter from './routes/reports.js';
+import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
+import { requireAuthUnlessPublic, actorId, requireCollectionAccess } from './middleware/access.js';
+import { isGenericWriteClosed } from './constants/collectionAccess.js';
 import * as planning from './services/planning.js';
+import { warnIfDefaultAdminPassword } from './services/auth.js';
 import {
   prepareUserCreate,
   prepareUserUpdate,
@@ -16,13 +24,26 @@ import {
 } from './services/users.js';
 
 ensureCollections();
+warnIfDefaultAdminPassword();
 
 const app = express();
-app.use(cors());
+const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin || corsOrigins.includes(origin)) return cb(null, true);
+      cb(null, false);
+    },
+  })
+);
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+app.use('/api', requireAuthUnlessPublic);
 app.use('/api/auth', authRouter);
 
 function assertPlannedVolumeUnique(item, excludeId) {
@@ -62,23 +83,24 @@ function assertProductionOrderLinks(item) {
 }
 
 /** Переход в «завершен»/«отменен» — через складскую логику, а не голый статус */
-function applyProductionOrderUpdate(merged, current) {
+function applyProductionOrderUpdate(merged, current, req) {
   assertProductionOrderLinks(merged);
+  const userId = actorId(req);
 
   if (merged.status === 'завершен') {
-    const hasOpenReservations = readAll('reservations').some((r) => r.productionOrderId === current.id);
-    const hasIssue = readAll('material_movements').some(
-      (m) => m.productionOrderId === current.id && m.type === 'issue'
+    const hasOpenReservations = readAll('active_reservations').some((r) => r.productionOrderId === current.id);
+    const hasIssue = readAll('production_issue_documents').some(
+      (d) => d.productionOrderId === current.id && d.status === 'posted'
     );
     const needsComplete = current.status !== 'завершен' || hasOpenReservations || !hasIssue;
     if (needsComplete) {
-      const { order } = planning.completeOrder(current.id);
+      const { order } = planning.completeOrder(current.id, userId);
       return { ...merged, status: order.status, lines: order.lines };
     }
   }
 
   if (merged.status === 'отменен' && current.status !== 'отменен') {
-    const order = planning.cancelOrder(current.id);
+    const order = planning.cancelOrder(current.id, userId);
     return { ...merged, status: order.status, lines: order.lines };
   }
 
@@ -86,6 +108,8 @@ function applyProductionOrderUpdate(merged, current) {
 }
 
 for (const name of COLLECTIONS) {
+  if (name === 'feedback') continue;
+  const readOnly = isGenericWriteClosed(name);
   if (name === 'production_orders') {
     app.use(
       `/api/${name}`,
@@ -120,7 +144,7 @@ for (const name of COLLECTIONS) {
       })
     );
   } else {
-    app.use(`/api/${name}`, crudRouter(name));
+    app.use(`/api/${name}`, crudRouter(name, { readOnly }));
   }
 }
 
@@ -128,10 +152,18 @@ app.use('/api/planning', planningRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/quality', qualityRouter);
+app.use('/api/reports', reportsRouter);
+app.use('/api/feedback', feedbackRouter);
 
-app.get('/api/export/:collection.xlsx', async (req, res) => {
+app.get('/api/export/:collection.xlsx', (req, res, next) => {
   const name = req.params.collection;
-  if (!COLLECTIONS.includes(name)) return res.status(404).json({ error: 'Unknown collection' });
+  if (!COLLECTIONS.includes(name) || name === 'feedback') {
+    return res.status(404).json({ error: 'Unknown collection' });
+  }
+  req.exportCollection = name;
+  return requireCollectionAccess(name, 'read')(req, res, next);
+}, async (req, res) => {
+  const name = req.exportCollection;
   const rows = readAll(name);
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet(name);
@@ -154,6 +186,17 @@ app.get('/api/export/:collection.xlsx', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDist = path.resolve(__dirname, '../../frontend/dist');
+if (process.env.SERVE_FRONTEND === '1' && fs.existsSync(path.join(frontendDist, 'index.html'))) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+  console.log(`UI from ${frontendDist}`);
+}
+
 app.listen(PORT, () => {
   console.log(`Vilar OP API http://localhost:${PORT}`);
 });

@@ -9,12 +9,23 @@ type Props = {
   wide?: boolean;
   className?: string;
   headerExtra?: ReactNode;
+  nested?: boolean;
 };
 
-export function Modal({ open, title, onClose, children, footer, wide, className = '', headerExtra }: Props) {
+export function Modal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  wide,
+  className = '',
+  headerExtra,
+  nested,
+}: Props) {
   if (!open) return null;
   return (
-    <div className="modal-backdrop">
+    <div className={`modal-backdrop${nested ? ' modal-backdrop-nested' : ''}`}>
       <div
         className={`modal ${wide ? 'modal-wide' : ''} ${className}`.trim()}
         role="dialog"

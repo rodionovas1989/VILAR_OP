@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import ExcelJS from 'exceljs';
 import { COLLECTIONS, readAll } from '../store.js';
+import { requirePermission } from '../middleware/access.js';
 
 /** Справочники, доступные для экспорта из Администрирования */
 export const DICTIONARY_COLLECTIONS = [
@@ -46,11 +47,11 @@ function addCollectionSheet(wb, collectionId, sheetName) {
 
 const router = Router();
 
-router.get('/dictionaries', (_req, res) => {
+router.get('/dictionaries', requirePermission('admin_export', 'read'), (_req, res) => {
   res.json(DICTIONARY_COLLECTIONS.map(({ id, label }) => ({ id, label })));
 });
 
-router.post('/export-dictionaries.xlsx', async (req, res) => {
+router.post('/export-dictionaries.xlsx', requirePermission('admin_export', 'modify'), async (req, res) => {
   try {
     const requested = Array.isArray(req.body?.collections) ? req.body.collections.map(String) : [];
     const ids = [...new Set(requested)].filter((id) => ALLOWED.has(id));

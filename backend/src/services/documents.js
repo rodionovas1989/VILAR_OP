@@ -6,7 +6,7 @@ import {
   assertDocumentType,
   collectionForType,
 } from '../constants/documentTypes.js';
-import { freeQtyByLot, stockRowForLot } from './planning.js';
+import { freeQtyByLot, stockRowForLot } from './stock.js';
 
 function cryptoRandom() {
   return randomUUID();
@@ -163,10 +163,11 @@ function clearActiveReservationsForDocument(documentId) {
 }
 
 function applyStockDelta(materialId, lotId, warehouseId, delta, doc, extra = {}) {
+  const qtyDelta = roundQty(delta);
   let stockRow = store
     .readAll('stock')
     .find((s) => s.lotId === lotId && s.warehouseId === warehouseId);
-  if (!stockRow && delta > 0) {
+  if (!stockRow && qtyDelta > 0) {
     stockRow = store.create('stock', {
       id: cryptoRandom(),
       materialId,
@@ -176,7 +177,7 @@ function applyStockDelta(materialId, lotId, warehouseId, delta, doc, extra = {})
     });
   }
   if (!stockRow) throw new Error(`Нет остатка по партии ${lotId} на складе`);
-  const nextQty = roundQty(stockRow.quantity + delta);
+  const nextQty = roundQty(Number(stockRow.quantity) + qtyDelta);
   if (nextQty < -1e-9) throw new Error(`Недостаточно остатка по партии ${lotId}`);
   store.update('stock', stockRow.id, { quantity: nextQty });
 
@@ -185,10 +186,11 @@ function applyStockDelta(materialId, lotId, warehouseId, delta, doc, extra = {})
     materialId,
     lotId,
     seriesId: extra.seriesId || null,
-    quantity: delta,
+    quantity: qtyDelta,
     productionOrderId: extra.productionOrderId || doc.productionOrderId || null,
-    type: delta >= 0 ? 'receipt' : 'issue',
+    type: qtyDelta >= 0 ? 'receipt' : 'issue',
     warehouseId,
+    userId: extra.userId || doc.postedByUserId || doc.createdByUserId || null,
     at: new Date().toISOString(),
     ...movementBase(doc),
   });
@@ -239,7 +241,7 @@ function postReservation(doc, userId) {
   for (const line of doc.lines) {
     const stockRow = stockRowForLot(line.lotId, wh);
     if (!stockRow) throw new Error(`Нет остатка по партии ${line.lotId}`);
-    const free = freeQtyByLot(line.lotId);
+    const free = freeQtyByLot(line.lotId, { warehouseId: wh });
     if (free < line.quantity) {
       throw new Error(`Недостаточно свободного остатка по партии ${line.lotId}`);
     }
@@ -320,6 +322,10 @@ export function findReservationDocumentForOrder(productionOrderId, statuses = ['
 }
 
 export function createDocument(type, payload) {
+  return store.runWrite(() => createDocumentUnchecked(type, payload));
+}
+
+export function createDocumentUnchecked(type, payload) {
   assertDocumentType(type);
   const userId = payload.createdByUserId;
   if (!userId) throw new Error('Укажите пользователя (createdByUserId)');
@@ -401,7 +407,17 @@ export function deleteDocument(type, id) {
   return { deleted: 1 };
 }
 
+export function listDocumentsForOrder(type, productionOrderId, statuses) {
+  return listDocuments(type, { productionOrderId }).filter((d) =>
+    statuses ? statuses.includes(d.status) : true
+  );
+}
+
 export function postDocument(type, id, userId) {
+  return store.runWrite(() => postDocumentUnchecked(type, id, userId));
+}
+
+export function postDocumentUnchecked(type, id, userId) {
   const doc = getDocument(type, id);
   if (!doc) throw new Error('Документ не найден');
   assertDraft(doc);
@@ -412,76 +428,72 @@ export function postDocument(type, id, userId) {
   const handler = POST_HANDLERS[doc.type];
   if (!handler) throw new Error(`Проведение типа «${doc.type}» пока не реализовано`);
 
-  const posted = store.update(collectionForType(type), id, {
+  const postedView = {
+    ...doc,
     status: 'posted',
     postedAt: new Date().toISOString(),
     postedByUserId: userId,
+  };
+  handler(postedView, userId);
+  return updateDocRecord(doc, {
+    status: 'posted',
+    postedAt: postedView.postedAt,
+    postedByUserId: userId,
   });
+}
 
-  try {
-    handler(posted, userId);
-  } catch (e) {
+export function repostDocument(type, id, userId, patch = {}) {
+  return store.runWrite(() => {
+    const doc = getDocument(type, id);
+    if (!doc) throw new Error('Документ не найден');
+    if (doc.status !== 'posted') {
+      throw new Error('Повторное проведение доступно только для проведённых документов');
+    }
+    assertUserExists(userId);
+
+    if (doc.type === 'reservation') {
+      clearActiveReservationsForDocument(doc.id);
+      appendReservationHistory(doc, 'cancel', doc.lines, { userId });
+    } else {
+      reverseStockMovements(doc, userId);
+    }
+
+    const merged = {
+      ...doc,
+      ...patch,
+      id: doc.id,
+      type: doc.type,
+      number: doc.number,
+      lines: patch.lines != null ? normalizeLines(patch.lines) : doc.lines,
+    };
+
+    validateWarehouses(merged);
+    validateLines(merged.lines, merged.type);
+
     store.update(collectionForType(type), id, {
       status: 'draft',
       postedAt: null,
       postedByUserId: null,
+      date: merged.date,
+      time: merged.time != null ? normalizeTime(merged.time) : doc.time ?? null,
+      warehouseId: merged.warehouseId,
+      warehouseFromId: merged.warehouseFromId,
+      warehouseToId: merged.warehouseToId,
+      productionOrderId: merged.productionOrderId,
+      seriesId: merged.seriesId,
+      basisDocumentId: merged.basisDocumentId,
+      comment: merged.comment,
+      lines: merged.lines,
     });
-    throw e;
-  }
 
-  return getDocument(type, id);
-}
-
-export function repostDocument(type, id, userId, patch = {}) {
-  const doc = getDocument(type, id);
-  if (!doc) throw new Error('Документ не найден');
-  if (doc.status !== 'posted') {
-    throw new Error('Повторное проведение доступно только для проведённых документов');
-  }
-  assertUserExists(userId);
-
-  if (doc.type === 'reservation') {
-    clearActiveReservationsForDocument(doc.id);
-    appendReservationHistory(doc, 'cancel', doc.lines, { userId });
-  } else {
-    reverseStockMovements(doc, userId);
-  }
-
-  const merged = {
-    ...doc,
-    ...patch,
-    id: doc.id,
-    type: doc.type,
-    number: doc.number,
-    lines: patch.lines != null ? normalizeLines(patch.lines) : doc.lines,
-  };
-
-  validateWarehouses(merged);
-  validateLines(merged.lines, merged.type);
-
-  store.update(collectionForType(type), id, {
-    status: 'draft',
-    postedAt: null,
-    postedByUserId: null,
-    date: merged.date,
-    time: merged.time != null ? normalizeTime(merged.time) : doc.time ?? null,
-    warehouseId: merged.warehouseId,
-    warehouseFromId: merged.warehouseFromId,
-    warehouseToId: merged.warehouseToId,
-    productionOrderId: merged.productionOrderId,
-    seriesId: merged.seriesId,
-    basisDocumentId: merged.basisDocumentId,
-    comment: merged.comment,
-    lines: merged.lines,
+    return postDocumentUnchecked(type, id, userId);
   });
-
-  return postDocument(type, id, userId);
 }
 
 function reverseStockMovements(doc, userId) {
   const movements = store
     .readAll('material_movements')
-    .filter((m) => m.documentId === doc.id && m.documentStatus === 'posted');
+    .filter((m) => m.documentId === doc.id && m.documentStatus !== 'cancelled');
 
   for (const mov of movements) {
     applyStockDelta(mov.materialId, mov.lotId, mov.warehouseId, -mov.quantity, doc, {
@@ -497,6 +509,10 @@ function reverseStockMovements(doc, userId) {
 }
 
 export function cancelDocument(type, id, userId) {
+  return store.runWrite(() => cancelDocumentUnchecked(type, id, userId));
+}
+
+export function cancelDocumentUnchecked(type, id, userId) {
   const doc = getDocument(type, id);
   if (!doc) throw new Error('Документ не найден');
   if (doc.status !== 'posted' && doc.status !== 'draft') {
@@ -532,6 +548,10 @@ export function cancelDocument(type, id, userId) {
 }
 
 export function fulfillDocument(type, id, userId, basis = {}) {
+  return store.runWrite(() => fulfillDocumentUnchecked(type, id, userId, basis));
+}
+
+export function fulfillDocumentUnchecked(type, id, userId, basis = {}) {
   const doc = getDocument(type, id);
   if (!doc) throw new Error('Документ не найден');
   if (doc.type !== 'reservation') {
@@ -558,19 +578,125 @@ export function fulfillDocument(type, id, userId, basis = {}) {
 
 /** Отмена проведённого RES и создание нового черновика (перепланирование) */
 export function replaceReservationDocument(oldDocId, userId, newLines) {
-  const oldDoc = findDocumentById(oldDocId);
-  if (!oldDoc || oldDoc.type !== 'reservation') throw new Error('Документ резервирования не найден');
-  if (oldDoc.status === 'posted' || oldDoc.status === 'draft') {
-    cancelDocument('reservation', oldDocId, userId);
-  }
+  return store.runWrite(() => {
+    const oldDoc = findDocumentById(oldDocId);
+    if (!oldDoc || oldDoc.type !== 'reservation') throw new Error('Документ резервирования не найден');
+    if (oldDoc.status === 'posted' || oldDoc.status === 'draft') {
+      cancelDocumentUnchecked('reservation', oldDocId, userId);
+    }
 
-  return createDocument('reservation', {
-    date: todayIso(),
-    createdByUserId: userId,
-    warehouseId: oldDoc.warehouseId,
-    productionOrderId: oldDoc.productionOrderId,
-    seriesId: oldDoc.seriesId,
-    lines: newLines,
-    comment: oldDoc.comment,
+    return createDocumentUnchecked('reservation', {
+      date: todayIso(),
+      createdByUserId: userId,
+      warehouseId: oldDoc.warehouseId,
+      productionOrderId: oldDoc.productionOrderId,
+      seriesId: oldDoc.seriesId,
+      lines: newLines,
+      comment: oldDoc.comment,
+    });
   });
+}
+
+function summarizeDocument(d) {
+  return {
+    id: d.id,
+    type: d.type,
+    number: d.number,
+    status: d.status,
+    date: d.date,
+    productionOrderId: d.productionOrderId || null,
+    basisDocumentId: d.basisDocumentId || null,
+  };
+}
+
+/** Движения, регистры и связанные документы — для отладки и просмотра из карточки. */
+export function getDocumentTrace(type, id) {
+  const doc = getDocument(type, id);
+  if (!doc) return null;
+
+  const movements = store
+    .readAll('material_movements')
+    .filter((m) => m.documentId === id || m.documentNumber === doc.number)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+
+  const reservationHistory = store
+    .readAll('reservation_history')
+    .filter((h) => h.documentId === id || h.basisDocumentId === id)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+
+  const activeReservations = store
+    .readAll('active_reservations')
+    .filter((r) => r.documentId === id);
+
+  const relatedDocuments = [];
+  for (const t of Object.keys(DOCUMENT_TYPES)) {
+    for (const d of store.readAll(collectionForType(t))) {
+      if (d.id === id) continue;
+      const linked =
+        (doc.productionOrderId && d.productionOrderId === doc.productionOrderId) ||
+        d.basisDocumentId === id ||
+        (doc.basisDocumentId && doc.basisDocumentId === d.id);
+      if (linked) relatedDocuments.push(summarizeDocument(d));
+    }
+  }
+  relatedDocuments.sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.number).localeCompare(String(a.number)));
+
+  const productionOrder = doc.productionOrderId
+    ? store.getById('production_orders', doc.productionOrderId)
+    : null;
+
+  const lotIds = [...new Set(doc.lines.map((l) => l.lotId).filter(Boolean))];
+  const stock = store.readAll('stock').filter((s) => lotIds.includes(s.lotId));
+
+  return {
+    document: summarizeDocument(doc),
+    movements,
+    reservationHistory,
+    activeReservations,
+    relatedDocuments,
+    productionOrder: productionOrder
+      ? {
+          id: productionOrder.id,
+          status: productionOrder.status,
+          quantity: productionOrder.quantity,
+          seriesId: productionOrder.seriesId,
+          materialId: productionOrder.materialId,
+        }
+      : null,
+    stock,
+  };
+}
+
+export function getOrderTrace(orderId) {
+  const order = store.getById('production_orders', orderId);
+  if (!order) return null;
+  const documents = [];
+  for (const t of Object.keys(DOCUMENT_TYPES)) {
+    documents.push(...listDocuments(t, { productionOrderId: orderId }).map(summarizeDocument));
+  }
+  const docIds = new Set(documents.map((d) => d.id));
+  const movements = store
+    .readAll('material_movements')
+    .filter((m) => m.productionOrderId === orderId || docIds.has(m.documentId))
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const reservationHistory = store
+    .readAll('reservation_history')
+    .filter((h) => h.productionOrderId === orderId || docIds.has(h.documentId))
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  const activeReservations = store
+    .readAll('active_reservations')
+    .filter((r) => r.productionOrderId === orderId);
+  return {
+    productionOrder: {
+      id: order.id,
+      status: order.status,
+      quantity: order.quantity,
+      seriesId: order.seriesId,
+      materialId: order.materialId,
+    },
+    documents,
+    movements,
+    reservationHistory,
+    activeReservations,
+  };
 }

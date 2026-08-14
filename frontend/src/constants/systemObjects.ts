@@ -44,10 +44,17 @@ export const QUALITY_OBJECTS: SystemObject[] = [
   { id: 'quality_history', label: 'История качества' },
 ];
 
+export const REPORT_OBJECTS: SystemObject[] = [
+  { id: 'report_released_series', label: 'Выпущенные серии продукции' },
+  { id: 'report_stock', label: 'Запасы' },
+];
+
 export const ADMIN_OBJECTS: SystemObject[] = [
+  { id: 'admin_user_guide', label: 'Руководство пользователя' },
   { id: 'admin_users', label: 'Пользователи' },
   { id: 'admin_roles', label: 'Роли' },
   { id: 'admin_export', label: 'Экспорт справочников' },
+  { id: 'admin_feedback', label: 'Обратная связь' },
 ];
 
 export const SYSTEM_OBJECT_GROUPS = [
@@ -56,6 +63,7 @@ export const SYSTEM_OBJECT_GROUPS = [
   { id: 'planning', label: 'Планирование и производство', objects: PLANNING_OBJECTS },
   { id: 'stock', label: 'Запасы и регистры', objects: STOCK_OBJECTS },
   { id: 'quality', label: 'Качество', objects: QUALITY_OBJECTS },
+  { id: 'reports', label: 'Отчеты', objects: REPORT_OBJECTS },
   { id: 'admin', label: 'Администрирование', objects: ADMIN_OBJECTS },
 ];
 

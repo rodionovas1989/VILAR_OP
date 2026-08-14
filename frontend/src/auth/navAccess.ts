@@ -11,6 +11,10 @@ export function pagePermissionId(pageId: string): string {
       return 'admin_roles';
     case 'admin_export_dictionaries':
       return 'admin_export';
+    case 'admin_feedback':
+      return 'admin_feedback';
+    case 'admin_user_guide':
+      return 'admin_user_guide';
     default:
       return pageId;
   }

@@ -41,7 +41,7 @@ export default function HomePage({ onNavigate }: Props) {
       list.push(card);
       map.set(card.kind, list);
     }
-    const order: NavKind[] = ['desktop', 'planning', 'document', 'dictionary', 'register', 'quality', 'admin'];
+    const order: NavKind[] = ['desktop', 'planning', 'document', 'dictionary', 'register', 'quality', 'report', 'admin'];
     return order.filter((k) => map.has(k)).map((k) => [k, map.get(k)!] as const);
   }, [cards]);
 

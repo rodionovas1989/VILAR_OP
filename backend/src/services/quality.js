@@ -80,6 +80,7 @@ export function updateQualityDocument(id, patch) {
 
 /** Проведение — пишет в регистры качества; не связано с планированием и запасами */
 export function postQualityDocument(id, userId) {
+  return store.runWrite(() => {
   const doc = getQualityDocument(id);
   if (!doc) throw new Error('Документ не найден');
   if (doc.status !== 'draft') throw new Error('Провести можно только документ «Создан»');
@@ -130,33 +131,36 @@ export function postQualityDocument(id, userId) {
   });
 
   return posted;
+  });
 }
 
 export function cancelQualityDocument(id, userId) {
-  const doc = getQualityDocument(id);
-  if (!doc) throw new Error('Документ не найден');
-  if (doc.status === 'cancelled') throw new Error('Документ уже отменён');
+  return store.runWrite(() => {
+    const doc = getQualityDocument(id);
+    if (!doc) throw new Error('Документ не найден');
+    if (doc.status === 'cancelled') throw new Error('Документ уже отменён');
 
-  const cancelled = store.update('quality_documents', id, {
-    status: 'cancelled',
-    cancelledAt: new Date().toISOString(),
-    cancelledByUserId: userId,
+    const cancelled = store.update('quality_documents', id, {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      cancelledByUserId: userId,
+    });
+
+    store.create('quality_history', {
+      id: cryptoRandom(),
+      at: new Date().toISOString(),
+      action: 'cancel',
+      documentId: doc.id,
+      documentNumber: doc.number,
+      documentType: doc.type,
+      documentStatus: cancelled.status,
+      lotId: doc.lotId,
+      materialId: doc.materialId,
+      userId,
+    });
+
+    return cancelled;
   });
-
-  store.create('quality_history', {
-    id: cryptoRandom(),
-    at: new Date().toISOString(),
-    action: 'cancel',
-    documentId: doc.id,
-    documentNumber: doc.number,
-    documentType: doc.type,
-    documentStatus: cancelled.status,
-    lotId: doc.lotId,
-    materialId: doc.materialId,
-    userId,
-  });
-
-  return cancelled;
 }
 
 export { QUALITY_DOCUMENT_TYPES, QUALITY_DOCUMENT_STATUS };

@@ -9,30 +9,41 @@
 ```
 docs/GMP_SERIES_RULES.md     — правила серий
 package.json                 — корневые npm-скрипты (backend/frontend/setup)
-install.bat / start-*.bat / restart-all.bat — установка и запуск (ASCII; кириллица ломает cmd)
+install.bat / start-*.bat / restart-all.bat / backup.bat — установка, запуск, копия sqlite
 scripts/port-guard.ps1       — проверка портов 3001/5173 (защита от дублирования)
-scripts/*.ps1                — install / start-backend / start-frontend / start-all / restart-all
+scripts/*.ps1                — install / start-backend / start-frontend / start-all / restart-all / backup-data
 backend/
-  scripts/seed.js            — генерация демо из recipes_raw.json
+  scripts/seed.js            — генерация демо из recipes_raw.json (пересоздаёт sqlite)
+  scripts/seed-if-needed.js  — seed только если нет vilar.sqlite
   scripts/recipes_raw.json   — рецептуры
-  data/*.json                — хранилище
-  src/index.js               — Express API
-  src/store.js               — CRUD JSON
-  src/services/planning.js   — FEFO/FIFO, резервы, матрица остатков
+  data/vilar.sqlite          — хранилище SQLite (WAL)
+  src/index.js               — Express API (auth, CORS, опционально frontend/dist)
+  src/store.js               — CRUD SQLite (JSON-документы в таблице records)
+  src/middleware/access.js   — JWT + RBAC на маршрутах
+  src/constants/collectionAccess.js — коллекция → objectId; запрет generic-записи регистров
+  src/services/stock.js      — свободный остаток, склады
+  src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
   src/services/quality.js    — качество (заглушка)
   src/constants/documentTypes.js
-  src/routes/planning.js     — /api/planning/*
-  src/routes/documents.js    — /api/documents/*
+  src/routes/planning.js     — /api/planning/* (+ GET order-trace/:id)
+  src/routes/documents.js    — /api/documents/* (+ GET :id/related)
+  tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, guards
   src/routes/quality.js      — /api/quality/*
-  src/constants/systemObjects.js — объекты RBAC (справочники, документы, заказы)
+  src/routes/reports.js      — /api/reports/* (выпущенные серии, запасы, Excel)
+  src/services/reports.js
+  src/routes/feedback.js     — /api/feedback
+  src/services/feedback.js
+  src/constants/systemObjects.js — объекты RBAC (справочники, документы, заказы, отчеты)
   src/services/permissions.js    — матрица прав роли
   src/services/favorites.js      — избранное per user (+ RBAC filter)
   src/constants/navPages.js      — pageId → objectId для избранного
   src/routes/admin.js        — /api/admin/* (экспорт справочников)
   data/roles.json
+  docs/ORDER_STATUS_GUARDS.md
+  docs/PRE_PRODUCTION.md
 frontend/
-  src/App.tsx                — меню-аккордеон + страницы
+  src/App.tsx                — меню: одна открытая подсистема (аккордеон) + страницы
   src/components/CrudPage.tsx
   src/components/PlanningDesktop.tsx  — вкладки 1–5
   src/components/GanttChart.tsx       — Apache ECharts, дорожки = РЦ
@@ -46,10 +57,18 @@ frontend/
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка
   src/components/DocumentTypePage.tsx    — страница одного типа документа (date+time, actions menu, user labels)
+  src/components/DocumentTracePanel.tsx  — движения и связи
+  src/components/DocumentTraceModal.tsx  — отдельное окно по пиктограмме у статуса
   src/constants/navConfig.ts           — навигация + каталог pageId/kind
   src/auth/FavoritesContext.tsx        — избранное пользователя
   src/components/HomePage.tsx          — главная: колонки по типу объекта, избранное вертикально
-  src/hooks/useListTable.ts            — фильтр + сортировка списков
+  src/components/ReleasedSeriesReportPage.tsx — отчёт выпущенных серий
+  src/components/StockReportPage.tsx         — отчёт запасов (иерархия)
+  src/components/FeedbackPage.tsx            — обращения (обратная связь)
+  src/components/UserGuidePage.tsx           — руководство: инструкция + FAQ
+  src/content/userGuide.ts                   — текст руководства
+  src/content/userGuideTypes.ts
+  src/hooks/useListTable.ts            — фильтр + сортировка списков (persist per user)
   src/components/ListTableHeader.tsx   — шапка таблицы с фильтром/сортировкой
   src/components/PageTitle.tsx         — заголовок + ☆
   src/components/ProductionOrderPage.tsx — заказы на производство (модалка как документ)
@@ -62,16 +81,21 @@ frontend/
 ```
 
 ## Коллекции API `/api/{name}`
-materials, ... **receipt_documents**, **reservation_documents**, … (9 typed doc collections), **users**, **user_favorites**, active_reservations, reservation_history, material_movements
+Справочники и заказы — полный CRUD (с RBAC).  
+Регистры (`stock`, `active_reservations`, движения, качество) и коллекции документов — **только GET**; запись через `/api/documents/:type` и `/api/planning`.
 
-Документы API: `/api/documents/:type` (`receipt`, `reservation`, `production_issue`, …)
+Документы API: `/api/documents/:type` (`receipt`, `reservation`, `production_issue`, …)  
+Связи: `GET /api/documents/:type/:id/related`, `GET /api/planning/order-trace/:id`
 
 Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`qtyPerUnit` = кг на 1000 уп), `approvedSuppliers`
 Расход компонента (план): `need = qtyPerUnit * order.quantity / 1000`
 
 Планирование: `/api/planning/...`  
 Производство: `POST /api/planning/production-fact/:id`, `POST /api/planning/complete/:id` (по факту)  
-Администрирование: `GET /api/admin/dictionaries`, `POST /api/admin/export-dictionaries.xlsx`
+Администрирование: `GET /api/admin/dictionaries`, `POST /api/admin/export-dictionaries.xlsx`  
+Обратная связь: `/api/feedback` (свои записи; модератор — все)  
+Руководство пользователя: страница `admin_user_guide` (чтение у admin/planner/storekeeper)  
+Отчеты: `GET /api/reports/released-series`, `POST /api/reports/released-series.xlsx`, `GET /api/reports/stock`, `POST /api/reports/stock.xlsx`
 
 ## Плановые объёмы серий
 Срез `materialId + workCenterId → quantity`. При создании заказа количество подставляется из среза (можно править вручную).

@@ -150,3 +150,69 @@ export interface MaterialPick {
   freeQty?: number;
   ok?: boolean;
 }
+
+export interface ReleasedSeriesComponent {
+  materialId: string;
+  materialName: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  quantity: number;
+}
+
+export interface ReleasedSeriesRow {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  seriesId: string;
+  seriesNumber: string;
+  lotId: string;
+  lotNumber: string;
+  productionDate: string;
+  quantity: number;
+  documentNumber: string;
+  components: ReleasedSeriesComponent[];
+}
+
+export interface StockReportRow {
+  id: string;
+  warehouseId: string;
+  warehouseName: string;
+  warehouseType: string;
+  materialId: string;
+  materialName: string;
+  materialType: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  counterpartyId: string;
+  counterpartyName: string;
+  productionDate: string;
+  expiryDate: string;
+  quantity: number;
+  reserved: number;
+  free: number;
+}
+
+export type FeedbackCategory = 'понравилось' | 'улучшить' | 'ошибка' | 'вопрос';
+export type FeedbackStatus = 'новый' | 'в работе' | 'закрыт' | 'отклонён';
+
+export interface FeedbackTicket {
+  id: string;
+  number: string;
+  createdAt: string;
+  updatedAt?: string;
+  createdByUserId: string;
+  createdByName: string;
+  category: FeedbackCategory;
+  title: string;
+  body: string;
+  pageId?: string;
+  pageLabel?: string;
+  status: FeedbackStatus;
+  adminComment?: string;
+  respondedAt?: string | null;
+  respondedByUserId?: string | null;
+  respondedByName?: string | null;
+}

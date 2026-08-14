@@ -50,12 +50,20 @@ Push-Location (Join-Path $root 'frontend')
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'npm install failed in frontend' }
 Pop-Location
 
-Write-Step "Preparing demo data (seed)"
-Push-Location (Join-Path $root 'backend')
-& $npmCmd run seed
-if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'seed failed' }
-Pop-Location
+Write-Step "Preparing database"
+$sqlitePath = Join-Path $root 'backend\data\vilar.sqlite'
+if (Test-Path $sqlitePath) {
+  Write-Host "Found existing vilar.sqlite — seed skipped (working data kept)."
+  Write-Host "To rebuild demo data: cd backend && npm run seed"
+} else {
+  Write-Step "Creating demo data (seed)"
+  Push-Location (Join-Path $root 'backend')
+  & $npmCmd run seed
+  if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'seed failed' }
+  Pop-Location
+}
 
 Write-Host ""
 Write-Host "Installation completed successfully." -ForegroundColor Green
 Write-Host "Run start-all.bat (or start-backend.bat then start-frontend.bat)."
+Write-Host "start-all.bat does not recreate data."

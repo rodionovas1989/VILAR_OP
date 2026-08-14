@@ -2,10 +2,31 @@ import * as store from '../store.js';
 import { verifyPassword } from '../utils/password.js';
 import { getRoleById, resolveRoleId, resolveUserPermissions } from './permissions.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { DATA_DIR } from '../store.js';
 
 export { hashPassword, verifyPassword } from '../utils/password.js';
 
-const SECRET = process.env.AUTH_SECRET || 'vilar-op-dev-secret-change-in-prod';
+const SECRET_FILE = path.join(DATA_DIR, 'auth_secret');
+const DEV_FALLBACK = 'vilar-op-dev-secret-change-in-prod';
+
+function loadAuthSecret() {
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(SECRET_FILE)) {
+      fs.writeFileSync(SECRET_FILE, crypto.randomBytes(32).toString('hex'), { encoding: 'utf8' });
+    }
+    const fromFile = fs.readFileSync(SECRET_FILE, 'utf8').trim();
+    if (fromFile) return fromFile;
+  } catch (e) {
+    console.warn('Could not persist AUTH_SECRET to data/auth_secret:', e.message);
+  }
+  return DEV_FALLBACK;
+}
+
+const SECRET = loadAuthSecret();
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -71,4 +92,15 @@ export function userFromRequest(req) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   return verifyToken(token);
+}
+
+export function warnIfDefaultAdminPassword() {
+  try {
+    const admin = store.readAll('users').find((u) => u.login === 'Admin');
+    if (admin && verifyPassword('Admin', admin.passwordHash)) {
+      console.warn('WARNING: user Admin still has the default password. Change it in Users.');
+    }
+  } catch {
+    /* база ещё не готова */
+  }
 }

@@ -16,11 +16,14 @@ import {
   ProductionOrder,
   Series,
   Specification,
+  Warehouse,
   WorkCenter,
 } from '../types';
+import { OrderTrace } from '../types.documents';
 import AccessDenied from './AccessDenied';
 import ActionsMenu, { ActionMenuItem } from './ActionsMenu';
 import CollapsibleSection from './CollapsibleSection';
+import DocumentTraceModal from './DocumentTraceModal';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
@@ -37,6 +40,7 @@ type Props = {
   specs: Specification[];
   plannedVolumes: PlannedSeriesVolume[];
   lots: Lot[];
+  warehouses?: Warehouse[];
 };
 
 type FormMode = 'create' | 'edit' | 'view';
@@ -121,6 +125,7 @@ export default function ProductionOrderPage({
   specs,
   plannedVolumes,
   lots,
+  warehouses = [],
 }: Props) {
   const { user } = useAuth();
   const permissions = user?.permissions;
@@ -135,6 +140,9 @@ export default function ProductionOrderPage({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
+  const [trace, setTrace] = useState<OrderTrace | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(false);
 
   const matName = (id: string) => materials.find((m) => m.id === id)?.name || id;
   const serNum = (id: string) => series.find((s) => s.id === id)?.number || id;
@@ -177,14 +185,16 @@ export default function ProductionOrderPage({
     ];
   }, [materials, series, workCenters]);
 
-  const listTable = useListTable(rows, listColumns);
+  const listTable = useListTable(rows, listColumns, {
+    persistKey: 'production_orders',
+    userId: user?.id,
+  });
 
   const load = async () => {
     setError('');
     try {
       const data = await api.list<ProductionOrder>('production_orders');
       setRows(data);
-      listTable.resetOnLoad();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -193,6 +203,26 @@ export default function ProductionOrderPage({
   useEffect(() => {
     load().catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (!traceOpen || !editing?.id) return;
+    let cancelled = false;
+    setTraceLoading(true);
+    api
+      .getOrderTrace(editing.id)
+      .then((data) => {
+        if (!cancelled) setTrace(data);
+      })
+      .catch(() => {
+        if (!cancelled) setTrace(null);
+      })
+      .finally(() => {
+        if (!cancelled) setTraceLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [traceOpen, editing?.id, editing?.status]);
 
   const canEditFields =
     editing &&
@@ -233,6 +263,7 @@ export default function ProductionOrderPage({
   const closeForm = () => {
     setEditing(null);
     setFormMode('create');
+    setTraceOpen(false);
   };
 
   const startCreate = () => {
@@ -287,7 +318,7 @@ export default function ProductionOrderPage({
     setBusy(true);
     setError('');
     try {
-      await api.completeOrder(editing.id);
+      await api.completeOrder(editing.id, user?.id);
       const fresh = await api.get<ProductionOrder>('production_orders', editing.id);
       applySaved(fresh, 'view');
       await load();
@@ -303,7 +334,7 @@ export default function ProductionOrderPage({
     setBusy(true);
     setError('');
     try {
-      await api.cancelOrder(editing.id);
+      await api.cancelOrder(editing.id, user?.id);
       const fresh = await api.get<ProductionOrder>('production_orders', editing.id);
       applySaved(fresh, 'view');
       await load();
@@ -434,8 +465,18 @@ export default function ProductionOrderPage({
           className="modal-doc modal-order"
           headerExtra={
             <>
-              <span className={`doc-status-badge doc-status-${STATUS_CLASS[statusKey]}`}>
-                {STATUS_LABEL[statusKey] || statusKey}
+              <span className="doc-status-cluster">
+                {editing.id ? (
+                  <IconButton
+                    icon="links"
+                    label="Документы, движения, резервы"
+                    tone="muted"
+                    onClick={() => setTraceOpen(true)}
+                  />
+                ) : null}
+                <span className={`doc-status-badge doc-status-${STATUS_CLASS[statusKey]}`}>
+                  {STATUS_LABEL[statusKey] || statusKey}
+                </span>
               </span>
               {orderActions.length > 0 && (
                 <ActionsMenu
@@ -463,6 +504,7 @@ export default function ProductionOrderPage({
               e.preventDefault();
             }}
           >
+            <div className="doc-form-scroll">
             <div className="form-grid doc-header-grid">
               <label>
                 Продукт
@@ -646,16 +688,30 @@ export default function ProductionOrderPage({
                 </div>
               </CollapsibleSection>
             )}
+            </div>
 
+            <div className="doc-form-extra">
             <CollapsibleSection title="Дополнительно" defaultOpen={false}>
               <p className="hint" style={{ margin: 0 }}>
                 Статус «Завершён» — списание сырья, приход ГП и снятие резервов через API планирования. «Отменён» —
                 только снятие резервов. Подбор сырья выполняется на рабочем столе планирования.
               </p>
             </CollapsibleSection>
+            </div>
           </form>
         </Modal>
       )}
+
+      <DocumentTraceModal
+        open={traceOpen && Boolean(editing?.id)}
+        onClose={() => setTraceOpen(false)}
+        heading="Документы, движения и резервы"
+        trace={trace}
+        loading={traceLoading}
+        materials={materials}
+        lots={lots}
+        warehouses={warehouses}
+      />
     </div>
   );
 }

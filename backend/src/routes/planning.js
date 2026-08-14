@@ -2,10 +2,27 @@ import { Router } from 'express';
 import ExcelJS from 'exceljs';
 import * as planning from '../services/planning.js';
 import * as store from '../store.js';
+import { actorId, requireAnyPermission } from '../middleware/access.js';
 
 const router = Router();
 
-router.post('/select-orders', (req, res) => {
+const canReadPlan = requireAnyPermission([
+  ['planning_desktop', 'read'],
+  ['production_desktop', 'read'],
+  ['production_orders', 'read'],
+]);
+
+const canPlan = requireAnyPermission([
+  ['planning_desktop', 'modify'],
+  ['production_orders', 'modify'],
+]);
+
+const canProduce = requireAnyPermission([
+  ['production_desktop', 'modify'],
+  ['production_orders', 'modify'],
+]);
+
+router.post('/select-orders', canPlan, (req, res) => {
   try {
     const ids = req.body?.ids || [];
     res.json(planning.confirmOrderSelection(ids));
@@ -14,7 +31,7 @@ router.post('/select-orders', (req, res) => {
   }
 });
 
-router.post('/suggest-materials', (req, res) => {
+router.post('/suggest-materials', canPlan, (req, res) => {
   try {
     const { orderId, algorithm = 'FEFO' } = req.body || {};
     res.json(planning.suggestPicksForOrder(orderId, algorithm));
@@ -23,7 +40,7 @@ router.post('/suggest-materials', (req, res) => {
   }
 });
 
-router.post('/suggest-materials-bulk', (req, res) => {
+router.post('/suggest-materials-bulk', canPlan, (req, res) => {
   try {
     const { orderIds = [], algorithm = 'FEFO' } = req.body || {};
     const result = orderIds.map((orderId) => planning.suggestPicksForOrder(orderId, algorithm));
@@ -33,34 +50,34 @@ router.post('/suggest-materials-bulk', (req, res) => {
   }
 });
 
-router.post('/confirm-materials', (req, res) => {
+router.post('/confirm-materials', canPlan, (req, res) => {
   try {
     const { orderId, picks } = req.body || {};
-    res.json(planning.confirmMaterialPicks(orderId, picks));
+    res.json(planning.confirmMaterialPicks(orderId, picks, actorId(req)));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-router.post('/confirm-materials-bulk', (req, res) => {
+router.post('/confirm-materials-bulk', canPlan, (req, res) => {
   try {
     const { items = [] } = req.body || {};
-    const out = items.map(({ orderId, picks }) => planning.confirmMaterialPicks(orderId, picks));
+    const out = planning.confirmMaterialPicksBulk(items, actorId(req));
     res.json(out);
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-router.post('/complete/:id', (req, res) => {
+router.post('/complete/:id', canProduce, (req, res) => {
   try {
-    res.json(planning.completeOrder(req.params.id));
+    res.json(planning.completeOrder(req.params.id, actorId(req)));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-router.post('/production-fact/:id', (req, res) => {
+router.post('/production-fact/:id', canProduce, (req, res) => {
   try {
     res.json(
       planning.saveProductionFact(req.params.id, {
@@ -73,28 +90,34 @@ router.post('/production-fact/:id', (req, res) => {
   }
 });
 
-router.post('/cancel/:id', (req, res) => {
+router.post('/cancel/:id', canProduce, (req, res) => {
   try {
-    res.json(planning.cancelOrder(req.params.id));
+    res.json(planning.cancelOrder(req.params.id, actorId(req)));
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
 
-router.get('/gantt', (_req, res) => {
+router.get('/order-trace/:id', canReadPlan, (req, res) => {
+  const trace = planning.getOrderTrace(req.params.id);
+  if (!trace) return res.status(404).json({ error: 'Не найдено' });
+  res.json(trace);
+});
+
+router.get('/gantt', canReadPlan, (_req, res) => {
   const orders = store.readAll('production_orders');
   const materials = store.readAll('materials');
   const series = store.readAll('series');
   const lots = store.readAll('lots');
   const cps = store.readAll('counterparties');
   const wcs = store.readAll('work_centers');
-  const reservations = store.readAll('reservations');
+  const activeRes = store.readAll('active_reservations');
 
   const tasks = orders.map((o) => {
     const mat = materials.find((m) => m.id === o.materialId);
     const ser = series.find((s) => s.id === o.seriesId);
     const wc = wcs.find((w) => w.id === o.workCenterId);
-    const resLines = reservations
+    const resLines = activeRes
       .filter((r) => r.productionOrderId === o.id)
       .map((r) => {
         const rm = materials.find((m) => m.id === r.materialId);
@@ -129,12 +152,12 @@ router.get('/gantt', (_req, res) => {
   res.json({ workCenters: wcs, tasks });
 });
 
-router.get('/lots-available/:materialId', (req, res) => {
+router.get('/lots-available/:materialId', canReadPlan, (req, res) => {
   const algorithm = req.query.algorithm || 'FEFO';
   res.json(planning.availableLotsForMaterial(req.params.materialId, algorithm));
 });
 
-router.get('/material-balance-matrix', (req, res) => {
+router.get('/material-balance-matrix', canReadPlan, (req, res) => {
   try {
     res.json(
       planning.materialBalanceMatrix({
@@ -147,7 +170,7 @@ router.get('/material-balance-matrix', (req, res) => {
   }
 });
 
-router.post('/export-orders-materials.xlsx', async (req, res) => {
+router.post('/export-orders-materials.xlsx', canPlan, async (req, res) => {
   try {
     const ids = req.body?.ids || [];
     if (!ids.length) return res.status(400).json({ error: 'Не выбраны заказы' });

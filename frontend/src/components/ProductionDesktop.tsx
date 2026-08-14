@@ -3,6 +3,7 @@ import { api } from '../api';
 import { OrderLine, ProductionOrder } from '../types';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
+import { useAuth } from '../auth/AuthContext';
 
 type Dicts = {
   materials: { id: string; name: string }[];
@@ -35,6 +36,7 @@ function scaleFactLines(planLines: OrderLine[], planQty: number, factQty: number
 }
 
 export default function ProductionDesktop({ dictionaries }: Props) {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'plan' | 'fact'>('fact');
@@ -140,7 +142,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
   const completeProduction = async () => {
     if (!selected) return;
-    if (!confirm('Завершить производство по фактическим данным? Будут списаны компоненты, оприходована ГП, сняты резервы.')) {
+    if (!confirm('Завершить производство по фактическим данным? Будут проведены списание в производство (PRI), выпуск ГП (PRR) и выполнен документ резервирования.')) {
       return;
     }
     setBusy(true);
@@ -148,8 +150,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setMessage('');
     try {
       await api.saveProductionFact(selected.id, { actualQuantity, actualLines });
-      await api.completeOrder(selected.id);
-      setMessage('Производство завершено: заказ переведён в «завершен», движения проведены');
+      await api.completeOrder(selected.id, user?.id);
+      setMessage('Производство завершено: PRI + PRR проведены, резерв выполнен');
       setSelectedId(null);
       await load();
     } catch (e) {

@@ -4,6 +4,7 @@ import { MaterialPick, ProductionOrder } from '../types';
 import CounterpartyBadge from './CounterpartyBadge';
 import GanttChart from './GanttChart';
 import PageTitle from './PageTitle';
+import { useAuth } from '../auth/AuthContext';
 
 type SuggestResult = {
   orderId: string;
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export default function PlanningDesktop({ dictionaries }: Props) {
+  const { user } = useAuth();
   const [tab, setTab] = useState<TabId>('orders');
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [selectedNew, setSelectedNew] = useState<Set<string>>(new Set());
@@ -370,8 +372,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           lotId: p.lotId,
         })),
       }));
-      await api.confirmMaterialsBulk(items);
-      setMessage('Резервы созданы. Заказы переведены в статус «спланирован».');
+      await api.confirmMaterialsBulk(items, user?.id);
+      setMessage('Созданы документы резервирования. Заказы переведены в статус «спланирован».');
       setPlannedIds([]);
       setSelectedNew(new Set());
       setSuggestions([]);

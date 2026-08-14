@@ -1,31 +1,31 @@
 import * as store from '../store.js';
+import * as documents from './documents.js';
+import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
 
-export function warehouseByType(type) {
-  return store.readAll('warehouses').find((w) => w.type === type) || null;
-}
+export { warehouseByType, stockRowForLot, freeQtyByLot };
 
-export function stockRowForLot(lotId, warehouseId) {
-  const all = store.readAll('stock').filter((s) => s.lotId === lotId);
-  if (warehouseId) {
-    return all.find((s) => s.warehouseId === warehouseId) || all[0] || null;
+const ORDER_STATUS = {
+  new: 'новый',
+  planned: 'спланирован',
+  done: 'завершен',
+  cancelled: 'отменен',
+};
+
+function assertOrderStatus(order, allowed, action) {
+  if (!allowed.includes(order.status)) {
+    throw new Error(
+      `${action}: заказ в статусе «${order.status}», допустимо: ${allowed.map((s) => `«${s}»`).join(', ')}`
+    );
   }
-  return all[0] || null;
 }
 
-/** Свободный остаток партии = запас − активные резервы (legacy + документы) */
-export function freeQtyByLot(lotId, excludeReservationIds = []) {
-  const whComp = warehouseByType('компоненты')?.id;
-  const stockRow = stockRowForLot(lotId, whComp);
-  if (!stockRow) return 0;
-  const reservedLegacy = store
-    .readAll('reservations')
-    .filter((r) => r.lotId === lotId && !excludeReservationIds.includes(r.id))
-    .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-  const reservedDocs = store
-    .readAll('active_reservations')
-    .filter((r) => r.lotId === lotId)
-    .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-  return Number((stockRow.quantity - reservedLegacy - reservedDocs).toFixed(6));
+function resolveActorUserId(userId) {
+  if (userId && store.getById('users', userId)) return userId;
+  const admin = store.getById('users', 'user-admin');
+  if (admin) return admin.id;
+  const any = store.readAll('users').find((u) => u.active !== false);
+  if (!any) throw new Error('Нет пользователя для проведения документов. Войдите в систему.');
+  return any.id;
 }
 
 export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
@@ -125,12 +125,26 @@ export function confirmOrderSelection(orderIds) {
   return selected;
 }
 
-export function confirmMaterialPicks(orderId, picks) {
+export function confirmMaterialPicks(orderId, picks, userId) {
+  return store.runWrite(() => confirmMaterialPicksUnchecked(orderId, picks, userId));
+}
+
+function closeOpenReservationForOrder(orderId, userId) {
+  const open = documents
+    .listDocuments('reservation', { productionOrderId: orderId })
+    .filter((d) => d.status === 'posted' || d.status === 'draft');
+  for (const doc of open) {
+    documents.cancelDocumentUnchecked('reservation', doc.id, userId);
+  }
+}
+
+function confirmMaterialPicksUnchecked(orderId, picks, userId) {
   if (!orderId) throw new Error('id required');
   const order = store.getById('production_orders', orderId);
   if (!order) throw new Error('Заказ не найден');
+  assertOrderStatus(order, [ORDER_STATUS.new, ORDER_STATUS.planned], 'Подтверждение резерва');
+  const actorId = resolveActorUserId(userId);
 
-  // validate GMP: unique lot per material
   const byMat = new Map();
   for (const p of picks) {
     if (!p.lotId) throw new Error(`Не выбрана партия для материала ${p.materialId}`);
@@ -138,7 +152,7 @@ export function confirmMaterialPicks(orderId, picks) {
       throw new Error('GMP: нельзя резервировать две партии одного материала на одну серию');
     }
     byMat.set(p.materialId, p.lotId);
-    const free = freeQtyByLot(p.lotId);
+    const free = freeQtyByLot(p.lotId, { excludeProductionOrderId: orderId });
     if (free < Number(p.quantity)) {
       throw new Error(`Недостаточно свободного остатка по партии ${p.lotId}`);
     }
@@ -148,49 +162,52 @@ export function confirmMaterialPicks(orderId, picks) {
     }
   }
 
-  // remove old reservations for this order
-  const oldRes = store.readAll('reservations').filter((r) => r.productionOrderId === orderId);
-  if (oldRes.length) {
-    store.removeMany(
-      'reservations',
-      oldRes.map((r) => r.id)
-    );
-  }
+  closeOpenReservationForOrder(orderId, actorId);
 
-  const reservations = [];
-  const lines = [];
-  for (const p of picks) {
-    const res = {
-      id: cryptoRandom(),
-      productionOrderId: orderId,
-      materialId: p.materialId,
-      quantity: Number(p.quantity),
-      lotId: p.lotId,
-      seriesId: order.seriesId,
-    };
-    store.create('reservations', res);
-    reservations.push(res);
-    lines.push({
-      materialId: p.materialId,
-      lotId: p.lotId,
-      quantity: Number(p.quantity),
-      reservationId: res.id,
-    });
-  }
+  const whComp = warehouseByType('компоненты')?.id;
+  if (!whComp) throw new Error('Не найден склад компонентов');
+
+  const lines = picks.map((p) => ({
+    materialId: p.materialId,
+    lotId: p.lotId,
+    quantity: Number(p.quantity),
+  }));
+
+  const draft = documents.createDocumentUnchecked('reservation', {
+    createdByUserId: actorId,
+    warehouseId: whComp,
+    productionOrderId: orderId,
+    seriesId: order.seriesId,
+    lines,
+    comment: `Резерв по заказу ${orderId}`,
+  });
+  const posted = documents.postDocumentUnchecked('reservation', draft.id, actorId);
+
+  const orderLines = lines.map((l) => ({
+    materialId: l.materialId,
+    lotId: l.lotId,
+    quantity: l.quantity,
+    reservationDocumentId: posted.id,
+  }));
 
   const updated = store.update('production_orders', orderId, {
-    status: 'спланирован',
-    lines,
-    // стартовый факт = план (можно скорректировать на рабочем столе производства)
+    status: ORDER_STATUS.planned,
+    lines: orderLines,
     actualQuantity: Number(order.quantity),
-    actualLines: lines.map((l) => ({
+    actualLines: orderLines.map((l) => ({
       materialId: l.materialId,
       lotId: l.lotId,
       quantity: Number(l.quantity),
     })),
   });
 
-  return { order: updated, reservations };
+  return { order: updated, reservationDocument: posted };
+}
+
+export function confirmMaterialPicksBulk(items, userId) {
+  return store.runWrite(() =>
+    items.map(({ orderId, picks }) => confirmMaterialPicksUnchecked(orderId, picks, userId))
+  );
 }
 
 function cryptoRandom() {
@@ -199,174 +216,197 @@ function cryptoRandom() {
 
 /** Сохранить факт выпуска и фактический состав (до завершения) */
 export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
-  const order = store.getById('production_orders', orderId);
-  if (!order) throw new Error('Заказ не найден');
-  if (order.status !== 'спланирован') {
-    throw new Error(`Факт можно править только для статуса «спланирован» (сейчас: ${order.status})`);
-  }
-  if (!(Number(actualQuantity) > 0)) throw new Error('Фактический выпуск должен быть больше 0');
-  if (!Array.isArray(actualLines) || !actualLines.length) {
-    throw new Error('Укажите фактический состав компонентов');
-  }
-  for (const line of actualLines) {
-    if (!line.materialId || !line.lotId) throw new Error('В факте у каждой строки должны быть материал и партия');
-    if (!(Number(line.quantity) > 0)) throw new Error('Количество в факте должно быть больше 0');
-    const lot = store.getById('lots', line.lotId);
-    if (!lot || lot.materialId !== line.materialId) {
-      throw new Error('Партия в факте не соответствует материалу');
+  return store.runWrite(() => {
+    const order = store.getById('production_orders', orderId);
+    if (!order) throw new Error('Заказ не найден');
+    assertOrderStatus(order, [ORDER_STATUS.planned], 'Сохранение факта');
+    if (!(Number(actualQuantity) > 0)) throw new Error('Фактический выпуск должен быть больше 0');
+    if (!Array.isArray(actualLines) || !actualLines.length) {
+      throw new Error('Укажите фактический состав компонентов');
     }
-  }
-  return store.update('production_orders', orderId, {
-    actualQuantity: Number(actualQuantity),
-    actualLines: actualLines.map((l) => ({
-      materialId: l.materialId,
-      lotId: l.lotId,
-      quantity: Number(l.quantity),
-    })),
+    for (const line of actualLines) {
+      if (!line.materialId || !line.lotId) throw new Error('В факте у каждой строки должны быть материал и партия');
+      if (!(Number(line.quantity) > 0)) throw new Error('Количество в факте должно быть больше 0');
+      const lot = store.getById('lots', line.lotId);
+      if (!lot || lot.materialId !== line.materialId) {
+        throw new Error('Партия в факте не соответствует материалу');
+      }
+    }
+    return store.update('production_orders', orderId, {
+      actualQuantity: Number(actualQuantity),
+      actualLines: actualLines.map((l) => ({
+        materialId: l.materialId,
+        lotId: l.lotId,
+        quantity: Number(l.quantity),
+      })),
+    });
   });
 }
 
-export function completeOrder(orderId) {
-  const order = store.getById('production_orders', orderId);
-  if (!order) throw new Error('Заказ не найден');
+function findPostedDocForOrder(type, orderId) {
+  return documents.listDocuments(type, { productionOrderId: orderId }).find((d) => d.status === 'posted');
+}
 
-  const planLines = order.lines || [];
-  const factLines =
-    Array.isArray(order.actualLines) && order.actualLines.length > 0
-      ? order.actualLines
-      : planLines;
-  const outputQty =
-    order.actualQuantity != null && Number(order.actualQuantity) > 0
-      ? Number(order.actualQuantity)
-      : Number(order.quantity);
-
-  if (!factLines.length) throw new Error('Нет строк состава — завершение невозможно');
-  if (!(outputQty > 0)) throw new Error('Количество выпуска должно быть больше 0');
-
-  const whComp = warehouseByType('компоненты')?.id;
-  const whFg = warehouseByType('ГП')?.id;
-
-  const existingIssues = store
-    .readAll('material_movements')
-    .filter((m) => m.productionOrderId === orderId && m.type === 'issue');
-  const alreadyIssued = existingIssues.length > 0;
-  const movements = [...existingIssues];
-
-  // списание по ФАКТУ (один раз)
-  if (!alreadyIssued) {
-    for (const line of factLines) {
-      const stockRow = stockRowForLot(line.lotId, whComp);
-      if (!stockRow || stockRow.quantity < line.quantity) {
-        throw new Error(`Недостаточно запаса для списания партии ${line.lotId}`);
-      }
-      store.update('stock', stockRow.id, {
-        quantity: Number((stockRow.quantity - line.quantity).toFixed(6)),
-      });
-      const mov = {
-        id: cryptoRandom(),
-        materialId: line.materialId,
-        lotId: line.lotId,
-        seriesId: order.seriesId,
-        quantity: -Number(line.quantity),
-        productionOrderId: orderId,
-        type: 'issue',
-        warehouseId: stockRow.warehouseId || whComp,
-        at: new Date().toISOString(),
-      };
-      store.create('material_movements', mov);
-      movements.push(mov);
-    }
-
-    // приход ГП по фактическому выпуску
-    const series = store.getById('series', order.seriesId);
-    const gpNumber = `ГП-${series?.number || orderId.slice(0, 8)}`;
-    let gpLot = store.readAll('lots').find((l) => l.number === gpNumber);
-    if (!gpLot) {
-      gpLot = store.create('lots', {
-        id: cryptoRandom(),
-        number: gpNumber,
-        materialId: order.materialId,
-        counterpartyId: null,
-        productionDate: new Date().toISOString().slice(0, 10),
-        expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 730).toISOString().slice(0, 10),
-      });
-      store.create('stock', {
-        id: cryptoRandom(),
-        materialId: order.materialId,
-        lotId: gpLot.id,
-        warehouseId: whFg,
-        quantity: outputQty,
-      });
-    } else {
-      const stockRow = stockRowForLot(gpLot.id, whFg);
-      if (stockRow) {
-        store.update('stock', stockRow.id, {
-          quantity: Number((stockRow.quantity + outputQty).toFixed(6)),
-        });
-      } else {
-        store.create('stock', {
-          id: cryptoRandom(),
-          materialId: order.materialId,
-          lotId: gpLot.id,
-          warehouseId: whFg,
-          quantity: outputQty,
-        });
-      }
-    }
-
-    const hasReceipt = store
-      .readAll('material_movements')
-      .some((m) => m.productionOrderId === orderId && m.type === 'receipt');
-    if (!hasReceipt) {
-      const inMov = {
-        id: cryptoRandom(),
-        materialId: order.materialId,
-        lotId: gpLot.id,
-        seriesId: order.seriesId,
-        quantity: Number(outputQty),
-        productionOrderId: orderId,
-        type: 'receipt',
-        warehouseId: whFg,
-        at: new Date().toISOString(),
-      };
-      store.create('material_movements', inMov);
-      movements.push(inMov);
-    }
+function resolvePostedReservation(order) {
+  const orderId = order.id;
+  const byOrder = documents.findReservationDocumentForOrder(orderId, ['posted']);
+  if (byOrder) return byOrder;
+  const fromLine = (order.lines || []).find((l) => l.reservationDocumentId)?.reservationDocumentId;
+  if (fromLine) {
+    const doc = documents.getDocument('reservation', fromLine);
+    if (doc && doc.status === 'posted') return doc;
   }
+  return null;
+}
 
-  // снять резервы (по плану); списание уже по факту
-  const res = store.readAll('reservations').filter((r) => r.productionOrderId === orderId);
-  if (res.length) {
-    store.removeMany(
-      'reservations',
-      res.map((r) => r.id)
-    );
+function fulfillReservationForOrder(order, priDoc, actorId, fallbackRes) {
+  const resDoc = resolvePostedReservation(order) || (fallbackRes?.status === 'posted' ? fallbackRes : null);
+  if (!resDoc) {
+    throw new Error('Нет проведённого резерва для закрытия при завершении заказа');
   }
+  return documents.fulfillDocumentUnchecked('reservation', resDoc.id, actorId, {
+    basisDocumentId: priDoc?.id || null,
+    basisDocumentNumber: priDoc?.number || null,
+  });
+}
 
-  return {
-    order: store.update('production_orders', orderId, {
-      status: 'завершен',
+function ensureGpLot(order, outputQty, whFg) {
+  const series = store.getById('series', order.seriesId);
+  const gpNumber = `ГП-${series?.number || order.id.slice(0, 8)}`;
+  let gpLot = store.readAll('lots').find((l) => l.number === gpNumber);
+  if (!gpLot) {
+    gpLot = store.create('lots', {
+      id: cryptoRandom(),
+      number: gpNumber,
+      materialId: order.materialId,
+      counterpartyId: null,
+      productionDate: new Date().toISOString().slice(0, 10),
+      expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 730).toISOString().slice(0, 10),
+    });
+  }
+  return { gpLot, outputQty, whFg };
+}
+
+export function completeOrder(orderId, userId) {
+  return store.runWrite(() => {
+    const order = store.getById('production_orders', orderId);
+    if (!order) throw new Error('Заказ не найден');
+    assertOrderStatus(order, [ORDER_STATUS.planned], 'Завершение производства');
+    const actorId = resolveActorUserId(userId);
+
+    const planLines = order.lines || [];
+    const factLines =
+      Array.isArray(order.actualLines) && order.actualLines.length > 0 ? order.actualLines : planLines;
+    const outputQty =
+      order.actualQuantity != null && Number(order.actualQuantity) > 0
+        ? Number(order.actualQuantity)
+        : Number(order.quantity);
+
+    if (!factLines.length) throw new Error('Нет строк состава — завершение невозможно');
+    if (!(outputQty > 0)) throw new Error('Количество выпуска должно быть больше 0');
+
+    const whComp = warehouseByType('компоненты')?.id;
+    const whFg = warehouseByType('ГП')?.id;
+    if (!whComp || !whFg) throw new Error('Не заданы склады компонентов и ГП');
+
+    let resDoc = resolvePostedReservation(order);
+    if (!resDoc) {
+      const draft = documents.createDocumentUnchecked('reservation', {
+        createdByUserId: actorId,
+        warehouseId: whComp,
+        productionOrderId: orderId,
+        seriesId: order.seriesId,
+        lines: planLines.map((l) => ({
+          materialId: l.materialId,
+          lotId: l.lotId,
+          quantity: Number(l.quantity),
+        })),
+        comment: 'RES создан при завершении (не было проведённого резерва)',
+      });
+      resDoc = documents.postDocumentUnchecked('reservation', draft.id, actorId);
+    }
+
+    let priDoc = findPostedDocForOrder('production_issue', orderId);
+    if (!priDoc) {
+      const draft = documents.createDocumentUnchecked('production_issue', {
+        createdByUserId: actorId,
+        warehouseFromId: whComp,
+        productionOrderId: orderId,
+        seriesId: order.seriesId,
+        basisDocumentId: resDoc.id,
+        lines: factLines.map((l) => ({
+          materialId: l.materialId,
+          lotId: l.lotId,
+          quantity: Number(l.quantity),
+        })),
+        comment: `Списание в производство по заказу`,
+      });
+      priDoc = documents.postDocumentUnchecked('production_issue', draft.id, actorId);
+    }
+
+    const { gpLot } = ensureGpLot(order, outputQty, whFg);
+
+    let prrDoc = findPostedDocForOrder('production_receipt', orderId);
+    if (!prrDoc) {
+      const draft = documents.createDocumentUnchecked('production_receipt', {
+        createdByUserId: actorId,
+        warehouseToId: whFg,
+        productionOrderId: orderId,
+        seriesId: order.seriesId,
+        basisDocumentId: priDoc.id,
+        lines: [
+          {
+            materialId: order.materialId,
+            lotId: gpLot.id,
+            quantity: outputQty,
+          },
+        ],
+        comment: `Выпуск ГП по заказу`,
+      });
+      prrDoc = documents.postDocumentUnchecked('production_receipt', draft.id, actorId);
+    }
+
+    const fulfilledRes = fulfillReservationForOrder(order, priDoc, actorId, resDoc);
+
+    const updated = store.update('production_orders', orderId, {
+      status: ORDER_STATUS.done,
       lines: planLines,
       actualQuantity: outputQty,
       actualLines: factLines,
-    }),
-    movements,
-  };
+    });
+
+    return {
+      order: updated,
+      documents: {
+        reservation: fulfilledRes,
+        productionIssue: priDoc,
+        productionReceipt: prrDoc,
+      },
+    };
+  });
 }
 
-export function cancelOrder(orderId) {
-  const order = store.getById('production_orders', orderId);
-  if (!order) throw new Error('Заказ не найден');
-  const res = store.readAll('reservations').filter((r) => r.productionOrderId === orderId);
-  store.removeMany(
-    'reservations',
-    res.map((r) => r.id)
-  );
-  return store.update('production_orders', orderId, {
-    status: 'отменен',
-    lines: [],
-    actualLines: [],
-    actualQuantity: null,
+export function getOrderTrace(orderId) {
+  return documents.getOrderTrace(orderId);
+}
+
+export function cancelOrder(orderId, userId) {
+  return store.runWrite(() => {
+    const order = store.getById('production_orders', orderId);
+    if (!order) throw new Error('Заказ не найден');
+    assertOrderStatus(order, [ORDER_STATUS.new, ORDER_STATUS.planned], 'Отмена заказа');
+    const actorId = resolveActorUserId(userId);
+
+    if (order.status === ORDER_STATUS.planned) {
+      closeOpenReservationForOrder(orderId, actorId);
+    }
+
+    return store.update('production_orders', orderId, {
+      status: ORDER_STATUS.cancelled,
+      lines: order.status === ORDER_STATUS.new ? [] : order.lines || [],
+      actualLines: [],
+      actualQuantity: null,
+    });
   });
 }
 

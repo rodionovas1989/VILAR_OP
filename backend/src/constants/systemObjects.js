@@ -42,10 +42,17 @@ export const QUALITY_OBJECTS = [
   { id: 'quality_history', label: 'История качества' },
 ];
 
+export const REPORT_OBJECTS = [
+  { id: 'report_released_series', label: 'Выпущенные серии продукции' },
+  { id: 'report_stock', label: 'Запасы' },
+];
+
 export const ADMIN_OBJECTS = [
+  { id: 'admin_user_guide', label: 'Руководство пользователя' },
   { id: 'admin_users', label: 'Пользователи' },
   { id: 'admin_roles', label: 'Роли' },
   { id: 'admin_export', label: 'Экспорт справочников' },
+  { id: 'admin_feedback', label: 'Обратная связь' },
 ];
 
 export const SYSTEM_OBJECT_GROUPS = [
@@ -54,6 +61,7 @@ export const SYSTEM_OBJECT_GROUPS = [
   { id: 'planning', label: 'Планирование и производство', objects: PLANNING_OBJECTS },
   { id: 'stock', label: 'Запасы и регистры', objects: STOCK_OBJECTS },
   { id: 'quality', label: 'Качество', objects: QUALITY_OBJECTS },
+  { id: 'reports', label: 'Отчеты', objects: REPORT_OBJECTS },
   { id: 'admin', label: 'Администрирование', objects: ADMIN_OBJECTS },
 ];
 
@@ -86,6 +94,11 @@ export function storekeeperPermissions() {
   for (const id of STOCK_OBJECTS.map((o) => o.id)) {
     out[id] = { read: true, create: false, modify: false };
   }
+  for (const id of REPORT_OBJECTS.map((o) => o.id)) {
+    out[id] = { read: true, create: false, modify: false };
+  }
+  out.admin_feedback = { read: true, create: true, modify: false };
+  out.admin_user_guide = { read: true, create: false, modify: false };
   return out;
 }
 
@@ -103,6 +116,11 @@ export function plannerPermissions() {
   out.production_orders = { read: true, create: true, modify: true };
   out.planning_desktop = { read: true, create: true, modify: true };
   out.production_desktop = { read: true, create: false, modify: false };
+  for (const id of REPORT_OBJECTS.map((o) => o.id)) {
+    out[id] = { read: true, create: false, modify: false };
+  }
+  out.admin_feedback = { read: true, create: true, modify: false };
+  out.admin_user_guide = { read: true, create: false, modify: false };
   return out;
 }
 

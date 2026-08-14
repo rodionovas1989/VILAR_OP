@@ -40,8 +40,8 @@
 
 - [x] **0** — каркас, auth, users
 - [x] **1** — отдельные сущности и UI
-- [ ] **2** — RES ↔ планирование
-- [ ] **3** — PRI/PRR ↔ completeOrder
+- [x] **2** — RES ↔ планирование
+- [x] **3** — PRI/PRR ↔ completeOrder
 
 ## Связь с заказом (этап 2–3)
 
@@ -52,4 +52,4 @@
 переплан    → RES [cancelled] + новый RES [posted]
 ```
 
-Legacy `stock_documents` мигрировано; `reservations` — до этапа 2.
+Legacy `reservations` переносится в RES при старте и очищается.

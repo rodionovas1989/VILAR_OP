@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Database from 'better-sqlite3';
+import { randomUUID } from 'crypto';
 import { hashPassword } from './utils/password.js';
 import { defaultRoles, normalizePermissions } from './services/permissions.js';
 import { LEGACY_ROLE_MAP, ALL_SYSTEM_OBJECT_IDS, DEFAULT_ROLE_PERMISSIONS } from './constants/systemObjects.js';
@@ -8,7 +10,9 @@ import { ALL_DOCUMENT_COLLECTIONS, collectionForType } from './constants/documen
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = path.join(__dirname, '..', 'data');
+export const DB_PATH = process.env.VILAR_SQLITE_PATH || path.join(DATA_DIR, 'vilar.sqlite');
 
+/** Коллекции, доступные через generic CRUD. Legacy `reservations` убран. */
 const COLLECTIONS = [
   'materials',
   'specifications',
@@ -17,7 +21,6 @@ const COLLECTIONS = [
   'series',
   'warehouses',
   'stock',
-  'reservations',
   'work_centers',
   'planned_series_volumes',
   'production_orders',
@@ -33,57 +36,135 @@ const COLLECTIONS = [
   'quality_register',
   'quality_history',
   'user_favorites',
+  'feedback',
 ];
 
-function filePath(name) {
+const IMPORT_COLLECTIONS = [...new Set([...COLLECTIONS, 'reservations'])];
+
+let db = null;
+
+function jsonFilePath(name) {
   return path.join(DATA_DIR, `${name}.json`);
 }
 
+export function getDb() {
+  if (db) return db;
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 8000');
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS records (
+      collection TEXT NOT NULL,
+      id TEXT NOT NULL,
+      data TEXT NOT NULL,
+      PRIMARY KEY (collection, id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection);
+  `);
+  return db;
+}
+
+export function closeDb() {
+  if (!db) return;
+  db.close();
+  db = null;
+}
+
+export function resetDatabase() {
+  closeDb();
+  for (const suffix of ['', '-wal', '-shm']) {
+    const p = `${DB_PATH}${suffix}`;
+    if (fs.existsSync(p)) fs.unlinkSync(p);
+  }
+  getDb();
+}
+
+/** BEGIN IMMEDIATE. Вложенные вызовы идут в той же транзакции (без второго BEGIN). */
+let writeDepth = 0;
+export function runWrite(fn) {
+  if (writeDepth > 0) return fn();
+  writeDepth += 1;
+  try {
+    return getDb().transaction(fn).immediate();
+  } finally {
+    writeDepth -= 1;
+  }
+}
+
 export function readAll(name) {
-  const p = filePath(name);
-  if (!fs.existsSync(p)) return [];
-  return JSON.parse(fs.readFileSync(p, 'utf8'));
+  const rows = getDb().prepare('SELECT data FROM records WHERE collection = ?').all(name);
+  return rows.map((r) => JSON.parse(r.data));
 }
 
 export function writeAll(name, rows) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(filePath(name), JSON.stringify(rows, null, 2), 'utf8');
+  const database = getDb();
+  const del = database.prepare('DELETE FROM records WHERE collection = ?');
+  const ins = database.prepare('INSERT INTO records (collection, id, data) VALUES (?, ?, ?)');
+  const txn = database.transaction((items) => {
+    del.run(name);
+    for (const item of items) {
+      if (!item?.id) throw new Error(`Запись коллекции ${name} без id`);
+      ins.run(name, item.id, JSON.stringify(item));
+    }
+  });
+  txn(rows);
   return rows;
 }
 
 export function getById(name, id) {
-  return readAll(name).find((r) => r.id === id) || null;
+  const row = getDb().prepare('SELECT data FROM records WHERE collection = ? AND id = ?').get(name, id);
+  return row ? JSON.parse(row.data) : null;
 }
 
 export function create(name, item) {
-  const rows = readAll(name);
-  rows.push(item);
-  writeAll(name, rows);
+  if (!item?.id) throw new Error(`Запись коллекции ${name} без id`);
+  getDb()
+    .prepare('INSERT INTO records (collection, id, data) VALUES (?, ?, ?)')
+    .run(name, item.id, JSON.stringify(item));
   return item;
 }
 
 export function update(name, id, patch) {
-  const rows = readAll(name);
-  const idx = rows.findIndex((r) => r.id === id);
-  if (idx < 0) return null;
-  rows[idx] = { ...rows[idx], ...patch, id };
-  writeAll(name, rows);
-  return rows[idx];
+  const current = getById(name, id);
+  if (!current) return null;
+  const next = { ...current, ...patch, id };
+  getDb()
+    .prepare('UPDATE records SET data = ? WHERE collection = ? AND id = ?')
+    .run(JSON.stringify(next), name, id);
+  return next;
 }
 
 export function removeMany(name, ids) {
-  const idSet = new Set(ids);
-  const rows = readAll(name);
-  const next = rows.filter((r) => !idSet.has(r.id));
-  writeAll(name, next);
-  return rows.length - next.length;
+  const stmt = getDb().prepare('DELETE FROM records WHERE collection = ? AND id = ?');
+  const txn = getDb().transaction((list) => {
+    let n = 0;
+    for (const id of list) n += stmt.run(name, id).changes;
+    return n;
+  });
+  return txn(ids);
+}
+
+function importJsonIfEmpty() {
+  if (process.env.VILAR_SKIP_JSON_IMPORT === '1') return;
+  const count = getDb().prepare('SELECT COUNT(*) AS n FROM records').get().n;
+  if (count > 0) return;
+  for (const name of IMPORT_COLLECTIONS) {
+    const p = jsonFilePath(name);
+    if (!fs.existsSync(p)) continue;
+    try {
+      const rows = JSON.parse(fs.readFileSync(p, 'utf8'));
+      if (Array.isArray(rows) && rows.length) writeAll(name, rows);
+    } catch (e) {
+      console.error(`Не удалось импортировать ${name}.json:`, e.message);
+    }
+  }
 }
 
 export function ensureCollections() {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const c of COLLECTIONS) {
-    if (!fs.existsSync(filePath(c))) writeAll(c, []);
-  }
+  getDb();
+  importJsonIfEmpty();
   migrateSpecifications();
   migrateWarehousesAndStock();
   migrateOrderPlanFact();
@@ -91,6 +172,7 @@ export function ensureCollections() {
   migrateRoles();
   migrateRolePermissionKeys();
   migrateStockDocumentsToTyped();
+  migrateLegacyReservationsToDocuments();
 }
 
 /** Пользователь по умолчанию: Admin / Admin */
@@ -155,7 +237,6 @@ function migrateRoles() {
   if (usersChanged) writeAll('users', users);
 }
 
-/** Новые объекты RBAC — добавить в существующие роли без перезаписи настроенных прав */
 function migrateRolePermissionKeys() {
   let roles = readAll('roles');
   let changed = false;
@@ -178,7 +259,6 @@ function migrateRolePermissionKeys() {
   if (changed) writeAll('roles', roles);
 }
 
-/** Перенос legacy stock_documents → отдельные коллекции по типу */
 function migrateStockDocumentsToTyped() {
   const legacy = readAll('stock_documents');
   if (!legacy.length) return;
@@ -191,16 +271,11 @@ function migrateStockDocumentsToTyped() {
     } catch {
       continue;
     }
-    const bucket = readAll(col);
-    if (!bucket.some((d) => d.id === doc.id)) {
-      bucket.push(doc);
-      writeAll(col, bucket);
-    }
+    if (!getById(col, doc.id)) create(col, doc);
   }
   writeAll('stock_documents', []);
 }
 
-/** Склады по умолчанию + привязка запасов */
 function migrateWarehousesAndStock() {
   let warehouses = readAll('warehouses');
   let changedWh = false;
@@ -229,14 +304,10 @@ function migrateWarehousesAndStock() {
   if (changedStock) writeAll('stock', stock);
 }
 
-/** План/факт в заказах */
 function migrateOrderPlanFact() {
   const orders = readAll('production_orders');
   let changed = false;
   for (const o of orders) {
-    if (o.actualQuantity == null && o.quantity != null) {
-      // факт ещё не вводили — не копируем, пока не откроют производство / не подтвердят резерв
-    }
     if (!Array.isArray(o.actualLines)) {
       o.actualLines = [];
       changed = true;
@@ -245,11 +316,9 @@ function migrateOrderPlanFact() {
   if (changed) writeAll('production_orders', orders);
 }
 
-/** Убрать префикс «Спецификация:», type, норма расхода на 1000 уп */
 function migrateSpecifications() {
-  const p = filePath('specifications');
-  if (!fs.existsSync(p)) return;
   const rows = readAll('specifications');
+  if (!rows.length) return;
   let changed = false;
   for (const s of rows) {
     if (typeof s.name === 'string' && s.name.startsWith('Спецификация: ')) {
@@ -260,15 +329,12 @@ function migrateSpecifications() {
       s.type = 'Основная';
       changed = true;
     }
-    // Перевод нормы с «кг на 1 уп» → «кг на 1000 уп» (один раз)
     if (s.qtyBasis !== 'per1000') {
       for (const line of s.lines || []) {
         if (line.qtyPerUnit != null) {
           line.qtyPerUnit = Number((Number(line.qtyPerUnit) * 1000).toFixed(8));
         }
-        if ('note' in line) {
-          delete line.note;
-        }
+        if ('note' in line) delete line.note;
       }
       s.qtyBasis = 'per1000';
       changed = true;
@@ -282,6 +348,100 @@ function migrateSpecifications() {
     }
   }
   if (changed) writeAll('specifications', rows);
+}
+
+/**
+ * Legacy `reservations` → документ RES [posted] + active_reservations.
+ * Выполняется один раз: после переноса коллекция reservations очищается.
+ */
+function migrateLegacyReservationsToDocuments() {
+  const legacy = readAll('reservations');
+  if (!legacy.length) return;
+
+  const actor = getById('users', 'user-admin')?.id || readAll('users')[0]?.id || 'user-admin';
+  const whComp = readAll('warehouses').find((w) => w.type === 'компоненты')?.id || 'wh-components';
+  const today = new Date().toISOString().slice(0, 10);
+  const byOrder = new Map();
+  for (const r of legacy) {
+    const oid = r.productionOrderId || '_none';
+    if (!byOrder.has(oid)) byOrder.set(oid, []);
+    byOrder.get(oid).push(r);
+  }
+
+  const existingRes = readAll('reservation_documents');
+
+  for (const [orderId, rows] of byOrder) {
+    const linked = existingRes.find(
+      (d) => d.productionOrderId === orderId && (d.status === 'posted' || d.status === 'fulfilled')
+    );
+    if (linked) continue;
+
+    const order = orderId !== '_none' ? getById('production_orders', orderId) : null;
+    const lines = rows
+      .filter((r) => r.materialId && r.lotId)
+      .map((r) => ({
+        id: randomUUID(),
+        materialId: r.materialId,
+        lotId: r.lotId,
+        quantity: Number(r.quantity) || 0,
+      }));
+    if (!lines.length) continue;
+
+    const seq = nextLocalNumber('RES', today);
+    const docId = randomUUID();
+    const doc = {
+      id: docId,
+      type: 'reservation',
+      number: seq,
+      date: today,
+      time: '00:00',
+      status: order?.status === 'завершен' ? 'fulfilled' : 'posted',
+      warehouseId: whComp,
+      warehouseFromId: null,
+      warehouseToId: null,
+      productionOrderId: orderId !== '_none' ? orderId : null,
+      seriesId: order?.seriesId || rows[0]?.seriesId || null,
+      basisDocumentId: null,
+      createdByUserId: actor,
+      createdAt: new Date().toISOString(),
+      postedAt: new Date().toISOString(),
+      postedByUserId: actor,
+      cancelledAt: null,
+      cancelledByUserId: null,
+      fulfilledAt: order?.status === 'завершен' ? new Date().toISOString() : null,
+      fulfilledByUserId: order?.status === 'завершен' ? actor : null,
+      comment: 'Перенесено из legacy reservations',
+      lines,
+    };
+    create('reservation_documents', doc);
+
+    if (doc.status === 'posted') {
+      for (const line of lines) {
+        create('active_reservations', {
+          id: randomUUID(),
+          documentId: docId,
+          productionOrderId: doc.productionOrderId,
+          materialId: line.materialId,
+          lotId: line.lotId,
+          quantity: line.quantity,
+          seriesId: doc.seriesId,
+          warehouseId: whComp,
+        });
+      }
+    }
+  }
+
+  writeAll('reservations', []);
+}
+
+function nextLocalNumber(code, dateStr) {
+  const key = `${code}:${dateStr}`;
+  const sequences = readAll('document_sequences');
+  const row = sequences.find((s) => s.key === key);
+  const next = (row?.last ?? 0) + 1;
+  if (row) update('document_sequences', row.id, { last: next });
+  else create('document_sequences', { id: randomUUID(), key, last: next });
+  return `${code}-${dateStr}-${String(next).padStart(5, '0')}`;
 }
 
 export { COLLECTIONS };

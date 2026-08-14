@@ -16,13 +16,14 @@ import { userDisplayName } from '../utils/userDisplay';
 import AccessDenied from './AccessDenied';
 import ActionsMenu, { ActionMenuItem } from './ActionsMenu';
 import CollapsibleSection from './CollapsibleSection';
+import DocumentTraceModal from './DocumentTraceModal';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
 import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
-import { DocumentTypeMeta, StockDocument, StockDocumentLine, StockDocumentType } from '../types.documents';
+import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
 import { Lot, Material, Warehouse } from '../types';
 
 type Props = {
@@ -95,6 +96,9 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
+  const [trace, setTrace] = useState<DocumentTrace | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(false);
 
   const matName = (id: string) => materials.find((m) => m.id === id)?.name || id;
   const lotNum = (id: string) => lots.find((l) => l.id === id)?.number || id;
@@ -135,7 +139,10 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     ];
   }, [users, warehouses]);
 
-  const listTable = useListTable(rows, listColumns);
+  const listTable = useListTable(rows, listColumns, {
+    persistKey: `doc_${documentType}`,
+    userId: user?.id,
+  });
 
   const load = async () => {
     setError('');
@@ -146,7 +153,6 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       ]);
       setTypeMeta(meta.types.find((t) => t.id === documentType) || null);
       setRows(docs);
-      listTable.resetOnLoad();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -160,9 +166,57 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       .catch(console.error);
   }, [documentType]);
 
+  useEffect(() => {
+    if (!traceOpen || !editing?.id) return;
+    const doc = editing;
+    let cancelled = false;
+    setTraceLoading(true);
+    (async () => {
+      try {
+        const data = await api.getDocumentRelated(documentType, doc.id);
+        if (!cancelled) setTrace(data);
+      } catch {
+        try {
+          const [movements, stock] = await Promise.all([
+            api.list<MaterialMovementRow>('material_movements'),
+            api.list<StockRow>('stock'),
+          ]);
+          if (cancelled) return;
+          const lotIds = new Set((doc.lines || []).map((l) => l.lotId));
+          setTrace({
+            document: {
+              id: doc.id,
+              type: doc.type,
+              number: doc.number,
+              status: doc.status,
+              date: doc.date,
+              productionOrderId: doc.productionOrderId,
+              basisDocumentId: doc.basisDocumentId,
+            },
+            movements: movements.filter(
+              (m) => m.documentId === doc.id || m.documentNumber === doc.number
+            ),
+            reservationHistory: [],
+            activeReservations: [],
+            relatedDocuments: [],
+            productionOrder: null,
+            stock: stock.filter((s) => lotIds.has(s.lotId)),
+          });
+        } catch {
+          if (!cancelled) setTrace(null);
+        }
+      } finally {
+        if (!cancelled) setTraceLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [traceOpen, documentType, editing?.id, editing?.status, editing?.number]);
+
   const cloneDoc = (doc: StockDocument): StockDocument => ({
     ...doc,
-    lines: doc.lines.map((l) => ({ ...l })),
+    lines: (doc.lines || []).map((l) => ({ ...l })),
   });
 
   const applySavedDoc = (saved: StockDocument, mode: FormMode) => {
@@ -185,6 +239,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const closeForm = () => {
     setEditing(null);
     setFormMode('create');
+    setTraceOpen(false);
   };
 
   const startCreate = () => {
@@ -218,7 +273,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     setEditing({
       ...doc,
       time: doc.time || displayDocTime(doc),
-      lines: doc.lines.map((l) => ({ ...l })),
+      lines: (doc.lines || []).map((l) => ({ ...l })),
     });
   };
 
@@ -227,7 +282,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     setEditing({
       ...doc,
       time: doc.time || displayDocTime(doc),
-      lines: doc.lines.map((l) => ({ ...l })),
+      lines: (doc.lines || []).map((l) => ({ ...l })),
     });
   };
 
@@ -733,8 +788,18 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           className="modal-doc"
           headerExtra={
             <>
-              <span className={`doc-status-badge doc-status-${editing.status || 'draft'}`}>
-                {STATUS_LABEL[editing.status] || (formMode === 'create' ? 'Создан' : editing.status)}
+              <span className="doc-status-cluster">
+                {editing.id ? (
+                  <IconButton
+                    icon="links"
+                    label="Движения и связанные объекты"
+                    tone="muted"
+                    onClick={() => setTraceOpen(true)}
+                  />
+                ) : null}
+                <span className={`doc-status-badge doc-status-${editing.status || 'draft'}`}>
+                  {STATUS_LABEL[editing.status] || (formMode === 'create' ? 'Создан' : editing.status)}
+                </span>
               </span>
               {docActions.length > 0 && (
                 <ActionsMenu
@@ -761,6 +826,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
             }}
             className="doc-form"
           >
+            <div className="doc-form-scroll">
             {postedEdit && (
               <p className="doc-form-notice">
                 Изменение проведённого документа выполняется через «Провести повторно»: движения будут
@@ -827,7 +893,9 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
             </div>
 
             {linesTable}
+            </div>
 
+            <div className="doc-form-extra">
             <CollapsibleSection title="Дополнительно" defaultOpen={false}>
               <div className="doc-comment-field">
                 <label htmlFor="doc-comment">Комментарий</label>
@@ -844,9 +912,21 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                 )}
               </div>
             </CollapsibleSection>
+            </div>
           </form>
         </Modal>
       )}
+
+      <DocumentTraceModal
+        open={traceOpen && Boolean(editing?.id)}
+        onClose={() => setTraceOpen(false)}
+        heading={`Связи — ${editing?.number || 'документ'}`}
+        trace={trace}
+        loading={traceLoading}
+        materials={materials}
+        lots={lots}
+        warehouses={warehouses}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type IconKind = 'edit' | 'view' | 'complete' | 'cancel' | 'delete' | 'refresh' | 'status';
+export type IconKind = 'edit' | 'view' | 'complete' | 'cancel' | 'delete' | 'refresh' | 'status' | 'links';
 
 const ICONS: Record<IconKind, ReactNode> = {
   edit: (
@@ -56,6 +56,14 @@ const ICONS: Record<IconKind, ReactNode> = {
       <path
         fill="currentColor"
         d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3zm-1 13-3.5-3.5 1.4-1.4L11 12.2l4.1-4.1 1.4 1.4L11 15z"
+      />
+    </svg>
+  ),
+  links: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M7.5 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm0-5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM16.5 19.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm0-5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM16.5 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zm0-5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM9.2 9.6l5.6-2.2.7 1.86-5.6 2.2-.7-1.86zm.7 2.9 5.6 2.2-.7 1.86-5.6-2.2.7-1.86z"
       />
     </svg>
   ),

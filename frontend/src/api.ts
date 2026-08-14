@@ -29,6 +29,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
+async function downloadFile(path: string, filename: string, init?: RequestInit): Promise<void> {
+  const headers: Record<string, string> = {
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+  if (init?.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+  } catch {
+    throw new Error(
+      'Сервер недоступен. Запустите backend (npm run backend в корне проекта, порт 3001).'
+    );
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error || res.statusText);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   authLogin: (login: string, password: string, rememberMe: boolean) =>
     request<{ token: string; user: import('./auth/AuthContext').AuthUser; expiresInMs: number }>(
@@ -67,8 +95,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ orderIds, algorithm }),
     }),
-  confirmMaterialsBulk: (items: { orderId: string; picks: unknown[] }[]) =>
-    request('/planning/confirm-materials-bulk', { method: 'POST', body: JSON.stringify({ items }) }),
+  confirmMaterialsBulk: (items: { orderId: string; picks: unknown[] }[], userId?: string) =>
+    request('/planning/confirm-materials-bulk', { method: 'POST', body: JSON.stringify({ items, userId }) }),
   gantt: () => request<{ workCenters: unknown[]; tasks: GanttTask[] }>('/planning/gantt'),
   lotsAvailable: (materialId: string, algorithm: string) =>
     request(`/planning/lots-available/${materialId}?algorithm=${algorithm}`),
@@ -79,8 +107,10 @@ export const api = {
     const qs = q.toString();
     return request<MaterialBalanceMatrix>(`/planning/material-balance-matrix${qs ? `?${qs}` : ''}`);
   },
-  completeOrder: (id: string) => request(`/planning/complete/${id}`, { method: 'POST' }),
-  cancelOrder: (id: string) => request(`/planning/cancel/${id}`, { method: 'POST' }),
+  completeOrder: (id: string, userId?: string) =>
+    request(`/planning/complete/${id}`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  cancelOrder: (id: string, userId?: string) =>
+    request(`/planning/cancel/${id}`, { method: 'POST', body: JSON.stringify({ userId }) }),
   saveProductionFact: (
     id: string,
     body: { actualQuantity: number; actualLines: { materialId: string; lotId: string; quantity: number }[] }
@@ -177,6 +207,24 @@ export const api = {
     request<import('./types.documents').StockDocument>(`/documents/${type}/${id}/fulfill`, {
       method: 'POST',
       body: JSON.stringify({ userId, ...basis }),
+    }),
+  getDocumentRelated: (type: string, id: string) =>
+    request<import('./types.documents').DocumentTrace>(`/documents/${type}/${id}/related`),
+  getOrderTrace: (id: string) =>
+    request<import('./types.documents').OrderTrace>(`/planning/order-trace/${id}`),
+
+  releasedSeriesReport: () =>
+    request<import('./types').ReleasedSeriesRow[]>('/reports/released-series'),
+  exportReleasedSeriesXlsx: (ids: string[]) =>
+    downloadFile(`/reports/released-series.xlsx`, `released-series-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  stockReport: () => request<import('./types').StockReportRow[]>('/reports/stock'),
+  exportStockReportXlsx: (ids: string[]) =>
+    downloadFile(`/reports/stock.xlsx`, `stock-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
     }),
 
   qualityDocumentTypes: () =>

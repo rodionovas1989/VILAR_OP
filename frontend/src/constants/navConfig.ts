@@ -1,4 +1,4 @@
-export type NavKind = 'desktop' | 'planning' | 'dictionary' | 'document' | 'register' | 'quality' | 'admin';
+export type NavKind = 'desktop' | 'planning' | 'dictionary' | 'document' | 'register' | 'quality' | 'report' | 'admin';
 
 export type NavItem = { id: string; label: string; kind: NavKind };
 export type NavGroup = { id: string; label: string; items: NavItem[] };
@@ -10,6 +10,7 @@ export const KIND_SECTION_LABELS: Record<NavKind, string> = {
   document: 'Документы',
   register: 'Регистры',
   quality: 'Качество',
+  report: 'Отчеты',
   admin: 'Администрирование',
 };
 
@@ -69,6 +70,14 @@ export const NAV: NavGroup[] = [
     items: [{ id: 'production_desktop', label: 'Управление заказами', kind: 'desktop' }],
   },
   {
+    id: 'reports',
+    label: 'Отчеты',
+    items: [
+      { id: 'report_released_series', label: 'Выпущенные серии продукции', kind: 'report' },
+      { id: 'report_stock', label: 'Запасы', kind: 'report' },
+    ],
+  },
+  {
     id: 'quality',
     label: 'Качество',
     items: [
@@ -81,9 +90,11 @@ export const NAV: NavGroup[] = [
     id: 'admin',
     label: 'Администрирование',
     items: [
+      { id: 'admin_user_guide', label: 'Руководство пользователя', kind: 'admin' },
       { id: 'users', label: 'Пользователи', kind: 'admin' },
       { id: 'roles', label: 'Роли', kind: 'admin' },
       { id: 'admin_export_dictionaries', label: 'Экспорт справочников', kind: 'admin' },
+      { id: 'admin_feedback', label: 'Обратная связь', kind: 'admin' },
     ],
   },
 ];

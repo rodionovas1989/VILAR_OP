@@ -69,6 +69,8 @@ type Props = {
   bulkStatusOptions?: { value: string; label: string }[];
   /** Не показывать fields в модалке (рендер через formExtra) */
   hideFormFields?: boolean;
+  /** Список без кнопок создать/изменить/удалить (регистры, история) */
+  readOnly?: boolean;
 };
 function toLocalInput(iso?: string) {
   if (!iso) return '';
@@ -98,6 +100,7 @@ export function CrudPage({
   pageId: pageIdProp,
   skipAccessCheck,
   hideFormFields,
+  readOnly = false,
 }: Props) {
   const { user } = useAuth();
   const loggedIn = Boolean(user);
@@ -105,8 +108,8 @@ export function CrudPage({
   const pageId = pageIdProp ?? collection;
   const permissions = user?.permissions;
   const canView = skipAccessCheck || canViewObject(permissions, objectId, loggedIn);
-  const canCreate = skipAccessCheck || canCreateObject(permissions, objectId);
-  const canModify = skipAccessCheck || canModifyObject(permissions, objectId);
+  const canCreate = !readOnly && (skipAccessCheck || canCreateObject(permissions, objectId));
+  const canModify = !readOnly && (skipAccessCheck || canModifyObject(permissions, objectId));
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
@@ -126,7 +129,10 @@ export function CrudPage({
     }));
   }, [columns]);
 
-  const listTable = useListTable(rows, listColumns);
+  const listTable = useListTable(rows, listColumns, {
+    persistKey: pageId,
+    userId: user?.id,
+  });
   const filteredRows = listTable.displayRows;
 
   const load = async () => {
@@ -136,7 +142,6 @@ export function CrudPage({
       const data = await api.list<Record<string, unknown>>(collection);
       setRows(data);
       setSelected(new Set());
-      listTable.resetOnLoad();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
