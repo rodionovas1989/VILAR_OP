@@ -61,7 +61,9 @@ npm run dev
 
 1. Фича/фикс — **новая ветка**, тест **локально**.
 2. Если ок → merge в **`main`**, push на GitHub.
-3. На пилотной ВМ: бэкап `vilar.sqlite` → `git pull` (ветка `main`) → при необходимости `npm run install:all` → сборка frontend с `VITE_API_URL` → `sudo systemctl restart vilar-op`.
+3. На пилотной ВМ: бэкап `vilar.sqlite` → `git pull`/`git bundle` (ветка `main`) → при необходимости `npm run install:all` → сборка frontend с `VITE_API_URL` → `sudo systemctl restart vilar-op`.
+   Пилот по HTTP (`http://IP`) — не secure context: фронт не должен полагаться на `crypto.randomUUID` без fallback (`frontend/src/utils/id.ts`).
+4. Hard refresh браузера (Ctrl+F5) после деплоя фронта.
 4. Проверка сайта. Правило агента: `.cursor/rules/releases-and-updates.mdc`.
 
 На ВМ не запускать `npm run seed` вручную. Очистка/демо/слепки — **Администрирование → Данные и резервные копии** (только Admin).
