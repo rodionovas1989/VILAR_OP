@@ -1,14 +1,14 @@
-# BRANCH_INFO
+﻿# BRANCH_INFO
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: SQLite, документы, RBAC, отчёты, обратная связь, руководство | эталон |
-| `feature/admin-data-reset-demo-backups` | Админ: очистка, демо-seed, пул резервных копий sqlite | **активна** |
-| `fix/admin-login-no-hint-strong-password` | Без подсказки Admin в UI; `VILAR_ADMIN_PASSWORD` | вливается вместе с feature / ещё на ВМ |
-| `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite`, без Visual Studio / better-sqlite3 | слита в main |
-| `feature/reports-released-series` | Отчёты; карточки; persist отборов; аккордеон меню; обратная связь; руководство пользователя | слита в main |
-| `feature/launch-sqlite-reservations` | SQLite, RES, completeOrder, API RBAC, тесты цепочки, связи документа | слита в main (через reports) |
-| `feature/stock-documents` | Документы движений, регистры, качество-заглушка | слита в main |
+| `main` | Стабильный снимок: админ-очистка/демо/бэкапы, без подсказки Admin | **эталон** |
+| `feature/admin-data-reset-demo-backups` | Админ: очистка, демо, резервные копии | слита в main |
+| `fix/admin-login-no-hint-strong-password` | Без подсказки Admin; VILAR_ADMIN_PASSWORD | слита в main |
+| `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite` | слита в main |
+| `feature/reports-released-series` | Отчёты; обратная связь; руководство | слита в main |
+| `feature/launch-sqlite-reservations` | SQLite, RES, completeOrder, RBAC | слита в main |
+| `feature/stock-documents` | Документы движений, регистры | слита в main |
 | `feature/initial-ops-planning` | Каркас ОП | слита в main |
 | `feature/planning-orders-matrix` | Установка/запуск; вкладки 4–5 | слита в main |
 | `feature/echarts-resource-gantt` | ECharts Гант по РЦ | слита в main |
