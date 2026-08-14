@@ -13,4 +13,5 @@ backend/data/*.sqlite-wal
 backend/data/*.sqlite-shm
 backend/data/auth_secret
 backend/data/backups/
+backend/data/factory/
 backups/

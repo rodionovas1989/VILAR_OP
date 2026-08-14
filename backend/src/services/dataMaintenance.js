@@ -2,12 +2,25 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
-import { DB_PATH, DATA_DIR, closeDb, getDb, ensureCollections, resetDatabase, readAll } from '../store.js';
+import {
+  DB_PATH,
+  DATA_DIR,
+  COLLECTIONS,
+  closeDb,
+  getDb,
+  ensureCollections,
+  readAll,
+  writeAll,
+} from '../store.js';
+import { hashPassword } from '../utils/password.js';
+import { defaultRoles } from './permissions.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.join(__dirname, '..', '..');
+const FACTORY_DIR = path.join(DATA_DIR, 'factory');
+const FACTORY_DEMO = path.join(FACTORY_DIR, 'demo.sqlite');
 
-/** Каталог архивов рядом с фактическим файлом БД (не путать с тестовым VILAR_SQLITE_PATH). */
+/** Каталог архивов рядом с фактическим файлом БД. */
 export function getBackupsDir() {
   return path.join(path.dirname(DB_PATH), 'backups');
 }
@@ -37,15 +50,25 @@ function countSnapshot() {
       lots: readAll('lots').length,
       production_orders: readAll('production_orders').length,
       users: readAll('users').length,
+      warehouses: readAll('warehouses').length,
     };
   } catch {
-    return { materials: 0, lots: 0, production_orders: 0, users: 0 };
+    return { materials: 0, lots: 0, production_orders: 0, users: 0, warehouses: 0 };
   }
 }
 
-/**
- * Надёжный слепок: checkpoint + VACUUM INTO (один самодостаточный файл без wal).
- */
+function withSkipJsonImport(fn) {
+  const prev = process.env.VILAR_SKIP_JSON_IMPORT;
+  process.env.VILAR_SKIP_JSON_IMPORT = '1';
+  try {
+    return fn();
+  } finally {
+    if (prev === undefined) delete process.env.VILAR_SKIP_JSON_IMPORT;
+    else process.env.VILAR_SKIP_JSON_IMPORT = prev;
+  }
+}
+
+/** Checkpoint + VACUUM INTO — самодостаточный файл без wal. */
 function snapshotDatabaseTo(destSqlitePath) {
   ensureBackupsDir();
   fs.mkdirSync(path.dirname(destSqlitePath), { recursive: true });
@@ -78,11 +101,42 @@ function readMeta(dir) {
   }
 }
 
+function replaceLiveDbFromFile(srcSqlite) {
+  closeDb();
+  const sleep = (ms) => {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      /* spin — Windows file lock release */
+    }
+  };
+  let lastErr;
+  for (let i = 0; i < 8; i++) {
+    try {
+      for (const p of sqliteSidecars(DB_PATH)) {
+        if (fs.existsSync(p)) fs.unlinkSync(p);
+      }
+      lastErr = null;
+      break;
+    } catch (e) {
+      lastErr = e;
+      sleep(50 * (i + 1));
+    }
+  }
+  if (lastErr) throw lastErr;
+  try {
+    fs.copyFileSync(srcSqlite, DB_PATH);
+  } finally {
+    getDb();
+    withSkipJsonImport(() => ensureCollections());
+  }
+}
+
 export function listBackups() {
   ensureBackupsDir();
   const names = fs.readdirSync(getBackupsDir(), { withFileTypes: true }).filter((d) => d.isDirectory());
   const items = [];
   for (const d of names) {
+    if (d.name.startsWith('_')) continue;
     const dir = path.join(getBackupsDir(), d.name);
     const sqlite = path.join(dir, 'vilar.sqlite');
     if (!fs.existsSync(sqlite)) continue;
@@ -129,23 +183,8 @@ export function restoreBackup(id) {
   const srcSqlite = path.join(dir, 'vilar.sqlite');
   if (!fs.existsSync(srcSqlite)) throw new Error('Архив не найден');
 
-  const meta = readMeta(dir);
-  if (meta?.counts && meta.counts.materials === 0 && meta.counts.lots === 0) {
-    // всё равно разрешаем, но вызывающий UI предупредит; здесь только серверный след
-  }
-
   createBackup({ label: `before-restore-${safe}`, reason: 'before-restore' });
-
-  closeDb();
-  try {
-    for (const p of sqliteSidecars(DB_PATH)) {
-      if (fs.existsSync(p)) fs.unlinkSync(p);
-    }
-    fs.copyFileSync(srcSqlite, DB_PATH);
-  } finally {
-    getDb();
-    ensureCollections();
-  }
+  replaceLiveDbFromFile(srcSqlite);
   return { ok: true, restoredId: safe, counts: countSnapshot() };
 }
 
@@ -158,36 +197,98 @@ export function deleteBackup(id) {
   return { ok: true, deletedId: safe };
 }
 
-/** Пустая БД + Admin/роли (ensureCollections). Перед этим — автобэкап. */
+/**
+ * Чистый лист: пустые справочники/документы/запасы.
+ * Без unlink файла БД (на Windows иначе EBUSY при открытом соединении).
+ * Остаются Admin (тот же пароль), роли и два пустых склада.
+ */
 export function clearAllData() {
-  createBackup({ label: 'before-clear', reason: 'before-clear' });
-  resetDatabase();
   ensureCollections();
-  return { ok: true, mode: 'clear' };
+  const adminBefore = readAll('users').find((u) => u.login === 'Admin');
+  const savedHash = adminBefore?.passwordHash;
+
+  createBackup({ label: 'before-clear', reason: 'before-clear' });
+
+  withSkipJsonImport(() => {
+    for (const name of COLLECTIONS) {
+      if (name === 'users' || name === 'roles') continue;
+      writeAll(name, []);
+    }
+
+    writeAll('warehouses', [
+      { id: 'wh-components', name: 'Склад компонентов', type: 'компоненты' },
+      { id: 'wh-finished', name: 'Склад ГП', type: 'ГП' },
+    ]);
+
+    writeAll('users', [
+      {
+        id: 'user-admin',
+        name: 'Admin',
+        login: 'Admin',
+        passwordHash:
+          savedHash ||
+          hashPassword(String(process.env.VILAR_ADMIN_PASSWORD || '').trim() || 'Admin'),
+        role: 'administrator',
+        roleId: 'role-administrator',
+        active: true,
+      },
+    ]);
+
+    if (!readAll('roles').length) {
+      writeAll('roles', defaultRoles());
+    }
+  });
+
+  return { ok: true, mode: 'clear', counts: countSnapshot() };
 }
 
-/** Полный демо-seed (как scripts/seed.js). Перед этим — автобэкап. */
-export function loadDemoData() {
-  createBackup({ label: 'before-demo', reason: 'before-demo' });
+function ensureFactoryDemoFromSeed() {
+  fs.mkdirSync(FACTORY_DIR, { recursive: true });
   closeDb();
   const result = spawnSync(
     process.execPath,
     ['--experimental-sqlite', path.join(BACKEND_ROOT, 'scripts', 'seed.js')],
     {
       cwd: BACKEND_ROOT,
-      env: {
-        ...process.env,
-        // seed всегда пишет в стандартный data/vilar.sqlite, если не задан путь
-        VILAR_SQLITE_PATH: DB_PATH,
-      },
+      env: { ...process.env, VILAR_SQLITE_PATH: DB_PATH, VILAR_SKIP_JSON_IMPORT: '1' },
       encoding: 'utf8',
     }
   );
   getDb();
-  ensureCollections();
+  withSkipJsonImport(() => ensureCollections());
   if (result.status !== 0) {
     const err = (result.stderr || result.stdout || '').trim() || `seed exit ${result.status}`;
     throw new Error(`Демо-загрузка не удалась: ${err.slice(0, 500)}`);
   }
-  return { ok: true, mode: 'demo', counts: countSnapshot() };
+  snapshotDatabaseTo(FACTORY_DEMO);
+}
+
+/**
+ * Демонстрационные данные (как при проектировании).
+ * Использует заводской слепок data/factory/demo.sqlite или строит его через seed.
+ */
+export function loadDemoData() {
+  createBackup({ label: 'before-demo', reason: 'before-demo' });
+
+  if (!fs.existsSync(FACTORY_DEMO)) {
+    ensureFactoryDemoFromSeed();
+  } else {
+    replaceLiveDbFromFile(FACTORY_DEMO);
+  }
+
+  const counts = countSnapshot();
+  if ((counts.materials || 0) < 10) {
+    // слепок битый — пересобрать
+    ensureFactoryDemoFromSeed();
+  }
+
+  return { ok: true, mode: 'demo', counts: countSnapshot(), factory: FACTORY_DEMO };
+}
+
+export function factoryDemoInfo() {
+  if (!fs.existsSync(FACTORY_DEMO)) {
+    return { exists: false, path: FACTORY_DEMO };
+  }
+  const st = fs.statSync(FACTORY_DEMO);
+  return { exists: true, path: FACTORY_DEMO, sizeBytes: st.size, mtime: st.mtime.toISOString() };
 }

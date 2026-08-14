@@ -222,7 +222,10 @@ export default function AdminDataMaintenance() {
 
       <section className="admin-panel danger-panel">
         <h3>Очистка данных</h3>
-        <p>Удаляет все данные в SQLite и приводит систему к пустому старту (остаётся Admin и роли).</p>
+        <p>
+          Полный чистый лист: все справочники, документы, запасы и заказы становятся пустыми. Остаются
+          только пользователь Admin (пароль не меняется), роли и два пустых склада.
+        </p>
         {canWrite && (
           <>
             <label>
@@ -239,9 +242,11 @@ export default function AdminDataMaintenance() {
               disabled={busy || clearConfirm !== 'CLEAR'}
               onClick={() => {
                 void run(async () => {
-                  await api.clearAllData('CLEAR');
+                  const res = (await api.clearAllData('CLEAR')) as { counts?: { materials?: number } };
                   setClearConfirm('');
-                  window.alert('Данные очищены. Обновите страницу и войдите как Admin.');
+                  window.alert(
+                    `База очищена (материалов: ${res?.counts?.materials ?? 0}). Страница будет перезагружена — войдите тем же паролем Admin.`
+                  );
                   window.location.reload();
                 }, 'Данные очищены');
               }}
@@ -255,8 +260,9 @@ export default function AdminDataMaintenance() {
       <section className="admin-panel danger-panel">
         <h3>Демонстрационные данные</h3>
         <p>
-          Полностью перезаписывает базу демо-набором (как при проектировании / <code>npm run seed</code>).
-          Текущие данные будут потеряны (кроме автослепка).
+          Подгружает исходный демонстрационный слепок (данные проектирования). Текущая база будет
+          заменена; перед этим создаётся автослепок. После первой загрузки слепок сохраняется в{' '}
+          <code>backend/data/factory/demo.sqlite</code>.
         </p>
         {canWrite && (
           <>
@@ -274,14 +280,16 @@ export default function AdminDataMaintenance() {
               disabled={busy || demoConfirm !== 'DEMO'}
               onClick={() => {
                 void run(async () => {
-                  await api.loadDemoData('DEMO');
+                  const res = (await api.loadDemoData('DEMO')) as { counts?: { materials?: number } };
                   setDemoConfirm('');
-                  window.alert('Демо-данные загружены. Обновите страницу и войдите снова.');
+                  window.alert(
+                    `Демо загружено (материалов: ${res?.counts?.materials ?? '—'}). Страница будет перезагружена.`
+                  );
                   window.location.reload();
                 }, 'Демо-данные загружены');
               }}
             >
-              Загрузить демо
+              Загрузить демо-слепок
             </button>
           </>
         )}
