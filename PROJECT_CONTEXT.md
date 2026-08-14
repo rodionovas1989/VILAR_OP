@@ -1,9 +1,8 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: fix/http-randomuuid-fallback (активна)
+## Ветка: main (эталон после релиза)
 
-Баг ВМ: «Создать» документ молча не открывает форму на `http://IP` — `crypto.randomUUID()` только в secure context (HTTPS/localhost). Фикс: `frontend/src/utils/id.ts` (`newId`).
-
+Слито: `fix/http-randomuuid-fallback` — «Создать» документ на пилотной ВМ по `http://IP` (не secure context).
 Релизы: локальная ветка → main → ВМ (`.cursor/rules/releases-and-updates.mdc`).
 
 ### На ВМ
