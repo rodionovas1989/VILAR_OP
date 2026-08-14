@@ -19,7 +19,10 @@ backend/
   data/vilar.sqlite          — хранилище SQLite (WAL)
   src/index.js               — Express API (auth, CORS, опционально frontend/dist)
   src/sqlite.js              — обёртка node:sqlite (без better-sqlite3 / node-gyp)
-  src/store.js               — CRUD SQLite (JSON-документы в таблице records)
+  src/services/auth.js           — login/JWT; warnIfDefaultAdminPassword
+  src/utils/adminBootstrap.js    — VILAR_ADMIN_PASSWORD / временный пароль Admin
+  src/utils/password.js          — scrypt hash
+  src/store.js               — CRUD SQLite (JSON-документы в таблице records); bootstrap Admin
   src/middleware/access.js   — JWT + RBAC на маршрутах
   src/constants/collectionAccess.js — коллекция → objectId; запрет generic-записи регистров
   src/services/stock.js      — свободный остаток, склады

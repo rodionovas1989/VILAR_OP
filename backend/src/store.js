@@ -3,7 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { randomUUID } from 'crypto';
 import { openDatabase } from './sqlite.js';
-import { hashPassword } from './utils/password.js';
+import { hashPassword, verifyPassword } from './utils/password.js';
+import {
+  resolveBootstrapAdminPassword,
+  makeTemporaryAdminPassword,
+} from './utils/adminBootstrap.js';
 import { defaultRoles, normalizePermissions } from './services/permissions.js';
 import { LEGACY_ROLE_MAP, ALL_SYSTEM_OBJECT_IDS, DEFAULT_ROLE_PERMISSIONS } from './constants/systemObjects.js';
 import { ALL_DOCUMENT_COLLECTIONS, collectionForType } from './constants/documentTypes.js';
@@ -173,7 +177,17 @@ export function ensureCollections() {
   migrateLegacyReservationsToDocuments();
 }
 
-/** Пользователь по умолчанию: Admin / Admin */
+/** Пользователь Admin при пустой/миграции БД. Пароль: VILAR_ADMIN_PASSWORD (не светить в UI). */
+function bootstrapAdminPasswordPlain() {
+  const fromEnv = resolveBootstrapAdminPassword();
+  if (fromEnv) return fromEnv;
+  const tmp = makeTemporaryAdminPassword();
+  console.warn(
+    `VILAR_ADMIN_PASSWORD not set: Admin gets a one-time password (save it now): ${tmp}`,
+  );
+  return tmp;
+}
+
 function migrateDefaultUsers() {
   let users = readAll('users');
   let changed = false;
@@ -184,7 +198,7 @@ function migrateDefaultUsers() {
         id: 'user-admin',
         name: 'Admin',
         login: 'Admin',
-        passwordHash: hashPassword('Admin'),
+        passwordHash: hashPassword(bootstrapAdminPasswordPlain()),
         role: 'administrator',
         roleId: 'role-administrator',
         active: true,
@@ -193,6 +207,8 @@ function migrateDefaultUsers() {
     writeAll('users', users);
     return;
   }
+
+  const upgradePwd = resolveBootstrapAdminPassword();
 
   for (const u of users) {
     if (u.id === 'user-admin' || u.login === 'Admin' || u.login === 'admin') {
@@ -205,8 +221,12 @@ function migrateDefaultUsers() {
         changed = true;
       }
       if (!u.passwordHash) {
-        u.passwordHash = hashPassword('Admin');
+        u.passwordHash = hashPassword(bootstrapAdminPasswordPlain());
         changed = true;
+      } else if (upgradePwd && verifyPassword('Admin', u.passwordHash)) {
+        u.passwordHash = hashPassword(upgradePwd);
+        changed = true;
+        console.warn('Admin password upgraded from weak default via VILAR_ADMIN_PASSWORD');
       }
     }
   }

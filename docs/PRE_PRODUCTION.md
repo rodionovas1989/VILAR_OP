@@ -12,7 +12,8 @@
 - [x] Guards статусов заказа (см. `docs/ORDER_STATUS_GUARDS.md`)
 - [x] Auth + RBAC на API (все маршруты кроме login/health); userId проведения из токена
 - [x] Generic CRUD по регистрам и документам — только чтение (запись через проведение)
-- [x] `AUTH_SECRET` в `backend/data/auth_secret` (или env); предупреждение, если пароль Admin по умолчанию
+- [x] `AUTH_SECRET` в `backend/data/auth_secret` (или env); предупреждение, если пароль Admin ещё слабый (`Admin`)
+- [x] `VILAR_ADMIN_PASSWORD` для bootstrap Admin; подсказок логина/пароля в UI нет
 - [x] CORS ограничен origin фронта (`CORS_ORIGIN`, по умолчанию localhost/127.0.0.1:5173)
 - [x] Опция `SERVE_FRONTEND=1` — раздача `frontend/dist` с API
 - [x] `backup.bat` копирует sqlite (+ wal/shm) в `backups/<дата-время>/`
@@ -24,7 +25,7 @@
 |---|--------|--------|-----------|
 | 1 | Auth + RBAC на API | **готово** | |
 | 2 | Закрыть generic CRUD по регистрам и документам | **готово** | |
-| 3 | Сменить `AUTH_SECRET` и пароль Admin | Секрет пишется сам; **пароль Admin сменить вручную** в Пользователях | низкая |
+| 3 | Задать `VILAR_ADMIN_PASSWORD` до первого seed; не светить пароль в UI | env; одноразовый пароль в логе, если env пуст | низкая |
 | 4 | CORS только на origin фронта | **готово** (на площадке задать `CORS_ORIGIN`) | |
 | 5 | Production: `npm start` + `frontend/dist` | Скрипт: `SERVE_FRONTEND=1`; ежедневный запуск пока Vite | низкая |
 | 6 | Backup `vilar.sqlite` | Скрипт `backup.bat`; **поставить расписание** на площадке | процесс |

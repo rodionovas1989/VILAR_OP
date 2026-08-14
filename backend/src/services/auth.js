@@ -98,7 +98,9 @@ export function warnIfDefaultAdminPassword() {
   try {
     const admin = store.readAll('users').find((u) => u.login === 'Admin');
     if (admin && verifyPassword('Admin', admin.passwordHash)) {
-      console.warn('WARNING: user Admin still has the default password. Change it in Users.');
+      console.warn(
+        'WARNING: user Admin still has the weak password "Admin". Set VILAR_ADMIN_PASSWORD and restart, or change it in Users.',
+      );
     }
   } catch {
     /* база ещё не готова */

@@ -1,13 +1,16 @@
 # PROJECT_CONTEXT
 
-## Ветка: fix/sqlite-builtin-no-gyp (активна)
+## Ветка: fix/admin-login-no-hint-strong-password (активна)
 
-Убрать `better-sqlite3` (node-gyp / Visual Studio) — SQLite через встроенный `node:sqlite`.
+Убрать подсказки логина/пароля Admin из UI; bootstrap-пароль только через `VILAR_ADMIN_PASSWORD` (не светить в сети).
 
 ### Сделано
-- `backend/src/sqlite.js` — WAL, busy_timeout, транзакции/savepoint
-- Скрипты node с `--experimental-sqlite` (Node 22)
-- `install.bat` больше не собирает native-модуль
+- `LoginModal` — пустые поля, без hint Admin/Admin
+- `store.migrateDefaultUsers` — пароль из env / одноразовый в лог; апгрейд слабого `Admin`
+- `local/CREDENTIALS.md`, `local/YANDEX_CLOUD.md` — учётки и шаги YC (не в git)
 
 ### База (main)
 - SQLite, RES, completeOrder, JWT/RBAC, отчёты, обратная связь, руководство
+
+### Локально (не в git)
+- Заметки по пилоту в Yandex Cloud: `local/YANDEX_CLOUD.md` (папка `local/` в `.gitignore`)
