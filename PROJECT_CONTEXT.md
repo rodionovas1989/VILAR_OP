@@ -1,8 +1,9 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон после релиза)
+## Ветка: fix/http-randomuuid-fallback (активна)
 
-Слито: админ-очистка/демо/бэкапы + вход без подсказки Admin (`VILAR_ADMIN_PASSWORD`).
+Баг ВМ: «Создать» документ молча не открывает форму на `http://IP` — `crypto.randomUUID()` только в secure context (HTTPS/localhost). Фикс: `frontend/src/utils/id.ts` (`newId`).
+
 Релизы: локальная ветка → main → ВМ (`.cursor/rules/releases-and-updates.mdc`).
 
 ### На ВМ

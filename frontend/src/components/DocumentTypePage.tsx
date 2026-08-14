@@ -26,6 +26,7 @@ import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSetting
 import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
 import { Lot, Material, Warehouse } from '../types';
 import { metaForDocumentType } from '../constants/documentTypes';
+import { newId } from '../utils/id';
 
 type Props = {
   documentType: StockDocumentType;
@@ -44,7 +45,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function emptyLine(): StockDocumentLine {
-  return { id: crypto.randomUUID(), materialId: '', lotId: '', quantity: 0 };
+  return { id: newId(), materialId: '', lotId: '', quantity: 0 };
 }
 
 function lotsForMaterial(lots: Lot[], materialId: string) {

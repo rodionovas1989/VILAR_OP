@@ -3,6 +3,7 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | Стабильный снимок: админ-очистка/демо/бэкапы, без подсказки Admin | **эталон** |
+| `fix/http-randomuuid-fallback` | Create на http://IP: fallback UUID без secure context | **активна** |
 | `feature/admin-data-reset-demo-backups` | Админ: очистка, демо, резервные копии | слита в main |
 | `fix/admin-login-no-hint-strong-password` | Без подсказки Admin; VILAR_ADMIN_PASSWORD | слита в main |
 | `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite` | слита в main |

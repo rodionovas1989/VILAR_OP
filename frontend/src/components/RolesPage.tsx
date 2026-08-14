@@ -9,6 +9,7 @@ import { Modal } from './Modal';
 import PermissionMatrix from './PermissionMatrix';
 import RefreshButton from './RefreshButton';
 import { Role, emptyPermissions, normalizePermissions } from '../constants/systemObjects';
+import { newId } from '../utils/id';
 
 function emptyRole(): Role {
   return {
@@ -64,7 +65,7 @@ export default function RolesPage() {
       if (editing.id) {
         await api.update('roles', editing.id, body);
       } else {
-        await api.create('roles', { ...body, id: `role-${crypto.randomUUID()}` });
+        await api.create('roles', { ...body, id: `role-${newId()}` });
       }
       setEditing(null);
       await load();
