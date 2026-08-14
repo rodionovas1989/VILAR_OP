@@ -242,7 +242,7 @@ export function clearAllData() {
   return { ok: true, mode: 'clear', counts: countSnapshot() };
 }
 
-function ensureFactoryDemoFromSeed() {
+function ensureFactoryDemoFromSeed(preservePasswordHash) {
   fs.mkdirSync(FACTORY_DIR, { recursive: true });
   closeDb();
   const result = spawnSync(
@@ -255,7 +255,17 @@ function ensureFactoryDemoFromSeed() {
     }
   );
   getDb();
-  withSkipJsonImport(() => ensureCollections());
+  withSkipJsonImport(() => {
+    ensureCollections();
+    if (preservePasswordHash) {
+      const users = readAll('users');
+      const admin = users.find((u) => u.login === 'Admin');
+      if (admin) {
+        admin.passwordHash = preservePasswordHash;
+        writeAll('users', users);
+      }
+    }
+  });
   if (result.status !== 0) {
     const err = (result.stderr || result.stdout || '').trim() || `seed exit ${result.status}`;
     throw new Error(`Демо-загрузка не удалась: ${err.slice(0, 500)}`);
@@ -268,21 +278,33 @@ function ensureFactoryDemoFromSeed() {
  * Использует заводской слепок data/factory/demo.sqlite или строит его через seed.
  */
 export function loadDemoData() {
+  ensureCollections();
+  const adminBefore = readAll('users').find((u) => u.login === 'Admin');
+  const savedHash = adminBefore?.passwordHash;
+
   createBackup({ label: 'before-demo', reason: 'before-demo' });
 
   if (!fs.existsSync(FACTORY_DEMO)) {
-    ensureFactoryDemoFromSeed();
+    ensureFactoryDemoFromSeed(savedHash);
   } else {
     replaceLiveDbFromFile(FACTORY_DEMO);
+    if (savedHash) {
+      const users = readAll('users');
+      const admin = users.find((u) => u.login === 'Admin');
+      if (admin) {
+        admin.passwordHash = savedHash;
+        writeAll('users', users);
+      }
+    }
   }
 
-  const counts = countSnapshot();
+  let counts = countSnapshot();
   if ((counts.materials || 0) < 10) {
-    // слепок битый — пересобрать
-    ensureFactoryDemoFromSeed();
+    ensureFactoryDemoFromSeed(savedHash);
+    counts = countSnapshot();
   }
 
-  return { ok: true, mode: 'demo', counts: countSnapshot(), factory: FACTORY_DEMO };
+  return { ok: true, mode: 'demo', counts, factory: FACTORY_DEMO };
 }
 
 export function factoryDemoInfo() {
