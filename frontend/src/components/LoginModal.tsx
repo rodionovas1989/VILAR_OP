@@ -4,7 +4,7 @@ import { Modal } from './Modal';
 
 export default function LoginModal() {
   const { loginOpen, closeLogin, login } = useAuth();
-  const [loginName, setLoginName] = useState('Admin');
+  const [loginName, setLoginName] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
@@ -64,9 +64,6 @@ export default function LoginModal() {
             {error}
           </p>
         )}
-        <p className="hint full-width">
-          По умолчанию: логин <strong>Admin</strong>, пароль <strong>Admin</strong>.
-        </p>
       </form>
     </Modal>
   );

@@ -11,6 +11,8 @@ export type StockDocumentType =
   | 'production_receipt'
   | 'shipment';
 
+export type QualityDocumentType = 'quality_incoming' | 'quality_release';
+
 export interface User {
   id: string;
   name: string;

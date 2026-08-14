@@ -1,13 +1,19 @@
 # PROJECT_CONTEXT
 
-## Ветка: fix/sqlite-builtin-no-gyp (активна)
+## Ветка: feature/admin-data-reset-demo-backups (активна)
 
-Убрать `better-sqlite3` (node-gyp / Visual Studio) — SQLite через встроенный `node:sqlite`.
+Администрирование: очистка БД, загрузка демо-данных, пул резервных копий sqlite.
+Процесс релизов: локальная ветка → `main` → обновление ВМ (см. `.cursor/rules/releases-and-updates.mdc`).
 
-### Сделано
-- `backend/src/sqlite.js` — WAL, busy_timeout, транзакции/savepoint
-- Скрипты node с `--experimental-sqlite` (Node 22)
-- `install.bat` больше не собирает native-модуль
+### Сделано / в работе
+- RBAC объект `admin_data_maintenance`
+- API `/api/admin/backups`, `/data/clear`, `/data/demo`
+- UI «Данные и резервные копии»
+- Автослепок перед clear / demo / restore
 
-### База (main)
+### База
 - SQLite, RES, completeOrder, JWT/RBAC, отчёты, обратная связь, руководство
+- `VILAR_ADMIN_PASSWORD`, без подсказок Admin в UI (ветка fix/admin-login…)
+
+### Локально (не в git)
+- `local/YANDEX_CLOUD.md`, `local/CREDENTIALS.md`

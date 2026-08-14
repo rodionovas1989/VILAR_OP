@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .tools/
+local/
 *.log
 .DS_Store
 .env
@@ -11,3 +12,6 @@ backend/data/*.sqlite
 backend/data/*.sqlite-wal
 backend/data/*.sqlite-shm
 backend/data/auth_secret
+backend/data/backups/
+backend/data/factory/
+backups/

@@ -53,6 +53,7 @@ export const ADMIN_OBJECTS = [
   { id: 'admin_roles', label: 'Роли' },
   { id: 'admin_export', label: 'Экспорт справочников' },
   { id: 'admin_feedback', label: 'Обратная связь' },
+  { id: 'admin_data_maintenance', label: 'Данные и резервные копии' },
 ];
 
 export const SYSTEM_OBJECT_GROUPS = [

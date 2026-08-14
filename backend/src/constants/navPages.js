@@ -5,6 +5,7 @@ const PAGE_TO_OBJECT = {
   users: 'admin_users',
   roles: 'admin_roles',
   admin_export_dictionaries: 'admin_export',
+  admin_data_maintenance: 'admin_data_maintenance',
 };
 
 export const NAV_PAGE_IDS = new Set([
@@ -39,6 +40,7 @@ export const NAV_PAGE_IDS = new Set([
   'report_stock',
   'admin_feedback',
   'admin_user_guide',
+  'admin_data_maintenance',
   'users',
   'roles',
   'admin_export_dictionaries',
