@@ -25,6 +25,7 @@ import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
 import { Lot, Material, Warehouse } from '../types';
+import { metaForDocumentType } from '../constants/documentTypes';
 
 type Props = {
   documentType: StockDocumentType;
@@ -88,7 +89,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const objectId = `doc_${documentType}`;
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
-  const [typeMeta, setTypeMeta] = useState<DocumentTypeMeta | null>(null);
+  const [typeMeta, setTypeMeta] = useState<DocumentTypeMeta | null>(() => metaForDocumentType(documentType));
   const [rows, setRows] = useState<StockDocument[]>([]);
   const [users, setUsers] = useState<{ id: string; name: string }[]>([]);
   const [editing, setEditing] = useState<StockDocument | null>(null);
@@ -151,9 +152,10 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
         api.documentTypes(),
         api.listDocuments(documentType),
       ]);
-      setTypeMeta(meta.types.find((t) => t.id === documentType) || null);
+      setTypeMeta(meta.types.find((t) => t.id === documentType) || metaForDocumentType(documentType));
       setRows(docs);
     } catch (e) {
+      setTypeMeta(metaForDocumentType(documentType));
       setError(e instanceof Error ? e.message : String(e));
     }
   };
@@ -243,7 +245,6 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   };
 
   const startCreate = () => {
-    if (!typeMeta) return;
     if (!loggedIn) {
       openLogin();
       return;
@@ -252,6 +253,8 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       window.alert('Недостаточно прав на создание документов. Проверьте роль или войдите снова.');
       return;
     }
+    const meta = typeMeta || metaForDocumentType(documentType);
+    if (!typeMeta) setTypeMeta(meta);
     const base: StockDocument = {
       id: '',
       type: documentType,
@@ -263,12 +266,13 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       createdAt: '',
       comment: '',
       lines: [emptyLine()],
-      warehouseId: typeMeta.warehouseMode === 'single' ? whComp : null,
-      warehouseFromId: typeMeta.warehouseMode === 'from' || typeMeta.warehouseMode === 'both' ? whComp : null,
-      warehouseToId: typeMeta.warehouseMode === 'to' ? whComp : null,
+      warehouseId: meta.warehouseMode === 'single' ? whComp : null,
+      warehouseFromId: meta.warehouseMode === 'from' || meta.warehouseMode === 'both' ? whComp : null,
+      warehouseToId: meta.warehouseMode === 'to' ? whComp : null,
     };
     setFormMode('create');
     setEditing(base);
+    setError('');
   };
 
   const openEdit = (doc: StockDocument) => {
