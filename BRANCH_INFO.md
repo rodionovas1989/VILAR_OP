@@ -3,7 +3,8 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | Стабильный снимок: SQLite, документы, RBAC, отчёты, обратная связь, руководство | эталон |
-| `fix/admin-login-no-hint-strong-password` | Без подсказки Admin в UI; пароль Admin через `VILAR_ADMIN_PASSWORD` | **активна** |
+| `feature/admin-data-reset-demo-backups` | Админ: очистка, демо-seed, пул резервных копий sqlite | **активна** |
+| `fix/admin-login-no-hint-strong-password` | Без подсказки Admin в UI; `VILAR_ADMIN_PASSWORD` | вливается вместе с feature / ещё на ВМ |
 | `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite`, без Visual Studio / better-sqlite3 | слита в main |
 | `feature/reports-released-series` | Отчёты; карточки; persist отборов; аккордеон меню; обратная связь; руководство пользователя | слита в main |
 | `feature/launch-sqlite-reservations` | SQLite, RES, completeOrder, API RBAC, тесты цепочки, связи документа | слита в main (через reports) |

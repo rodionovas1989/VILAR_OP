@@ -1,17 +1,19 @@
 # PROJECT_CONTEXT
 
-## Ветка: fix/admin-login-no-hint-strong-password (активна)
+## Ветка: feature/admin-data-reset-demo-backups (активна)
 
-Убрать подсказки логина/пароля Admin из UI; bootstrap-пароль только через `VILAR_ADMIN_PASSWORD` (не светить в сети).
+Администрирование: очистка БД, загрузка демо-данных, пул резервных копий sqlite.
+Процесс релизов: локальная ветка → `main` → обновление ВМ (см. `.cursor/rules/releases-and-updates.mdc`).
 
-### Сделано
-- `LoginModal` — пустые поля, без hint Admin/Admin
-- `store.migrateDefaultUsers` — пароль из env / одноразовый в лог; апгрейд слабого `Admin`
-- `QualityDocumentType` в `types.documents.ts` (починка `npm run build`)
-- `local/CREDENTIALS.md`, `local/YANDEX_CLOUD.md` — учётки и шаги YC (не в git)
+### Сделано / в работе
+- RBAC объект `admin_data_maintenance`
+- API `/api/admin/backups`, `/data/clear`, `/data/demo`
+- UI «Данные и резервные копии»
+- Автослепок перед clear / demo / restore
 
-### База (main)
+### База
 - SQLite, RES, completeOrder, JWT/RBAC, отчёты, обратная связь, руководство
+- `VILAR_ADMIN_PASSWORD`, без подсказок Admin в UI (ветка fix/admin-login…)
 
 ### Локально (не в git)
-- Заметки по пилоту в Yandex Cloud: `local/YANDEX_CLOUD.md` (папка `local/` в `.gitignore`)
+- `local/YANDEX_CLOUD.md`, `local/CREDENTIALS.md`

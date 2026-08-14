@@ -1007,6 +1007,40 @@ th {
   font-size: 11px;
 }
 
+.admin-data-maintenance .admin-panel {
+  margin: 16px 0 28px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(15, 42, 61, 0.12);
+}
+
+.admin-data-maintenance .danger-panel {
+  border-top-color: rgba(180, 60, 40, 0.35);
+}
+
+.admin-data-maintenance .inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.admin-data-maintenance .confirm-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(180, 60, 40, 0.06);
+}
+
+.admin-data-maintenance .ok-msg {
+  color: #1a7a62;
+}
+
+.admin-data-maintenance .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

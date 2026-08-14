@@ -5,6 +5,7 @@ import { canAccessPage, filterNavByPermissions } from './auth/navAccess';
 import { useAuth } from './auth/AuthContext';
 import AccessDenied from './components/AccessDenied';
 import AdminExportDictionaries from './components/AdminExportDictionaries';
+import AdminDataMaintenance from './components/AdminDataMaintenance';
 import AppHeader from './components/AppHeader';
 import HomePage from './components/HomePage';
 import LoginModal from './components/LoginModal';
@@ -641,6 +642,8 @@ export default function App() {
         return <StockReportPage />;
       case 'admin_export_dictionaries':
         return <AdminExportDictionaries />;
+      case 'admin_data_maintenance':
+        return <AdminDataMaintenance />;
       case 'production_desktop':
         return (
           <ProductionDesktop

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import ExcelJS from 'exceljs';
 import { COLLECTIONS, readAll } from '../store.js';
 import { requirePermission } from '../middleware/access.js';
+import * as dataMaintenance from '../services/dataMaintenance.js';
 
 /** Справочники, доступные для экспорта из Администрирования */
 export const DICTIONARY_COLLECTIONS = [
@@ -28,7 +29,6 @@ function addCollectionSheet(wb, collectionId, sheetName) {
     throw new Error(`Неизвестная коллекция: ${collectionId}`);
   }
   const rows = readAll(collectionId);
-  // Excel sheet name max 31 chars
   const safeName = String(sheetName || collectionId).slice(0, 31);
   const ws = wb.addWorksheet(safeName);
   if (!rows.length) {
@@ -43,6 +43,13 @@ function addCollectionSheet(wb, collectionId, sheetName) {
     ws.addRow(flat);
   }
   ws.getRow(1).font = { bold: true };
+}
+
+function assertConfirm(body, expected) {
+  const got = String(body?.confirm || '').trim();
+  if (got !== expected) {
+    throw new Error(`Для подтверждения введите ${expected}`);
+  }
 }
 
 const router = Router();
@@ -73,6 +80,62 @@ router.post('/export-dictionaries.xlsx', requirePermission('admin_export', 'modi
     res.setHeader('Content-Disposition', `attachment; filename="dictionaries-${stamp}.xlsx"`);
     await wb.xlsx.write(res);
     res.end();
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.get('/backups', requirePermission('admin_data_maintenance', 'read'), (_req, res) => {
+  try {
+    res.json(dataMaintenance.listBackups());
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.post('/backups', requirePermission('admin_data_maintenance', 'create'), (req, res) => {
+  try {
+    res.status(201).json(
+      dataMaintenance.createBackup({
+        label: req.body?.label,
+        reason: 'manual',
+      })
+    );
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.post('/backups/:id/restore', requirePermission('admin_data_maintenance', 'modify'), (req, res) => {
+  try {
+    assertConfirm(req.body, 'RESTORE');
+    res.json(dataMaintenance.restoreBackup(req.params.id));
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.delete('/backups/:id', requirePermission('admin_data_maintenance', 'modify'), (req, res) => {
+  try {
+    res.json(dataMaintenance.deleteBackup(req.params.id));
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.post('/data/clear', requirePermission('admin_data_maintenance', 'modify'), (req, res) => {
+  try {
+    assertConfirm(req.body, 'CLEAR');
+    res.json(dataMaintenance.clearAllData());
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.post('/data/demo', requirePermission('admin_data_maintenance', 'modify'), (req, res) => {
+  try {
+    assertConfirm(req.body, 'DEMO');
+    res.json(dataMaintenance.loadDemoData());
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
   }

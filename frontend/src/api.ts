@@ -120,6 +120,23 @@ export const api = {
       body: JSON.stringify(body),
     }),
   adminDictionaries: () => request<{ id: string; label: string }[]>('/admin/dictionaries'),
+  listBackups: () =>
+    request<{ id: string; createdAt: string; label: string; reason: string; sizeBytes: number }[]>(
+      '/admin/backups'
+    ),
+  createBackup: (label?: string) =>
+    request('/admin/backups', { method: 'POST', body: JSON.stringify({ label: label || '' }) }),
+  restoreBackup: (id: string, confirm: string) =>
+    request(`/admin/backups/${encodeURIComponent(id)}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm }),
+    }),
+  deleteBackup: (id: string) =>
+    request(`/admin/backups/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  clearAllData: (confirm: string) =>
+    request('/admin/data/clear', { method: 'POST', body: JSON.stringify({ confirm }) }),
+  loadDemoData: (confirm: string) =>
+    request('/admin/data/demo', { method: 'POST', body: JSON.stringify({ confirm }) }),
   exportDictionariesXlsx: async (collections: string[]) => {
     const res = await fetch(`${API_BASE}/admin/export-dictionaries.xlsx`, {
       method: 'POST',
