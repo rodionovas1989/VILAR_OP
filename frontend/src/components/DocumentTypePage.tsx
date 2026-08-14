@@ -244,8 +244,12 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
 
   const startCreate = () => {
     if (!typeMeta) return;
-    if (!canCreateObject(permissions, objectId)) {
+    if (!loggedIn) {
       openLogin();
+      return;
+    }
+    if (!canCreateObject(permissions, objectId)) {
+      window.alert('Недостаточно прав на создание документов. Проверьте роль или войдите снова.');
       return;
     }
     const base: StockDocument = {
