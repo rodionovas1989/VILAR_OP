@@ -7,6 +7,7 @@
 ### Сделано
 - `LoginModal` — пустые поля, без hint Admin/Admin
 - `store.migrateDefaultUsers` — пароль из env / одноразовый в лог; апгрейд слабого `Admin`
+- `QualityDocumentType` в `types.documents.ts` (починка `npm run build`)
 - `local/CREDENTIALS.md`, `local/YANDEX_CLOUD.md` — учётки и шаги YC (не в git)
 
 ### База (main)
