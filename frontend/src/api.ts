@@ -1,16 +1,55 @@
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
-    ...init,
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (authToken) headers.Authorization = `Bearer ${authToken}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch {
+    throw new Error(
+      'Сервер недоступен. Запустите backend (npm run backend в корне проекта, порт 3001).'
+    );
+  }
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
+  if (!res.ok) throw new Error((data as { error?: string }).error || res.statusText);
   return data as T;
 }
 
 export const api = {
+  authLogin: (login: string, password: string, rememberMe: boolean) =>
+    request<{ token: string; user: import('./auth/AuthContext').AuthUser; expiresInMs: number }>(
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ login, password, rememberMe }) }
+    ),
+  authMe: () => request<import('./auth/AuthContext').AuthUser>('/auth/me'),
+  authLogout: () => request('/auth/logout', { method: 'POST' }),
+  getFavorites: () =>
+    request<{ items: { pageId: string; addedAt: string }[] }>('/auth/favorites'),
+  saveFavorites: (items: { pageId: string; addedAt?: string }[]) =>
+    request<{ items: { pageId: string; addedAt: string }[] }>('/auth/favorites', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    }),
+  toggleFavorite: (pageId: string) =>
+    request<{ items: { pageId: string; addedAt: string }[] }>('/auth/favorites/toggle', {
+      method: 'POST',
+      body: JSON.stringify({ pageId }),
+    }),
+
   list: <T>(collection: string) => request<T[]>(`/${collection}`),
   get: <T>(collection: string, id: string) => request<T>(`/${collection}/${id}`),
   create: <T>(collection: string, body: unknown) =>
@@ -87,6 +126,79 @@ export const api = {
     a.click();
     URL.revokeObjectURL(url);
   },
+
+  documentTypes: () =>
+    request<{ types: import('./types.documents').DocumentTypeMeta[]; statuses: Record<string, string> }>(
+      '/documents/meta/types'
+    ),
+  listDocuments: (type: string, params?: { status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    const qs = q.toString();
+    return request<import('./types.documents').StockDocument[]>(
+      `/documents/${type}${qs ? `?${qs}` : ''}`
+    );
+  },
+  getDocument: (type: string, id: string) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}`),
+  createDocument: (type: string, body: unknown) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateDocument: (type: string, id: string, body: unknown) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteDocument: (type: string, id: string) =>
+    request(`/documents/${type}/${id}`, { method: 'DELETE' }),
+  postDocument: (type: string, id: string, userId: string) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}/post`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+  repostDocument: (type: string, id: string, userId: string, body: unknown) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}/repost`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, ...(body as object) }),
+    }),
+  cancelDocument: (type: string, id: string, userId: string) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+  fulfillDocument: (
+    type: string,
+    id: string,
+    userId: string,
+    basis?: { basisDocumentId?: string; basisDocumentNumber?: string }
+  ) =>
+    request<import('./types.documents').StockDocument>(`/documents/${type}/${id}/fulfill`, {
+      method: 'POST',
+      body: JSON.stringify({ userId, ...basis }),
+    }),
+
+  qualityDocumentTypes: () =>
+    request<{ types: { id: string; code: string; label: string }[]; statuses: Record<string, string> }>(
+      '/quality/meta/types'
+    ),
+  listQualityDocuments: () => request<import('./types.documents').QualityDocument[]>('/quality/documents'),
+  createQualityDocument: (body: unknown) =>
+    request<import('./types.documents').QualityDocument>('/quality/documents', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  postQualityDocument: (id: string, userId: string) =>
+    request<import('./types.documents').QualityDocument>(`/quality/documents/${id}/post`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+  cancelQualityDocument: (id: string, userId: string) =>
+    request<import('./types.documents').QualityDocument>(`/quality/documents/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
 };
 
 export type GanttTask = {

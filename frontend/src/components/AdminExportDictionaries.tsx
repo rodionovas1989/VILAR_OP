@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
+import { canViewObject } from '../auth/permissions';
+import { useAuth } from '../auth/AuthContext';
+import AccessDenied from './AccessDenied';
+import PageTitle from './PageTitle';
 
 type DictOpt = { id: string; label: string };
 
 export default function AdminExportDictionaries() {
+  const { user } = useAuth();
   const [options, setOptions] = useState<DictOpt[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -58,10 +63,14 @@ export default function AdminExportDictionaries() {
     }
   };
 
+  if (!canViewObject(user?.permissions, 'admin_export', Boolean(user))) {
+    return <AccessDenied title="Экспорт справочников" />;
+  }
+
   return (
     <div className="page admin-export">
       <div className="page-toolbar">
-        <h1>Экспорт справочников</h1>
+        <PageTitle pageId="admin_export_dictionaries" title="Экспорт справочников" />
         <div className="toolbar-actions">
           <button type="button" disabled={!selected.size || busy} onClick={onExport}>
             {busy ? 'Экспорт…' : `Экспортировать (${selected.size})`}

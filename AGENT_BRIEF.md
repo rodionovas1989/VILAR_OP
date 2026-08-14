@@ -9,8 +9,9 @@
 ```
 docs/GMP_SERIES_RULES.md     — правила серий
 package.json                 — корневые npm-скрипты (backend/frontend/setup)
-install.bat / start-*.bat    — установка и запуск (ASCII; кириллица ломает cmd)
-scripts/*.ps1                — install / start-backend / start-frontend
+install.bat / start-*.bat / restart-all.bat — установка и запуск (ASCII; кириллица ломает cmd)
+scripts/port-guard.ps1       — проверка портов 3001/5173 (защита от дублирования)
+scripts/*.ps1                — install / start-backend / start-frontend / start-all / restart-all
 backend/
   scripts/seed.js            — генерация демо из recipes_raw.json
   scripts/recipes_raw.json   — рецептуры
@@ -18,8 +19,18 @@ backend/
   src/index.js               — Express API
   src/store.js               — CRUD JSON
   src/services/planning.js   — FEFO/FIFO, резервы, матрица остатков
+  src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
+  src/services/quality.js    — качество (заглушка)
+  src/constants/documentTypes.js
   src/routes/planning.js     — /api/planning/*
+  src/routes/documents.js    — /api/documents/*
+  src/routes/quality.js      — /api/quality/*
+  src/constants/systemObjects.js — объекты RBAC (справочники, документы, заказы)
+  src/services/permissions.js    — матрица прав роли
+  src/services/favorites.js      — избранное per user (+ RBAC filter)
+  src/constants/navPages.js      — pageId → objectId для избранного
   src/routes/admin.js        — /api/admin/* (экспорт справочников)
+  data/roles.json
 frontend/
   src/App.tsx                — меню-аккордеон + страницы
   src/components/CrudPage.tsx
@@ -32,11 +43,28 @@ frontend/
   src/components/ProductionDesktop.tsx       — управление заказами (план/факт)
   src/components/AdminExportDictionaries.tsx — экспорт справочников
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
+  src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
+  src/components/ListViewSettings.tsx        — панель отбора и сортировки списка
+  src/components/DocumentTypePage.tsx    — страница одного типа документа (date+time, actions menu, user labels)
+  src/constants/navConfig.ts           — навигация + каталог pageId/kind
+  src/auth/FavoritesContext.tsx        — избранное пользователя
+  src/components/HomePage.tsx          — главная: колонки по типу объекта, избранное вертикально
+  src/hooks/useListTable.ts            — фильтр + сортировка списков
+  src/components/ListTableHeader.tsx   — шапка таблицы с фильтром/сортировкой
+  src/components/PageTitle.tsx         — заголовок + ☆
+  src/components/ProductionOrderPage.tsx — заказы на производство (модалка как документ)
+  src/components/RolesPage.tsx           — роли + матрица прав
+  src/components/PermissionMatrix.tsx
+  src/auth/permissions.ts                — проверка read/create/modify
+  src/constants/systemObjects.ts
+  src/components/QualityDocumentsPage.tsx  — качество (заглушка)
   src/components/IconButton.tsx              — кнопки-пиктограммы действий
 ```
 
 ## Коллекции API `/api/{name}`
-materials, specifications, counterparties, lots, series, **warehouses**, stock (+warehouseId), reservations, work_centers, planned_series_volumes, production_orders (quantity/lines + actualQuantity/actualLines), material_movements
+materials, ... **receipt_documents**, **reservation_documents**, … (9 typed doc collections), **users**, **user_favorites**, active_reservations, reservation_history, material_movements
+
+Документы API: `/api/documents/:type` (`receipt`, `reservation`, `production_issue`, …)
 
 Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`qtyPerUnit` = кг на 1000 уп), `approvedSuppliers`
 Расход компонента (план): `need = qtyPerUnit * order.quantity / 1000`

@@ -1,0 +1,43 @@
+import { PermissionMap } from '../constants/systemObjects';
+import { canViewObject } from './permissions';
+
+/** ID объекта RBAC для пункта навигации / страницы */
+export function pagePermissionId(pageId: string): string {
+  if (pageId.startsWith('doc_')) return pageId;
+  switch (pageId) {
+    case 'users':
+      return 'admin_users';
+    case 'roles':
+      return 'admin_roles';
+    case 'admin_export_dictionaries':
+      return 'admin_export';
+    default:
+      return pageId;
+  }
+}
+
+export type NavGroup = { id: string; label: string; items: { id: string; label: string }[] };
+
+export function filterNavByPermissions(
+  nav: NavGroup[],
+  permissions: PermissionMap | undefined,
+  loggedIn: boolean
+): NavGroup[] {
+  return nav
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) =>
+        canViewObject(permissions, pagePermissionId(item.id), loggedIn)
+      ),
+    }))
+    .filter((group) => group.items.length > 0);
+}
+
+export function canAccessPage(
+  pageId: string,
+  permissions: PermissionMap | undefined,
+  loggedIn: boolean
+): boolean {
+  if (pageId === 'home') return true;
+  return canViewObject(permissions, pagePermissionId(pageId), loggedIn);
+}

@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type IconKind = 'edit' | 'complete' | 'cancel' | 'delete' | 'refresh' | 'status';
+export type IconKind = 'edit' | 'view' | 'complete' | 'cancel' | 'delete' | 'refresh' | 'status';
 
 const ICONS: Record<IconKind, ReactNode> = {
   edit: (
@@ -8,6 +8,14 @@ const ICONS: Record<IconKind, ReactNode> = {
       <path
         fill="currentColor"
         d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.04a1.003 1.003 0 0 0 0-1.42l-2.5-2.5a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.999-1.66z"
+      />
+    </svg>
+  ),
+  view: (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-2.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"
       />
     </svg>
   ),
@@ -39,7 +47,7 @@ const ICONS: Record<IconKind, ReactNode> = {
     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
       <path
         fill="currentColor"
-        d="M17.65 6.35A7.95 7.95 0 0 0 12 4V1L7 6l5 5V7c2.76 0 5 2.24 5 5a5 5 0 0 1-8.66 3.42l-1.42 1.42A7 7 0 0 0 19 12c0-1.93-.78-3.68-2.05-4.95zM6 12c0-1.48.51-2.84 1.35-3.92l1.42 1.42A4.97 4.97 0 0 0 7 12a5 5 0 0 0 8.66 3.42l1.42 1.42A7 7 0 0 1 5 12z"
+        d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
       />
     </svg>
   ),

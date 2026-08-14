@@ -1,0 +1,576 @@
+import { randomUUID } from 'crypto';
+import * as store from '../store.js';
+import {
+  DOCUMENT_TYPES,
+  DOCUMENT_STATUS,
+  assertDocumentType,
+  collectionForType,
+} from '../constants/documentTypes.js';
+import { freeQtyByLot, stockRowForLot } from './planning.js';
+
+function cryptoRandom() {
+  return randomUUID();
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function nowTime() {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function normalizeTime(value) {
+  if (value == null || value === '') return null;
+  const t = String(value).trim();
+  if (!/^\d{2}:\d{2}$/.test(t)) throw new Error('Некорректное время (ожидается ЧЧ:ММ)');
+  const [h, m] = t.split(':').map(Number);
+  if (h > 23 || m > 59) throw new Error('Некорректное время (ожидается ЧЧ:ММ)');
+  return t;
+}
+
+function assertUserExists(userId) {
+  if (!userId) throw new Error('Укажите пользователя');
+  if (!store.getById('users', userId)) throw new Error('Пользователь не найден');
+}
+
+function roundQty(n) {
+  return Number(Number(n).toFixed(6));
+}
+
+/** {TYPE}:{YYYY-MM-DD} → следующий NNNNN */
+export function nextDocumentNumber(type, dateStr = todayIso()) {
+  assertDocumentType(type);
+  const code = DOCUMENT_TYPES[type].code;
+  const key = `${code}:${dateStr}`;
+  const sequences = store.readAll('document_sequences');
+  const row = sequences.find((s) => s.key === key);
+  const next = (row?.last ?? 0) + 1;
+  if (row) {
+    store.update('document_sequences', row.id, { last: next });
+  } else {
+    store.create('document_sequences', { id: cryptoRandom(), key, last: next });
+  }
+  const seq = String(next).padStart(5, '0');
+  return `${code}-${dateStr}-${seq}`;
+}
+
+function assertDraft(doc) {
+  if (doc.status !== 'draft') {
+    throw new Error(`Документ ${doc.number} не в статусе «Создан» (сейчас: ${DOCUMENT_STATUS[doc.status] || doc.status})`);
+  }
+}
+
+function assertPosted(doc) {
+  if (doc.status !== 'posted') {
+    throw new Error(`Документ ${doc.number} не проведён (сейчас: ${DOCUMENT_STATUS[doc.status] || doc.status})`);
+  }
+}
+
+function validateLines(lines, docType) {
+  if (!Array.isArray(lines) || !lines.length) {
+    throw new Error('Добавьте хотя бы одну строку в табличную часть');
+  }
+  for (const line of lines) {
+    if (!line.materialId || !line.lotId) throw new Error('В каждой строке укажите материал и партию');
+    const lot = store.getById('lots', line.lotId);
+    if (!lot || lot.materialId !== line.materialId) {
+      throw new Error('Партия не соответствует материалу в строке');
+    }
+    if (docType === 'inventory') {
+      const book = line.bookQuantity != null ? line.bookQuantity : line.quantity;
+      const actual = line.actualQuantity != null ? line.actualQuantity : line.quantity;
+      if (book == null || actual == null) throw new Error('Для инвентаризации укажите учётное и фактическое количество');
+    } else if (!(Number(line.quantity) > 0)) {
+      throw new Error('Количество в строке должно быть больше 0');
+    }
+  }
+}
+
+function validateWarehouses(doc) {
+  const meta = DOCUMENT_TYPES[doc.type];
+  if (meta.warehouseMode === 'to' && !doc.warehouseToId) {
+    throw new Error('Укажите склад назначения');
+  }
+  if (meta.warehouseMode === 'from' && !doc.warehouseFromId) {
+    throw new Error('Укажите склад-источник');
+  }
+  if (meta.warehouseMode === 'single' && !doc.warehouseId) {
+    throw new Error('Укажите склад');
+  }
+  if (meta.warehouseMode === 'both') {
+    if (!doc.warehouseFromId || !doc.warehouseToId) {
+      throw new Error('Укажите склады «откуда» и «куда»');
+    }
+    if (doc.warehouseFromId === doc.warehouseToId) {
+      throw new Error('Склады перемещения должны различаться');
+    }
+  }
+}
+
+function normalizeLines(lines) {
+  return lines.map((l) => ({
+    id: l.id || cryptoRandom(),
+    materialId: l.materialId,
+    lotId: l.lotId,
+    quantity: roundQty(l.quantity),
+    bookQuantity: l.bookQuantity != null ? roundQty(l.bookQuantity) : undefined,
+    actualQuantity: l.actualQuantity != null ? roundQty(l.actualQuantity) : undefined,
+  }));
+}
+
+function movementBase(doc) {
+  return {
+    documentId: doc.id,
+    documentNumber: doc.number,
+    documentType: doc.type,
+    documentStatus: doc.status,
+  };
+}
+
+function appendReservationHistory(doc, action, lines, extra = {}) {
+  const at = new Date().toISOString();
+  for (const line of lines) {
+    store.create('reservation_history', {
+      id: cryptoRandom(),
+      at,
+      action,
+      documentId: doc.id,
+      documentNumber: doc.number,
+      documentType: doc.type,
+      documentStatus: doc.status,
+      materialId: line.materialId,
+      lotId: line.lotId,
+      quantity: line.quantity,
+      productionOrderId: doc.productionOrderId || null,
+      userId: extra.userId || doc.createdByUserId,
+      basisDocumentId: extra.basisDocumentId || null,
+      basisDocumentNumber: extra.basisDocumentNumber || null,
+    });
+  }
+}
+
+function clearActiveReservationsForDocument(documentId) {
+  const active = store.readAll('active_reservations').filter((r) => r.documentId === documentId);
+  if (active.length) {
+    store.removeMany(
+      'active_reservations',
+      active.map((r) => r.id)
+    );
+  }
+  return active;
+}
+
+function applyStockDelta(materialId, lotId, warehouseId, delta, doc, extra = {}) {
+  let stockRow = store
+    .readAll('stock')
+    .find((s) => s.lotId === lotId && s.warehouseId === warehouseId);
+  if (!stockRow && delta > 0) {
+    stockRow = store.create('stock', {
+      id: cryptoRandom(),
+      materialId,
+      lotId,
+      warehouseId,
+      quantity: 0,
+    });
+  }
+  if (!stockRow) throw new Error(`Нет остатка по партии ${lotId} на складе`);
+  const nextQty = roundQty(stockRow.quantity + delta);
+  if (nextQty < -1e-9) throw new Error(`Недостаточно остатка по партии ${lotId}`);
+  store.update('stock', stockRow.id, { quantity: nextQty });
+
+  store.create('material_movements', {
+    id: cryptoRandom(),
+    materialId,
+    lotId,
+    seriesId: extra.seriesId || null,
+    quantity: delta,
+    productionOrderId: extra.productionOrderId || doc.productionOrderId || null,
+    type: delta >= 0 ? 'receipt' : 'issue',
+    warehouseId,
+    at: new Date().toISOString(),
+    ...movementBase(doc),
+  });
+}
+
+function postReceipt(doc, userId) {
+  const wh = doc.warehouseToId;
+  for (const line of doc.lines) {
+    applyStockDelta(line.materialId, line.lotId, wh, line.quantity, doc, { userId });
+  }
+}
+
+function postWriteoff(doc) {
+  const wh = doc.warehouseFromId;
+  for (const line of doc.lines) {
+    applyStockDelta(line.materialId, line.lotId, wh, -line.quantity, doc);
+  }
+}
+
+function postPosting(doc) {
+  const wh = doc.warehouseToId;
+  for (const line of doc.lines) {
+    applyStockDelta(line.materialId, line.lotId, wh, line.quantity, doc);
+  }
+}
+
+function postTransfer(doc) {
+  for (const line of doc.lines) {
+    applyStockDelta(line.materialId, line.lotId, doc.warehouseFromId, -line.quantity, doc);
+    applyStockDelta(line.materialId, line.lotId, doc.warehouseToId, line.quantity, doc);
+  }
+}
+
+function postShipment(doc) {
+  postWriteoff(doc);
+}
+
+function postProductionIssue(doc) {
+  postWriteoff(doc);
+}
+
+function postProductionReceipt(doc) {
+  postPosting(doc);
+}
+
+function postReservation(doc, userId) {
+  const wh = doc.warehouseId;
+  for (const line of doc.lines) {
+    const stockRow = stockRowForLot(line.lotId, wh);
+    if (!stockRow) throw new Error(`Нет остатка по партии ${line.lotId}`);
+    const free = freeQtyByLot(line.lotId);
+    if (free < line.quantity) {
+      throw new Error(`Недостаточно свободного остатка по партии ${line.lotId}`);
+    }
+    store.create('active_reservations', {
+      id: cryptoRandom(),
+      documentId: doc.id,
+      productionOrderId: doc.productionOrderId || null,
+      materialId: line.materialId,
+      lotId: line.lotId,
+      quantity: line.quantity,
+      seriesId: doc.seriesId || null,
+      warehouseId: wh,
+    });
+  }
+  appendReservationHistory(doc, 'post', doc.lines, { userId });
+}
+
+function postInventory(doc) {
+  const wh = doc.warehouseId;
+  for (const line of doc.lines) {
+    const book = line.bookQuantity != null ? line.bookQuantity : line.quantity;
+    const actual = line.actualQuantity != null ? line.actualQuantity : line.quantity;
+    const delta = roundQty(actual - book);
+    if (Math.abs(delta) < 1e-9) continue;
+    applyStockDelta(line.materialId, line.lotId, wh, delta, doc);
+  }
+}
+
+const POST_HANDLERS = {
+  receipt: postReceipt,
+  writeoff: postWriteoff,
+  posting: postPosting,
+  transfer: postTransfer,
+  shipment: postShipment,
+  production_issue: postProductionIssue,
+  production_receipt: postProductionReceipt,
+  reservation: postReservation,
+  inventory: postInventory,
+};
+
+function docCollection(doc) {
+  return collectionForType(doc.type);
+}
+
+/** Поиск документа по id среди всех типов */
+export function findDocumentById(id) {
+  for (const type of Object.keys(DOCUMENT_TYPES)) {
+    const doc = store.getById(collectionForType(type), id);
+    if (doc) return doc;
+  }
+  // legacy
+  return store.getById('stock_documents', id);
+}
+
+export function getDocument(type, id) {
+  assertDocumentType(type);
+  return store.getById(collectionForType(type), id);
+}
+
+function updateDocRecord(doc, patch) {
+  return store.update(docCollection(doc), doc.id, patch);
+}
+
+export function listDocuments(type, filter = {}) {
+  assertDocumentType(type);
+  let rows = store.readAll(collectionForType(type));
+  if (filter.status) rows = rows.filter((d) => d.status === filter.status);
+  if (filter.productionOrderId) {
+    rows = rows.filter((d) => d.productionOrderId === filter.productionOrderId);
+  }
+  return rows.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+export function findReservationDocumentForOrder(productionOrderId, statuses = ['posted']) {
+  return store
+    .readAll(collectionForType('reservation'))
+    .find((d) => d.productionOrderId === productionOrderId && statuses.includes(d.status));
+}
+
+export function createDocument(type, payload) {
+  assertDocumentType(type);
+  const userId = payload.createdByUserId;
+  if (!userId) throw new Error('Укажите пользователя (createdByUserId)');
+  if (!store.getById('users', userId)) throw new Error('Пользователь не найден');
+
+  const date = payload.date || todayIso();
+  const time = normalizeTime(payload.time ?? nowTime());
+  const number = nextDocumentNumber(type, date);
+  const lines = normalizeLines(payload.lines || []);
+
+  const doc = {
+    id: cryptoRandom(),
+    type,
+    number,
+    date,
+    time,
+    status: 'draft',
+    warehouseId: payload.warehouseId || null,
+    warehouseFromId: payload.warehouseFromId || null,
+    warehouseToId: payload.warehouseToId || null,
+    productionOrderId: payload.productionOrderId || null,
+    seriesId: payload.seriesId || null,
+    basisDocumentId: payload.basisDocumentId || null,
+    createdByUserId: userId,
+    createdAt: new Date().toISOString(),
+    postedAt: null,
+    postedByUserId: null,
+    cancelledAt: null,
+    cancelledByUserId: null,
+    fulfilledAt: null,
+    fulfilledByUserId: null,
+    comment: payload.comment || '',
+    lines,
+  };
+
+  validateWarehouses(doc);
+  if (lines.length) validateLines(lines, type);
+
+  return store.create(collectionForType(type), doc);
+}
+
+export function updateDocument(type, id, patch) {
+  const current = getDocument(type, id);
+  if (!current) throw new Error('Документ не найден');
+  assertDraft(current);
+
+  const merged = {
+    ...current,
+    ...patch,
+    id: current.id,
+    type: current.type,
+    number: current.number,
+    status: current.status,
+    lines: patch.lines != null ? normalizeLines(patch.lines) : current.lines,
+  };
+
+  validateWarehouses(merged);
+  if (merged.lines.length) validateLines(merged.lines, merged.type);
+
+  return store.update(collectionForType(type), id, {
+    date: merged.date,
+    time: merged.time != null ? normalizeTime(merged.time) : current.time ?? null,
+    warehouseId: merged.warehouseId,
+    warehouseFromId: merged.warehouseFromId,
+    warehouseToId: merged.warehouseToId,
+    productionOrderId: merged.productionOrderId,
+    seriesId: merged.seriesId,
+    basisDocumentId: merged.basisDocumentId,
+    comment: merged.comment,
+    lines: merged.lines,
+  });
+}
+
+export function deleteDocument(type, id) {
+  const doc = getDocument(type, id);
+  if (!doc) throw new Error('Документ не найден');
+  assertDraft(doc);
+  store.removeMany(collectionForType(type), [id]);
+  return { deleted: 1 };
+}
+
+export function postDocument(type, id, userId) {
+  const doc = getDocument(type, id);
+  if (!doc) throw new Error('Документ не найден');
+  assertDraft(doc);
+  assertUserExists(userId);
+  validateWarehouses(doc);
+  validateLines(doc.lines, doc.type);
+
+  const handler = POST_HANDLERS[doc.type];
+  if (!handler) throw new Error(`Проведение типа «${doc.type}» пока не реализовано`);
+
+  const posted = store.update(collectionForType(type), id, {
+    status: 'posted',
+    postedAt: new Date().toISOString(),
+    postedByUserId: userId,
+  });
+
+  try {
+    handler(posted, userId);
+  } catch (e) {
+    store.update(collectionForType(type), id, {
+      status: 'draft',
+      postedAt: null,
+      postedByUserId: null,
+    });
+    throw e;
+  }
+
+  return getDocument(type, id);
+}
+
+export function repostDocument(type, id, userId, patch = {}) {
+  const doc = getDocument(type, id);
+  if (!doc) throw new Error('Документ не найден');
+  if (doc.status !== 'posted') {
+    throw new Error('Повторное проведение доступно только для проведённых документов');
+  }
+  assertUserExists(userId);
+
+  if (doc.type === 'reservation') {
+    clearActiveReservationsForDocument(doc.id);
+    appendReservationHistory(doc, 'cancel', doc.lines, { userId });
+  } else {
+    reverseStockMovements(doc, userId);
+  }
+
+  const merged = {
+    ...doc,
+    ...patch,
+    id: doc.id,
+    type: doc.type,
+    number: doc.number,
+    lines: patch.lines != null ? normalizeLines(patch.lines) : doc.lines,
+  };
+
+  validateWarehouses(merged);
+  validateLines(merged.lines, merged.type);
+
+  store.update(collectionForType(type), id, {
+    status: 'draft',
+    postedAt: null,
+    postedByUserId: null,
+    date: merged.date,
+    time: merged.time != null ? normalizeTime(merged.time) : doc.time ?? null,
+    warehouseId: merged.warehouseId,
+    warehouseFromId: merged.warehouseFromId,
+    warehouseToId: merged.warehouseToId,
+    productionOrderId: merged.productionOrderId,
+    seriesId: merged.seriesId,
+    basisDocumentId: merged.basisDocumentId,
+    comment: merged.comment,
+    lines: merged.lines,
+  });
+
+  return postDocument(type, id, userId);
+}
+
+function reverseStockMovements(doc, userId) {
+  const movements = store
+    .readAll('material_movements')
+    .filter((m) => m.documentId === doc.id && m.documentStatus === 'posted');
+
+  for (const mov of movements) {
+    applyStockDelta(mov.materialId, mov.lotId, mov.warehouseId, -mov.quantity, doc, {
+      productionOrderId: mov.productionOrderId,
+      seriesId: mov.seriesId,
+    });
+  }
+
+  const reversed = store.readAll('material_movements').filter((m) => m.documentId === doc.id);
+  for (const m of reversed) {
+    store.update('material_movements', m.id, { documentStatus: 'cancelled' });
+  }
+}
+
+export function cancelDocument(type, id, userId) {
+  const doc = getDocument(type, id);
+  if (!doc) throw new Error('Документ не найден');
+  if (doc.status !== 'posted' && doc.status !== 'draft') {
+    throw new Error(`Нельзя отменить документ в статусе «${DOCUMENT_STATUS[doc.status]}»`);
+  }
+  if (doc.status === 'draft') {
+    return store.update(collectionForType(type), id, {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      cancelledByUserId: userId,
+    });
+  }
+
+  assertPosted(doc);
+
+  if (doc.type === 'reservation') {
+    clearActiveReservationsForDocument(doc.id);
+    const cancelled = store.update(collectionForType(type), id, {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      cancelledByUserId: userId,
+    });
+    appendReservationHistory(cancelled, 'cancel', doc.lines, { userId });
+    return cancelled;
+  }
+
+  reverseStockMovements(doc, userId);
+  return store.update(collectionForType(type), id, {
+    status: 'cancelled',
+    cancelledAt: new Date().toISOString(),
+    cancelledByUserId: userId,
+  });
+}
+
+export function fulfillDocument(type, id, userId, basis = {}) {
+  const doc = getDocument(type, id);
+  if (!doc) throw new Error('Документ не найден');
+  if (doc.type !== 'reservation') {
+    throw new Error('Статус «Выполнен» доступен только для документов резервирования');
+  }
+  assertPosted(doc);
+
+  clearActiveReservationsForDocument(doc.id);
+  const fulfilled = store.update(collectionForType(type), id, {
+    status: 'fulfilled',
+    fulfilledAt: new Date().toISOString(),
+    fulfilledByUserId: userId,
+    basisDocumentId: basis.basisDocumentId || doc.basisDocumentId || null,
+  });
+
+  appendReservationHistory(fulfilled, 'fulfill', doc.lines, {
+    userId,
+    basisDocumentId: basis.basisDocumentId || null,
+    basisDocumentNumber: basis.basisDocumentNumber || null,
+  });
+
+  return fulfilled;
+}
+
+/** Отмена проведённого RES и создание нового черновика (перепланирование) */
+export function replaceReservationDocument(oldDocId, userId, newLines) {
+  const oldDoc = findDocumentById(oldDocId);
+  if (!oldDoc || oldDoc.type !== 'reservation') throw new Error('Документ резервирования не найден');
+  if (oldDoc.status === 'posted' || oldDoc.status === 'draft') {
+    cancelDocument('reservation', oldDocId, userId);
+  }
+
+  return createDocument('reservation', {
+    date: todayIso(),
+    createdByUserId: userId,
+    warehouseId: oldDoc.warehouseId,
+    productionOrderId: oldDoc.productionOrderId,
+    seriesId: oldDoc.seriesId,
+    lines: newLines,
+    comment: oldDoc.comment,
+  });
+}

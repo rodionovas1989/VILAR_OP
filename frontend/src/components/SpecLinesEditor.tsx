@@ -7,6 +7,7 @@ type Props = {
   lines: SpecLine[];
   materials: MaterialOpt[];
   onChange: (lines: SpecLine[]) => void;
+  showTitle?: boolean;
 };
 
 const emptyLine = (): SpecLine => ({
@@ -16,7 +17,7 @@ const emptyLine = (): SpecLine => ({
   componentType: 'Вспомогательный',
 });
 
-export default function SpecLinesEditor({ lines, materials, onChange }: Props) {
+export default function SpecLinesEditor({ lines, materials, onChange, showTitle = true }: Props) {
   const update = (idx: number, patch: Partial<SpecLine>) => {
     onChange(lines.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   };
@@ -26,7 +27,8 @@ export default function SpecLinesEditor({ lines, materials, onChange }: Props) {
   return (
     <div className="spec-lines">
       <div className="spec-lines-head">
-        <strong>Рецептура</strong>
+        {showTitle && <strong>Рецептура</strong>}
+        {!showTitle && <span />}
         <button type="button" className="ghost" onClick={() => onChange([...lines, emptyLine()])}>
           Добавить строку
         </button>

@@ -9,7 +9,8 @@
 Только ASCII-имена (кириллические `.bat` удалены — ломают `cmd.exe`):
 
 1. `install.bat` — один раз
-2. `start-all.bat` — каждый рабочий день  
+2. `start-all.bat` — каждый рабочий день (бэкенд + интерфейс; **не запустит второй экземпляр**, если порты 3001/5173 заняты)  
+   `restart-all.bat` — остановить старые процессы и запустить заново  
    Либо: `start-backend.bat` + `start-frontend.bat`
 
 - API: http://localhost:3001  
@@ -44,8 +45,16 @@ npm run dev
 - `PORT` — порт API (по умолчанию 3001)
 - `VITE_API_URL` — базовый URL API для фронта (по умолчанию `http://localhost:3001/api`)
 
+## API документов (ветка stock-documents)
+
+- `POST /api/auth/login` — `{ login, password, rememberMe }`
+- `GET /api/auth/me` — текущий пользователь (Bearer token)
+- `POST /api/documents/:id/post|cancel|fulfill` — проведение (тело `{ userId }`)
+- `GET /api/quality/documents` — документы качества (изолированно)
+
+Демо-пользователи создаются при первом запуске API: `user-admin`, `user-storekeeper`.
+
 ## Данные
-- JSON в `backend/data/*.json`
 - Перегенерация: `npm run backend:seed` из корня или `npm run seed` в `backend`
 - После обновления спецификаций (регистрация поставщиков) для демо-данных удобно пересидить; иначе заполните вкладку «Регистрация поставщиков» вручную
 - Excel-выгрузка одной коллекции: `GET /api/export/{collection}.xlsx`

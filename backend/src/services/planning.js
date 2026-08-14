@@ -12,16 +12,20 @@ export function stockRowForLot(lotId, warehouseId) {
   return all[0] || null;
 }
 
-/** Свободный остаток партии = запас − активные резервы */
+/** Свободный остаток партии = запас − активные резервы (legacy + документы) */
 export function freeQtyByLot(lotId, excludeReservationIds = []) {
   const whComp = warehouseByType('компоненты')?.id;
   const stockRow = stockRowForLot(lotId, whComp);
   if (!stockRow) return 0;
-  const reserved = store
+  const reservedLegacy = store
     .readAll('reservations')
     .filter((r) => r.lotId === lotId && !excludeReservationIds.includes(r.id))
     .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
-  return Number((stockRow.quantity - reserved).toFixed(6));
+  const reservedDocs = store
+    .readAll('active_reservations')
+    .filter((r) => r.lotId === lotId)
+    .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
+  return Number((stockRow.quantity - reservedLegacy - reservedDocs).toFixed(6));
 }
 
 export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {

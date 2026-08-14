@@ -1,10 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import './App.css';
 import { api } from './api';
+import { canAccessPage, filterNavByPermissions } from './auth/navAccess';
+import { useAuth } from './auth/AuthContext';
+import AccessDenied from './components/AccessDenied';
 import AdminExportDictionaries from './components/AdminExportDictionaries';
+import AppHeader from './components/AppHeader';
+import HomePage from './components/HomePage';
+import LoginModal from './components/LoginModal';
+import QualityDocumentsPage from './components/QualityDocumentsPage';
+import DocumentTypePage from './components/DocumentTypePage';
 import { CrudPage, FieldDef } from './components/CrudPage';
-import IconButton from './components/IconButton';
-import PlanningDesktop from './components/PlanningDesktop';
+import ProductionOrderPage from './components/ProductionOrderPage';
 import ProductionDesktop from './components/ProductionDesktop';
+import PlanningDesktop from './components/PlanningDesktop';
+import RolesPage from './components/RolesPage';
+import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
 import {
   ApprovedSupplier,
@@ -18,68 +29,26 @@ import {
   Warehouse,
   WorkCenter,
 } from './types';
-import './App.css';
-
-type NavItem = { id: string; label: string };
-type NavGroup = { id: string; label: string; items: NavItem[] };
-
-const NAV: NavGroup[] = [
-  {
-    id: 'refs',
-    label: 'Справочники',
-    items: [
-      { id: 'materials', label: 'Материалы' },
-      { id: 'specifications', label: 'Спецификации' },
-      { id: 'counterparties', label: 'Контрагенты' },
-      { id: 'lots', label: 'Партии' },
-      { id: 'series', label: 'Серии' },
-      { id: 'work_centers', label: 'Рабочие центры' },
-      { id: 'warehouses', label: 'Склады' },
-      { id: 'planned_series_volumes', label: 'Плановые объёмы серий' },
-    ],
-  },
-  {
-    id: 'stock',
-    label: 'Запасы',
-    items: [
-      { id: 'stock', label: 'Запасы' },
-      { id: 'reservations', label: 'Резервирование' },
-      { id: 'material_movements', label: 'Движение материалов' },
-    ],
-  },
-  {
-    id: 'plan',
-    label: 'Планирование',
-    items: [
-      { id: 'production_orders', label: 'Заказы на производство' },
-      { id: 'planning_desktop', label: 'Рабочий стол планирования' },
-    ],
-  },
-  {
-    id: 'production',
-    label: 'Производство',
-    items: [{ id: 'production_desktop', label: 'Управление заказами' }],
-  },
-  {
-    id: 'admin',
-    label: 'Администрирование',
-    items: [{ id: 'admin_export_dictionaries', label: 'Экспорт справочников' }],
-  },
-];
+import { StockDocumentType } from './types.documents';
+import { Role } from './constants/systemObjects';
+import { NAV } from './constants/navConfig';
 
 function opt(list: { id: string; name?: string; number?: string }[]) {
   return list.map((x) => ({ value: x.id, label: x.name || x.number || x.id }));
 }
 
 export default function App() {
+  const { user, loading: authLoading } = useAuth();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     refs: true,
+    docs: true,
     stock: false,
     plan: true,
     production: true,
     admin: false,
+    quality: false,
   });
-  const [page, setPage] = useState('planning_desktop');
+  const [page, setPage] = useState('home');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   const [lots, setLots] = useState<Lot[]>([]);
@@ -88,9 +57,34 @@ export default function App() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [specs, setSpecs] = useState<Specification[]>([]);
   const [plannedVolumes, setPlannedVolumes] = useState<PlannedSeriesVolume[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const contentRef = useRef<HTMLElement>(null);
+
+  const navigateTo = (pageId: string) => {
+    setPage(pageId);
+    requestAnimationFrame(() => {
+      contentRef.current
+        ?.querySelectorAll('.table-wrap, .matrix-wrap')
+        .forEach((el) => {
+          el.scrollTop = 0;
+        });
+    });
+  };
+
+  const visibleNav = useMemo(
+    () => filterNavByPermissions(NAV, user?.permissions, Boolean(user)),
+    [user]
+  );
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (canAccessPage(page, user?.permissions, Boolean(user))) return;
+    const first = visibleNav.flatMap((g) => g.items)[0];
+    if (first) setPage(first.id);
+  }, [authLoading, user, page, visibleNav]);
 
   const reloadDicts = async () => {
-    const [m, c, l, s, w, wh, sp, pv] = await Promise.all([
+    const [m, c, l, s, w, wh, sp, pv, rl] = await Promise.all([
       api.list<Material>('materials'),
       api.list<Counterparty>('counterparties'),
       api.list<Lot>('lots'),
@@ -99,6 +93,7 @@ export default function App() {
       api.list<Warehouse>('warehouses'),
       api.list<Specification>('specifications'),
       api.list<PlannedSeriesVolume>('planned_series_volumes'),
+      api.list<Role>('roles'),
     ]);
     setMaterials(m);
     setCounterparties(c);
@@ -108,6 +103,7 @@ export default function App() {
     setWarehouses(wh);
     setSpecs(sp);
     setPlannedVolumes(pv);
+    setRoles(rl);
   };
 
   useEffect(() => {
@@ -127,19 +123,6 @@ export default function App() {
   };
   const lotDate = (lotId: string, field: 'productionDate' | 'expiryDate') =>
     lotById(lotId)?.[field] || '—';
-
-  const plannedQtyFor = (materialId: unknown, workCenterId: unknown) => {
-    const m = String(materialId || '');
-    const w = String(workCenterId || '');
-    if (!m || !w) return null;
-    const row = plannedVolumes.find((p) => p.materialId === m && p.workCenterId === w);
-    return row ? Number(row.quantity) : null;
-  };
-
-  const applyPlannedQuantity = (editing: Record<string, unknown>) => {
-    const qty = plannedQtyFor(editing.materialId, editing.workCenterId);
-    return qty == null ? {} : { quantity: qty };
-  };
 
   const materialFields: FieldDef[] = useMemo(
     () => [
@@ -161,7 +144,21 @@ export default function App() {
     []
   );
 
-  const content = (() => {
+  const pageContent = (() => {
+    if (page === 'home') {
+      return <HomePage onNavigate={navigateTo} />;
+    }
+    if (page.startsWith('doc_')) {
+      const documentType = page.slice(4) as StockDocumentType;
+      return (
+        <DocumentTypePage
+          documentType={documentType}
+          materials={materials}
+          lots={lots}
+          warehouses={warehouses}
+        />
+      );
+    }
     switch (page) {
       case 'materials':
         return (
@@ -182,6 +179,7 @@ export default function App() {
             title="Спецификации"
             collection="specifications"
             wideModal
+            hideFormFields
             fields={[
               { key: 'name', label: 'Название', required: true },
               {
@@ -203,7 +201,6 @@ export default function App() {
                   { value: 'Испытания', label: 'Испытания' },
                 ],
               },
-              { key: 'batchSizeUnits', label: 'Размер серии (уп)', type: 'number' },
             ]}
             columns={[
               { key: 'name', label: 'Название' },
@@ -224,7 +221,6 @@ export default function App() {
               ...row,
               type: row.type || 'Основная',
               qtyBasis: 'per1000',
-              batchSizeUnits: Number(row.batchSizeUnits) || 0,
               lines: ((row.lines as SpecLine[]) || [])
                 .filter((l) => l.materialId)
                 .map((l) => ({
@@ -245,12 +241,11 @@ export default function App() {
             })}
             formExtra={({ editing, setEditing }) => (
               <SpecDetailTabs
-                lines={(editing.lines as SpecLine[]) || []}
-                approvedSuppliers={(editing.approvedSuppliers as ApprovedSupplier[]) || []}
+                editing={editing}
+                setEditing={setEditing}
+                productMaterials={materials.filter((m) => m.type === 'продукт').map((m) => ({ id: m.id, name: m.name }))}
                 materials={materials.filter((m) => m.type !== 'продукт')}
                 counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
-                onChangeLines={(lines) => setEditing({ ...editing, lines })}
-                onChangeSuppliers={(approvedSuppliers) => setEditing({ ...editing, approvedSuppliers })}
               />
             )}
           />
@@ -437,23 +432,48 @@ export default function App() {
             ]}
           />
         );
-      case 'reservations':
+      case 'active_reservations':
         return (
           <CrudPage
-            title="Резервирование запасов"
-            collection="reservations"
+            title="Активные резервы (регистр)"
+            collection="active_reservations"
             fields={[
-              { key: 'productionOrderId', label: 'Заказ', required: true },
+              { key: 'documentId', label: 'Документ', required: true },
+              { key: 'productionOrderId', label: 'Заказ' },
               { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
-              { key: 'quantity', label: 'Количество', type: 'number', required: true },
               { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
-              { key: 'seriesId', label: 'Серия', type: 'select', required: true, options: opt(series.map((s) => ({ id: s.id, name: s.number }))) },
+              { key: 'quantity', label: 'Количество', type: 'number', required: true },
             ]}
             columns={[
+              { key: 'documentId', label: 'Документ' },
               { key: 'productionOrderId', label: 'Заказ' },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
-              { key: 'seriesId', label: 'Серия', render: (r) => serNum(String(r.seriesId)) },
+              { key: 'quantity', label: 'Кол-во' },
+            ]}
+          />
+        );
+      case 'reservation_history':
+        return (
+          <CrudPage
+            title="История резервирования"
+            collection="reservation_history"
+            fields={[
+              { key: 'documentNumber', label: 'Номер документа', required: true },
+              { key: 'documentStatus', label: 'Статус документа', required: true },
+              { key: 'action', label: 'Действие', required: true },
+              { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
+              { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
+              { key: 'quantity', label: 'Количество', type: 'number', required: true },
+            ]}
+            columns={[
+              { key: 'atDate', label: 'Дата', render: (r) => dateFromIso(String(r.at || '')) },
+              { key: 'atTime', label: 'Время', render: (r) => displayTimeFromIso(String(r.at || '')) },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'documentStatus', label: 'Статус' },
+              { key: 'action', label: 'Действие' },
+              { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
+              { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
               { key: 'quantity', label: 'Кол-во' },
             ]}
           />
@@ -474,173 +494,132 @@ export default function App() {
               ]},
             ]}
             columns={[
-              { key: 'at', label: 'Дата' },
+              { key: 'atDate', label: 'Дата', render: (r) => dateFromIso(String(r.at || '')) },
+              { key: 'atTime', label: 'Время', render: (r) => displayTimeFromIso(String(r.at || '')) },
               { key: 'type', label: 'Тип' },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
               { key: 'seriesId', label: 'Серия', render: (r) => (r.seriesId ? serNum(String(r.seriesId)) : '—') },
               { key: 'quantity', label: 'Кол-во' },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'documentStatus', label: 'Статус док.' },
+            ]}
+          />
+        );
+      case 'quality_documents':
+        return <QualityDocumentsPage lots={lots} materials={materials} />;
+      case 'quality_register':
+        return (
+          <CrudPage
+            title="Регистр качества (активные статусы партий)"
+            collection="quality_register"
+            fields={[
+              { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
+              { key: 'materialId', label: 'Материал', type: 'select', options: opt(materials) },
+              { key: 'status', label: 'Статус', required: true },
+              { key: 'documentNumber', label: 'Документ' },
+            ]}
+            columns={[
+              { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
+              { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
+              { key: 'status', label: 'Статус' },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'documentStatus', label: 'Статус док.' },
+            ]}
+          />
+        );
+      case 'quality_history':
+        return (
+          <CrudPage
+            title="История качества"
+            collection="quality_history"
+            fields={[
+              { key: 'documentNumber', label: 'Документ', required: true },
+              { key: 'action', label: 'Действие', required: true },
+            ]}
+            columns={[
+              { key: 'atDate', label: 'Дата', render: (r) => dateFromIso(String(r.at || '')) },
+              { key: 'atTime', label: 'Время', render: (r) => displayTimeFromIso(String(r.at || '')) },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'documentType', label: 'Тип' },
+              { key: 'documentStatus', label: 'Статус' },
+              { key: 'action', label: 'Действие' },
+            ]}
+          />
+        );
+      case 'roles':
+        return <RolesPage />;
+      case 'users':
+        return (
+          <CrudPage
+            title="Пользователи"
+            collection="users"
+            transformIn={(row) => {
+              const { passwordHash: _ph, ...rest } = row;
+              return { ...rest, password: '' };
+            }}
+            transformOut={(row) => {
+              const body = { ...row };
+              if (!body.password) delete body.password;
+              return body;
+            }}
+            validate={(row) => {
+              if (!row.id && !String(row.password || '').trim()) {
+                return 'Укажите пароль для нового пользователя';
+              }
+              return null;
+            }}
+            fields={[
+              { key: 'name', label: 'Имя', required: true },
+              { key: 'login', label: 'Логин', required: true },
+              {
+                key: 'roleId',
+                label: 'Роль',
+                type: 'select',
+                required: true,
+                options: roles.map((r) => ({ value: r.id, label: r.name })),
+              },
+              {
+                key: 'password',
+                label: 'Пароль',
+                type: 'password',
+                hint: (editing) =>
+                  editing.id
+                    ? 'Оставьте пустым, чтобы не менять пароль'
+                    : 'Минимум 4 символа',
+              },
+              {
+                key: 'active',
+                label: 'Активен',
+                type: 'select',
+                defaultValue: 'true',
+                options: [
+                  { value: 'true', label: 'да' },
+                  { value: 'false', label: 'нет' },
+                ],
+              },
+            ]}
+            columns={[
+              { key: 'name', label: 'Имя' },
+              { key: 'login', label: 'Логин' },
+              {
+                key: 'roleId',
+                label: 'Роль',
+                render: (row) => roles.find((r) => r.id === row.roleId)?.name || String(row.roleId || '—'),
+              },
+              { key: 'active', label: 'Активен' },
             ]}
           />
         );
       case 'production_orders':
         return (
-          <CrudPage
-            title="Заказы на производство"
-            collection="production_orders"
-            fields={[
-              {
-                key: 'materialId',
-                label: 'Материал (продукт)',
-                type: 'select',
-                required: true,
-                options: opt(materials.filter((m) => m.type === 'продукт')),
-                resets: ['seriesId', 'specificationId'],
-                patchOnChange: (_value, editing) => applyPlannedQuantity(editing),
-              },
-              {
-                key: 'seriesId',
-                label: 'Серия',
-                type: 'select',
-                required: true,
-                optionsFor: (row) =>
-                  opt(
-                    series
-                      .filter((s) => !row.materialId || s.materialId === row.materialId)
-                      .map((s) => ({ id: s.id, name: s.number }))
-                  ),
-                hint: (row) =>
-                  !row.materialId
-                    ? 'Сначала выберите продукт'
-                    : series.some((s) => s.materialId === row.materialId)
-                      ? null
-                      : 'Нет серий для выбранного продукта',
-              },
-              {
-                key: 'workCenterId',
-                label: 'Рабочий центр',
-                type: 'select',
-                required: true,
-                options: opt(workCenters),
-                patchOnChange: (_value, editing) => applyPlannedQuantity(editing),
-              },
-              { key: 'startAt', label: 'Начало', type: 'datetime-local', required: true },
-              { key: 'endAt', label: 'Окончание', type: 'datetime-local', required: true },
-              {
-                key: 'quantity',
-                label: 'Количество',
-                type: 'number',
-                required: true,
-                hint: (row) => {
-                  const plan = plannedQtyFor(row.materialId, row.workCenterId);
-                  if (plan == null) return 'Нет планового объёма для пары продукт + РЦ — укажите вручную';
-                  return `Плановый объём: ${plan} (можно изменить)`;
-                },
-              },
-              {
-                key: 'status',
-                label: 'Статус',
-                type: 'select',
-                defaultValue: 'новый',
-                options: [
-                  { value: 'новый', label: 'новый' },
-                  { value: 'спланирован', label: 'спланирован' },
-                  { value: 'завершен', label: 'завершен' },
-                  { value: 'отменен', label: 'отменен' },
-                ],
-                hint: () =>
-                  '«Завершен» — списание сырья, приход ГП и снятие резервов. «Отменен» — только снятие резервов.',
-              },
-              {
-                key: 'specificationId',
-                label: 'Спецификация',
-                type: 'select',
-                required: true,
-                optionsFor: (row) =>
-                  opt(specs.filter((sp) => !row.materialId || sp.productMaterialId === row.materialId)),
-                hint: (row) =>
-                  !row.materialId
-                    ? 'Сначала выберите продукт'
-                    : specs.some((sp) => sp.productMaterialId === row.materialId)
-                      ? null
-                      : 'Нет спецификаций для выбранного продукта',
-              },
-            ]}
-            columns={[
-              { key: 'materialId', label: 'Продукт', render: (r) => matName(String(r.materialId)) },
-              { key: 'seriesId', label: 'Серия', render: (r) => serNum(String(r.seriesId)) },
-              { key: 'workCenterId', label: 'РЦ', render: (r) => wcName(String(r.workCenterId)) },
-              {
-                key: 'startAt',
-                label: 'Начало',
-                render: (r) => new Date(String(r.startAt)).toLocaleString(),
-              },
-              { key: 'quantity', label: 'План' },
-              {
-                key: 'actualQuantity',
-                label: 'Факт',
-                render: (r) => (r.actualQuantity != null ? String(r.actualQuantity) : '—'),
-              },
-              { key: 'status', label: 'Статус' },
-              {
-                key: 'lines',
-                label: 'ТЧ план',
-                render: (r) => String((r.lines as unknown[])?.length ?? 0),
-              },
-            ]}
-            transformOut={(row) => ({
-              ...row,
-              lines: row.lines || [],
-              actualLines: row.actualLines || [],
-              status: row.status || 'новый',
-            })}
-            bulkStatusOptions={[
-              { value: 'новый', label: 'новый' },
-              { value: 'спланирован', label: 'спланирован' },
-              { value: 'завершен', label: 'завершен' },
-              { value: 'отменен', label: 'отменен' },
-            ]}
-            validate={(row) => {
-              const materialId = String(row.materialId || '');
-              const seriesId = String(row.seriesId || '');
-              const specificationId = String(row.specificationId || '');
-              if (!materialId) return 'Укажите продукт';
-              const ser = series.find((s) => s.id === seriesId);
-              if (!ser || ser.materialId !== materialId) {
-                return 'Серия должна относиться к выбранному продукту';
-              }
-              const spec = specs.find((s) => s.id === specificationId);
-              if (!spec || spec.productMaterialId !== materialId) {
-                return 'Спецификация должна относиться к выбранному продукту';
-              }
-              return null;
-            }}
-            rowActions={(row, reload) => (
-              <>
-                {row.status === 'спланирован' && (row.lines as unknown[])?.length ? (
-                  <IconButton
-                    icon="complete"
-                    label="Завершить"
-                    tone="success"
-                    onClick={async () => {
-                      await api.completeOrder(String(row.id));
-                      reload();
-                    }}
-                  />
-                ) : null}
-                {row.status !== 'завершен' && row.status !== 'отменен' ? (
-                  <IconButton
-                    icon="cancel"
-                    label="Отменить"
-                    tone="danger"
-                    onClick={async () => {
-                      await api.cancelOrder(String(row.id));
-                      reload();
-                    }}
-                  />
-                ) : null}
-              </>
-            )}
+          <ProductionOrderPage
+            materials={materials}
+            series={series}
+            workCenters={workCenters}
+            specs={specs}
+            plannedVolumes={plannedVolumes}
+            lots={lots}
           />
         );
       case 'admin_export_dictionaries':
@@ -687,15 +666,27 @@ export default function App() {
     }
   })();
 
+  const content = canAccessPage(page, user?.permissions, Boolean(user)) ? (
+    pageContent
+  ) : (
+    <AccessDenied />
+  );
+
   return (
-    <div className="layout">
+    <div className="app-shell">
+      <AppHeader />
+      <LoginModal />
+      <div className="layout">
       <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">ВИЛАР</div>
-          <div className="brand-sub">Оперативное планирование</div>
-        </div>
         <nav>
-          {NAV.map((g) => (
+          <button
+            type="button"
+            className={page === 'home' ? 'nav-item nav-home active' : 'nav-item nav-home'}
+            onClick={() => navigateTo('home')}
+          >
+            Главная
+          </button>
+          {visibleNav.map((g) => (
             <div key={g.id} className="nav-group">
               <button
                 type="button"
@@ -712,7 +703,7 @@ export default function App() {
                       <button
                         type="button"
                         className={page === item.id ? 'nav-item active' : 'nav-item'}
-                        onClick={() => setPage(item.id)}
+                        onClick={() => navigateTo(item.id)}
                       >
                         {item.label}
                       </button>
@@ -724,7 +715,8 @@ export default function App() {
           ))}
         </nav>
       </aside>
-      <main className="content">{content}</main>
+      <main ref={contentRef} className="content">{content}</main>
+      </div>
     </div>
   );
 }

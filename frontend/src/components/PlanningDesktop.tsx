@@ -3,6 +3,7 @@ import { api, GanttTask, MaterialBalanceMatrix } from '../api';
 import { MaterialPick, ProductionOrder } from '../types';
 import CounterpartyBadge from './CounterpartyBadge';
 import GanttChart from './GanttChart';
+import PageTitle from './PageTitle';
 
 type SuggestResult = {
   orderId: string;
@@ -397,9 +398,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
 
   return (
     <div className="page planning-desktop">
-      <div className="page-toolbar">
-        <h1>Рабочий стол планирования</h1>
-      </div>
+      <PageTitle pageId="planning_desktop" title="Рабочий стол планирования" />
       <div className="tabs">
         <button type="button" className={tab === 'orders' ? 'active' : ''} onClick={() => setTab('orders')}>
           1. Подбор заказов

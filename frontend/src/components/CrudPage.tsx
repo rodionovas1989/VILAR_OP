@@ -1,13 +1,24 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import ColumnFilterDropdown from './ColumnFilterDropdown';
+import { pagePermissionId } from '../auth/navAccess';
+import {
+  canCreateObject,
+  canModifyObject,
+  canViewObject,
+} from '../auth/permissions';
+import { useAuth } from '../auth/AuthContext';
+import { useListTable, ListColumn } from '../hooks/useListTable';
+import AccessDenied from './AccessDenied';
 import IconButton from './IconButton';
+import PageTitle from './PageTitle';
+import RefreshButton from './RefreshButton';
+import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { Modal } from './Modal';
 
 export type FieldDef = {
   key: string;
   label: string;
-  type?: 'text' | 'number' | 'datetime-local' | 'date' | 'select' | 'textarea';
+  type?: 'text' | 'number' | 'datetime-local' | 'date' | 'select' | 'textarea' | 'password';
   options?: { value: string; label: string }[];
   /** Динамические options с учётом текущей формы (например, спецификации по продукту) */
   optionsFor?: (editing: Record<string, unknown>) => { value: string; label: string }[];
@@ -48,9 +59,17 @@ type Props = {
   /** Доп. проверка перед сохранением; вернуть текст ошибки или null */
   validate?: (row: Record<string, unknown>) => string | null;
   /** Если задано — кнопка «Изменить статус» для выбранных строк */
+  /** ID объекта RBAC; по умолчанию — collection или pagePermissionId(collection) */
+  permissionObjectId?: string;
+  /** ID страницы навигации для избранного; по умолчанию — collection */
+  pageId?: string;
+  /** Отключить RBAC (только для служебных страниц) */
+  skipAccessCheck?: boolean;
+  /** Опции массовой смены статуса */
   bulkStatusOptions?: { value: string; label: string }[];
+  /** Не показывать fields в модалке (рендер через formExtra) */
+  hideFormFields?: boolean;
 };
-
 function toLocalInput(iso?: string) {
   if (!iso) return '';
   const d = new Date(iso);
@@ -75,7 +94,19 @@ export function CrudPage({
   wideModal,
   validate,
   bulkStatusOptions,
+  permissionObjectId,
+  pageId: pageIdProp,
+  skipAccessCheck,
+  hideFormFields,
 }: Props) {
+  const { user } = useAuth();
+  const loggedIn = Boolean(user);
+  const objectId = permissionObjectId ?? pagePermissionId(collection);
+  const pageId = pageIdProp ?? collection;
+  const permissions = user?.permissions;
+  const canView = skipAccessCheck || canViewObject(permissions, objectId, loggedIn);
+  const canCreate = skipAccessCheck || canCreateObject(permissions, objectId);
+  const canModify = skipAccessCheck || canModifyObject(permissions, objectId);
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
@@ -84,10 +115,19 @@ export function CrudPage({
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
   const [statusBusy, setStatusBusy] = useState(false);
-  /** key колонки → выбранные значения (пусто = все) */
-  const [filters, setFilters] = useState<Record<string, Set<string>>>({});
-  const [openFilter, setOpenFilter] = useState<string | null>(null);
-  const tableHeadRef = useRef<HTMLTableSectionElement>(null);
+  const [listSettingsOpen, setListSettingsOpen] = useState(false);
+
+  const listColumns = useMemo((): ListColumn<Record<string, unknown>>[] => {
+    return columns.map((col) => ({
+      key: col.key,
+      label: col.label,
+      filterable: col.filterable,
+      getValue: (row) => cellText(row, col),
+    }));
+  }, [columns]);
+
+  const listTable = useListTable(rows, listColumns);
+  const filteredRows = listTable.displayRows;
 
   const load = async () => {
     setLoading(true);
@@ -96,8 +136,7 @@ export function CrudPage({
       const data = await api.list<Record<string, unknown>>(collection);
       setRows(data);
       setSelected(new Set());
-      setFilters({});
-      setOpenFilter(null);
+      listTable.resetOnLoad();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -109,47 +148,10 @@ export function CrudPage({
     load();
   }, [collection]);
 
-  useEffect(() => {
-    if (!openFilter) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!tableHeadRef.current?.contains(e.target as Node)) setOpenFilter(null);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpenFilter(null);
-    };
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDoc);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [openFilter]);
-
-  const filterOptions = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const col of columns) {
-      if (col.filterable === false) continue;
-      const vals = new Set<string>();
-      for (const row of rows) vals.add(cellText(row, col));
-      map[col.key] = [...vals].sort((a, b) => a.localeCompare(b, 'ru'));
-    }
-    return map;
-  }, [rows, columns]);
-
-  const filteredRows = useMemo(() => {
-    return rows.filter((row) =>
-      columns.every((col) => {
-        if (col.filterable === false) return true;
-        const sel = filters[col.key];
-        if (!sel || sel.size === 0) return true;
-        return sel.has(cellText(row, col));
-      })
-    );
-  }, [rows, columns, filters]);
-
   const allChecked = filteredRows.length > 0 && filteredRows.every((r) => selected.has(String(r.id)));
 
   const openCreate = () => {
+    if (!canCreate) return;
     const blank: Record<string, unknown> = {};
     fields.forEach((f) => {
       if (f.defaultValue !== undefined) blank[f.key] = f.defaultValue;
@@ -161,6 +163,7 @@ export function CrudPage({
   };
 
   const openEdit = (row: Record<string, unknown>) => {
+    if (!canModify) return;
     const base = transformIn ? transformIn({ ...row }) : { ...row };
     fields.forEach((f) => {
       if (f.type === 'datetime-local' && typeof base[f.key] === 'string') {
@@ -175,6 +178,9 @@ export function CrudPage({
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!editing) return;
+    const isNew = !editing.id;
+    if (isNew && !canCreate) return;
+    if (!isNew && !canModify) return;
     try {
       let body = { ...editing };
       const editingId = editing.id ? String(editing.id) : undefined;
@@ -201,14 +207,14 @@ export function CrudPage({
   };
 
   const bulkDelete = async () => {
-    if (!selected.size) return;
+    if (!selected.size || !canModify) return;
     if (!confirm(`Удалить выбранные (${selected.size})?`)) return;
     await api.bulkDelete(collection, [...selected]);
     await load();
   };
 
   const openStatusModal = () => {
-    if (!selected.size || !bulkStatusOptions?.length) return;
+    if (!selected.size || !bulkStatusOptions?.length || !canModify) return;
     setBulkStatus(bulkStatusOptions[0].value);
     setStatusModalOpen(true);
   };
@@ -233,36 +239,59 @@ export function CrudPage({
 
   const formFields = useMemo(() => fields, [fields]);
 
-  const setColumnFilter = (key: string, next: Set<string>) => {
-    setFilters((prev) => ({ ...prev, [key]: next }));
-  };
+  if (!canView) {
+    return <AccessDenied title={title} />;
+  }
 
   return (
     <div className="page">
       <div className="page-toolbar">
-        <h1>{title}</h1>
+        <PageTitle pageId={pageId} title={title} />
         <div className="toolbar-actions">
-          <button type="button" onClick={openCreate}>
-            Создать
-          </button>
-          {bulkStatusOptions?.length ? (
+          {canCreate && (
+            <button type="button" onClick={openCreate}>
+              Создать
+            </button>
+          )}
+          {bulkStatusOptions?.length && canModify ? (
             <button type="button" className="ghost" disabled={!selected.size} onClick={openStatusModal}>
               Изменить статус ({selected.size})
             </button>
           ) : null}
-          <button type="button" className="danger" disabled={!selected.size} onClick={bulkDelete}>
-            Удалить выбранные
-          </button>
-          <IconButton icon="refresh" label="Обновить" tone="muted" onClick={load} />
+          {canModify && (
+            <button type="button" className="danger" disabled={!selected.size} onClick={bulkDelete}>
+              Удалить выбранные
+            </button>
+          )}
+          <ListViewSettingsButton
+            open={listSettingsOpen}
+            onOpenChange={setListSettingsOpen}
+            activeFilterCount={listTable.activeFilterCount}
+            sortRulesCount={listTable.sortRules.length}
+          />
+          <RefreshButton onClick={load} disabled={loading} />
         </div>
       </div>
+      {listSettingsOpen && (
+        <ListViewSettingsPanel
+          open={listSettingsOpen}
+          onClose={() => setListSettingsOpen(false)}
+          columns={listColumns}
+          filterOptions={listTable.filterOptions}
+          filters={listTable.filters}
+          sortRules={listTable.sortRules}
+          onApply={listTable.applySettings}
+          onReset={listTable.resetSettings}
+          activeFilterCount={listTable.activeFilterCount}
+        />
+      )}
       {error && <div className="alert">{error}</div>}
       {loading ? (
         <p>Загрузка…</p>
       ) : (
         <div className="table-wrap">
           <table>
-            <thead ref={tableHeadRef}>
+            <thead>
               <tr>
                 <th>
                   <input
@@ -276,21 +305,7 @@ export function CrudPage({
                   />
                 </th>
                 {columns.map((c) => (
-                  <th key={c.key}>
-                    <div className="th-with-filter">
-                      <span className="th-label">{c.label}</span>
-                      {c.filterable !== false && (
-                        <ColumnFilterDropdown
-                          title={c.label}
-                          options={filterOptions[c.key] || []}
-                          selected={filters[c.key] || new Set()}
-                          onChange={(next) => setColumnFilter(c.key, next)}
-                          open={openFilter === c.key}
-                          onOpenChange={(o) => setOpenFilter(o ? c.key : null)}
-                        />
-                      )}
-                    </div>
-                  </th>
+                  <th key={c.key}>{c.label}</th>
                 ))}
                 <th></th>
               </tr>
@@ -317,7 +332,9 @@ export function CrudPage({
                     ))}
                     <td>
                       <div className="row-actions">
-                        <IconButton icon="edit" label="Изменить" onClick={() => openEdit(row)} />
+                        {canModify && (
+                          <IconButton icon="edit" label="Изменить" onClick={() => openEdit(row)} />
+                        )}
                         {rowActions?.(row, load)}
                       </div>
                     </td>
@@ -353,7 +370,8 @@ export function CrudPage({
         }
       >
         <form id="crud-form" onSubmit={onSubmit} className="form-grid">
-          {formFields.map((f) => {
+          {!hideFormFields &&
+            formFields.map((f) => {
             const selectOptions = f.optionsFor && editing ? f.optionsFor(editing) : f.options || [];
             const setField = (value: string | number) => {
               const next: Record<string, unknown> = { ...editing!, [f.key]: value };
@@ -386,6 +404,15 @@ export function CrudPage({
                   <textarea
                     value={String(editing?.[f.key] ?? '')}
                     onChange={(e) => setField(e.target.value)}
+                  />
+                ) : f.type === 'password' ? (
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required={f.required}
+                    value={String(editing?.[f.key] ?? '')}
+                    onChange={(e) => setField(e.target.value)}
+                    placeholder={f.defaultValue as string | undefined}
                   />
                 ) : (
                   <input

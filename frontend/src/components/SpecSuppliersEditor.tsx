@@ -9,6 +9,7 @@ type Props = {
   counterparties: Opt[];
   materials: Opt[];
   onChange: (rows: ApprovedSupplier[]) => void;
+  showTitle?: boolean;
 };
 
 const emptyRow = (): ApprovedSupplier => ({ materialId: '', counterpartyId: '' });
@@ -19,6 +20,7 @@ export default function SpecSuppliersEditor({
   counterparties,
   materials,
   onChange,
+  showTitle = true,
 }: Props) {
   const componentIds = [...new Set(lines.map((l) => l.materialId).filter(Boolean))];
   const componentOptions = materials.filter((m) => componentIds.includes(m.id));
@@ -32,7 +34,7 @@ export default function SpecSuppliersEditor({
   return (
     <div className="spec-lines">
       <div className="spec-lines-head">
-        <strong>Регистрация поставщиков</strong>
+        {showTitle ? <strong>Регистрация поставщиков</strong> : <span />}
         <button
           type="button"
           className="ghost"

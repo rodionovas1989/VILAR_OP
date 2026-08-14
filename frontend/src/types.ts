@@ -31,7 +31,8 @@ export interface Specification {
   id: string;
   name: string;
   productMaterialId: string;
-  batchSizeUnits: number;
+  /** @deprecated не используется в UI */
+  batchSizeUnits?: number;
   /** Основная | Альтернативная | Испытания */
   type?: string;
   lines: SpecLine[];
@@ -130,6 +131,11 @@ export interface MaterialMovement {
   productionOrderId?: string;
   type: string;
   at: string;
+  warehouseId?: string;
+  documentId?: string;
+  documentNumber?: string;
+  documentType?: string;
+  documentStatus?: string;
 }
 
 export interface MaterialPick {

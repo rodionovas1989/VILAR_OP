@@ -7,22 +7,29 @@ type Props = {
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  className?: string;
+  headerExtra?: ReactNode;
 };
 
-export function Modal({ open, title, onClose, children, footer, wide }: Props) {
+export function Modal({ open, title, onClose, children, footer, wide, className = '', headerExtra }: Props) {
   if (!open) return null;
   return (
     <div className="modal-backdrop">
       <div
-        className={`modal ${wide ? 'modal-wide' : ''}`}
+        className={`modal ${wide ? 'modal-wide' : ''} ${className}`.trim()}
         role="dialog"
         aria-modal
       >
         <header className="modal-header">
           <h2>{title}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Закрыть">
-            ×
-          </button>
+          <div className="modal-header-actions">
+            {headerExtra}
+            <button type="button" className="icon-square-btn modal-close-btn" onClick={onClose} aria-label="Закрыть">
+              <span className="icon-square-btn-glyph" aria-hidden>
+                ×
+              </span>
+            </button>
+          </div>
         </header>
         <div className="modal-body">{children}</div>
         {footer && <footer className="modal-footer">{footer}</footer>}

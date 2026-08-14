@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { OrderLine, ProductionOrder } from '../types';
-import IconButton from './IconButton';
+import PageTitle from './PageTitle';
+import RefreshButton from './RefreshButton';
 
 type Dicts = {
   materials: { id: string; name: string }[];
@@ -328,9 +329,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   return (
     <div className="page production-desktop">
       <div className="page-toolbar">
-        <h1>Управление заказами</h1>
+        <PageTitle pageId="production_desktop" title="Управление заказами" />
         <div className="toolbar-actions">
-          <IconButton icon="refresh" label="Обновить" tone="muted" onClick={() => load()} />
+          <RefreshButton onClick={() => load()} />
         </div>
       </div>
       <p className="hint">
