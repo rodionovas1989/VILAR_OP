@@ -2,7 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: SQLite, документы, RBAC, отчёты, обратная связь, руководство | **активна (эталон)** |
+| `main` | Стабильный снимок: SQLite, документы, RBAC, отчёты, обратная связь, руководство | эталон |
+| `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite`, без Visual Studio / better-sqlite3 | **активна** |
 | `feature/reports-released-series` | Отчёты; карточки; persist отборов; аккордеон меню; обратная связь; руководство пользователя | слита в main |
 | `feature/launch-sqlite-reservations` | SQLite, RES, completeOrder, API RBAC, тесты цепочки, связи документа | слита в main (через reports) |
 | `feature/stock-documents` | Документы движений, регистры, качество-заглушка | слита в main |

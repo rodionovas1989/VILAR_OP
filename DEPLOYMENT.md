@@ -1,8 +1,9 @@
 # DEPLOYMENT
 
 ## Требования
-- Node.js 20+ (портативный `.tools/node` или системный)
+- Node.js **22+** (портативный `.tools/node` или системный LTS 22)
 - npm
+- Visual Studio / C++ **не нужны** (SQLite — встроенный `node:sqlite`)
 
 ## Для пользователя (Windows, без командной строки)
 

@@ -40,6 +40,10 @@ Write-Host ("npm:  " + (& $npmCmd -v))
 
 Write-Step "Installing backend packages"
 Push-Location (Join-Path $root 'backend')
+if (Test-Path (Join-Path (Get-Location) 'node_modules\better-sqlite3')) {
+  Write-Host "Removing leftover better-sqlite3 (native build not required)..."
+  Remove-Item -Recurse -Force (Join-Path (Get-Location) 'node_modules\better-sqlite3') -ErrorAction SilentlyContinue
+}
 & $npmCmd install
 if ($LASTEXITCODE -ne 0) { Pop-Location; throw 'npm install failed in backend' }
 Pop-Location

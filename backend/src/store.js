@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import Database from 'better-sqlite3';
 import { randomUUID } from 'crypto';
+import { openDatabase } from './sqlite.js';
 import { hashPassword } from './utils/password.js';
 import { defaultRoles, normalizePermissions } from './services/permissions.js';
 import { LEGACY_ROLE_MAP, ALL_SYSTEM_OBJECT_IDS, DEFAULT_ROLE_PERMISSIONS } from './constants/systemObjects.js';
@@ -50,9 +50,7 @@ function jsonFilePath(name) {
 export function getDb() {
   if (db) return db;
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-  db.pragma('busy_timeout = 8000');
+  db = openDatabase(DB_PATH);
   db.exec(`
     CREATE TABLE IF NOT EXISTS records (
       collection TEXT NOT NULL,

@@ -19,4 +19,11 @@ Write-Host "Keep this window open while using the app. Stop: Ctrl+C"
 Write-Host ""
 
 Set-Location $backend
+if ($env:NODE_OPTIONS) {
+  if ($env:NODE_OPTIONS -notmatch 'experimental-sqlite') {
+    $env:NODE_OPTIONS = "$env:NODE_OPTIONS --experimental-sqlite"
+  }
+} else {
+  $env:NODE_OPTIONS = '--experimental-sqlite'
+}
 npm run dev

@@ -8,7 +8,7 @@
 |------|------------|--------|
 | Frontend | React + Vite + TypeScript | Веб-интерфейсы CRUD и рабочий стол планирования |
 | Backend | Node.js + Express | REST API, файловое хранилище JSON, Excel через `exceljs` |
-| Данные | SQLite (`backend/data/vilar.sqlite`) | WAL + транзакции; JSON импортируется один раз |
+| Данные | SQLite (`backend/data/vilar.sqlite`) через `node:sqlite` | WAL + транзакции; без Visual Studio / native-сборки |
 | Gantt | [Apache ECharts](https://echarts.apache.org/) (Apache-2.0) | Загрузка РЦ: дорожки = рабочие центры, параллельные заказы |
 
 ## Возможности
@@ -37,7 +37,7 @@
 
 В браузере: `http://localhost:5173`
 
-Нужен Node.js: портативный в `.tools\node` или с [nodejs.org](https://nodejs.org) (LTS).
+Нужен Node.js **22+**: портативный в `.tools\node` или LTS 22 с [nodejs.org](https://nodejs.org). Visual Studio не требуется.
 
 `start-all.bat` **не** запускает seed. Повторный `install.bat` при уже существующей базе `backend\data\vilar.sqlite` тоже **не** затирает данные. Пересборка демо только вручную: `cd backend && npm run seed`.
 

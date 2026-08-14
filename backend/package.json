@@ -4,14 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/index.js",
-    "start": "node src/index.js",
-    "seed": "node scripts/seed.js",
-    "seed:if-needed": "node scripts/seed-if-needed.js",
-    "test": "node --test tests/chain.test.js"
+    "dev": "node --watch --experimental-sqlite src/index.js",
+    "start": "node --experimental-sqlite src/index.js",
+    "seed": "node --experimental-sqlite scripts/seed.js",
+    "seed:if-needed": "node --experimental-sqlite scripts/seed-if-needed.js",
+    "test": "node --experimental-sqlite --test tests/chain.test.js"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
     "express": "^4.21.2",

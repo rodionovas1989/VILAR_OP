@@ -18,6 +18,7 @@ backend/
   scripts/recipes_raw.json   — рецептуры
   data/vilar.sqlite          — хранилище SQLite (WAL)
   src/index.js               — Express API (auth, CORS, опционально frontend/dist)
+  src/sqlite.js              — обёртка node:sqlite (без better-sqlite3 / node-gyp)
   src/store.js               — CRUD SQLite (JSON-документы в таблице records)
   src/middleware/access.js   — JWT + RBAC на маршрутах
   src/constants/collectionAccess.js — коллекция → objectId; запрет generic-записи регистров
