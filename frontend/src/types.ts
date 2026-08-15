@@ -203,6 +203,54 @@ export interface StockReportRow {
   free: number;
 }
 
+export interface QualityStockReportRow {
+  id: string;
+  materialId: string;
+  materialName: string;
+  materialType: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  counterpartyName: string;
+  productionDate: string;
+  expiryDate: string;
+  warehouseId: string;
+  warehouseName: string;
+  quantity: number;
+  reserved: number;
+  free: number;
+  qualityMissing: boolean;
+  qualityId?: string | null;
+  qualityName?: string | null;
+  permission: string;
+  permissionLabel: string;
+  documentNumber: string;
+  updatedAt: string;
+}
+
+export interface QualityHistoryReportRow {
+  id: string;
+  at: string;
+  action: string;
+  actionLabel: string;
+  documentId: string;
+  documentNumber: string;
+  documentType: string;
+  documentStatus: string;
+  materialId: string;
+  materialName: string;
+  materialType: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  qualityId: string;
+  qualityName: string;
+  permission: string;
+  permissionLabel: string;
+  userId: string;
+  userName: string;
+}
+
 export type FeedbackCategory = 'понравилось' | 'улучшить' | 'ошибка' | 'вопрос';
 export type FeedbackStatus = 'новый' | 'в работе' | 'закрыт' | 'отклонён';
 

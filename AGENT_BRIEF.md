@@ -41,7 +41,7 @@ backend/
   tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, guards
   src/routes/quality.js      — /api/quality/*
   src/routes/chat.js         — /api/chat/*
-  src/routes/reports.js      — /api/reports/* (выпущенные серии, запасы, Excel)
+  src/routes/reports.js      — /api/reports/* (серии, запасы, качество запасов/история, Excel)
   src/services/reports.js
   src/routes/feedback.js     — /api/feedback
   src/services/feedback.js
@@ -91,6 +91,8 @@ frontend/
   src/components/HomePage.tsx          — главная: колонки по типу объекта, избранное вертикально
   src/components/ReleasedSeriesReportPage.tsx — отчёт выпущенных серий
   src/components/StockReportPage.tsx         — отчёт запасов (иерархия)
+  src/components/QualityStockReportPage.tsx  — качество запасов
+  src/components/QualityHistoryReportPage.tsx — история качеств
   src/components/FeedbackPage.tsx            — обращения (обратная связь)
   src/components/UserGuidePage.tsx           — руководство: инструкция + FAQ
   src/content/userGuide.ts                   — текст руководства
@@ -122,7 +124,7 @@ frontend/
 `GET/POST /api/admin/backups`, `POST .../restore`, `DELETE ...`, `POST /api/admin/data/clear|demo`
 Обратная связь: `/api/feedback` (свои записи; модератор — все)  
 Руководство пользователя: страница `admin_user_guide` (чтение у admin/planner/storekeeper)  
-Отчеты: `GET /api/reports/released-series`, `POST /api/reports/released-series.xlsx`, `GET /api/reports/stock`, `POST /api/reports/stock.xlsx`
+Отчеты: `GET /api/reports/released-series`, `POST .../released-series.xlsx`, `GET /api/reports/stock`, `POST .../stock.xlsx`, `GET /api/reports/quality-stock`, `POST .../quality-stock.xlsx`, `GET /api/reports/quality-history`, `POST .../quality-history.xlsx`
 
 ## Плановые объёмы серий
 Срез `materialId + workCenterId → quantity`. При создании заказа количество подставляется из среза (можно править вручную).

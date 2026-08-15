@@ -46,6 +46,8 @@ export const QUALITY_OBJECTS = [
 export const REPORT_OBJECTS = [
   { id: 'report_released_series', label: 'Выпущенные серии продукции' },
   { id: 'report_stock', label: 'Запасы' },
+  { id: 'report_quality_stock', label: 'Качество запасов' },
+  { id: 'report_quality_history', label: 'История качеств' },
 ];
 
 export const ADMIN_OBJECTS = [

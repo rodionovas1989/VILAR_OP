@@ -98,6 +98,10 @@ npm run dev
 - `POST /api/reports/released-series.xlsx` — Excel того же отчёта (тело `{ "ids": [...] }` — необязательный отбор строк)
 - `GET /api/reports/stock` — отчёт запасов (строки партия×склад)
 - `POST /api/reports/stock.xlsx` — Excel запасов (иерархия + детализация; тело `{ "ids": [...] }`)
+- `GET /api/reports/quality-stock` — качество текущих запасов
+- `POST /api/reports/quality-stock.xlsx` — Excel качества запасов
+- `GET /api/reports/quality-history` — история качеств
+- `POST /api/reports/quality-history.xlsx` — Excel истории качеств
 - `GET/POST /api/feedback` — обращения; `PUT/DELETE /api/feedback/:id`
 
 Демо-пользователи при seed: логин `Admin` (пароль из `VILAR_ADMIN_PASSWORD` или одноразовый из лога); роли кладовщик, планировщик — см. seed.

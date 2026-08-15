@@ -23,6 +23,8 @@ import ProductionDesktop from './components/ProductionDesktop';
 import PlanningDesktop from './components/PlanningDesktop';
 import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
 import StockReportPage from './components/StockReportPage';
+import QualityStockReportPage from './components/QualityStockReportPage';
+import QualityHistoryReportPage from './components/QualityHistoryReportPage';
 import FeedbackPage from './components/FeedbackPage';
 import UserGuidePage from './components/UserGuidePage';
 import { ADMIN_USERS_PDN_HINT, SYSTEM_DISCLAIMER } from './content/legal';
@@ -736,6 +738,10 @@ export default function App() {
         return <ReleasedSeriesReportPage />;
       case 'report_stock':
         return <StockReportPage />;
+      case 'report_quality_stock':
+        return <QualityStockReportPage />;
+      case 'report_quality_history':
+        return <QualityHistoryReportPage />;
       case 'admin_export_dictionaries':
         return <AdminExportDictionaries />;
       case 'admin_data_maintenance':

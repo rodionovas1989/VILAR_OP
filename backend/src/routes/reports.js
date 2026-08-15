@@ -7,6 +7,12 @@ import {
   stockReport,
   filterStockReport,
   groupStockRows,
+  qualityStockReport,
+  filterQualityStockReport,
+  groupQualityStockRows,
+  qualityHistoryReport,
+  filterQualityHistoryReport,
+  groupQualityHistoryRows,
 } from '../services/reports.js';
 
 const router = Router();
@@ -187,6 +193,197 @@ router.post('/stock.xlsx', requirePermission('report_stock', 'read'), async (req
   const stamp = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="stock-${stamp}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+router.get('/quality-stock', requirePermission('report_quality_stock', 'read'), (_req, res) => {
+  res.json(qualityStockReport());
+});
+
+router.post('/quality-stock.xlsx', requirePermission('report_quality_stock', 'read'), async (req, res) => {
+  const rows = filterQualityStockReport(qualityStockReport(), req.body?.ids);
+  const groups = groupQualityStockRows(rows);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Vilar OP';
+
+  const tree = wb.addWorksheet('Иерархия');
+  tree.columns = [
+    { header: 'Группировка', key: 'label', width: 40 },
+    { header: 'Тип', key: 'type', width: 22 },
+    { header: 'Ед.', key: 'unit', width: 8 },
+    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Качество', key: 'qualityName', width: 22 },
+    { header: 'Разрешение', key: 'permissionLabel', width: 16 },
+    { header: 'Признак', key: 'qualityFlag', width: 28 },
+    { header: 'Документ', key: 'documentNumber', width: 18 },
+    { header: 'Обновлено', key: 'updatedAt', width: 20 },
+    { header: 'Склад', key: 'warehouseName', width: 22 },
+    { header: 'Остаток', key: 'quantity', width: 12 },
+    { header: 'Резерв', key: 'reserved', width: 12 },
+    { header: 'Свободно', key: 'free', width: 12 },
+  ];
+  tree.properties.outlineLevelRow = 2;
+
+  const addTreeRow = (values, level, bold) => {
+    const row = tree.addRow(values);
+    row.outlineLevel = level;
+    if (bold) row.font = { bold: true };
+  };
+
+  for (const mat of groups) {
+    addTreeRow(
+      {
+        label: mat.name,
+        type: mat.type,
+        unit: mat.unit,
+        quantity: mat.quantity,
+        reserved: mat.reserved,
+        free: mat.free,
+      },
+      0,
+      true
+    );
+    for (const lot of mat.lots) {
+      addTreeRow(
+        {
+          label: `  ${lot.lotNumber}`,
+          type: mat.type,
+          unit: mat.unit,
+          lotNumber: lot.lotNumber,
+          qualityName: lot.qualityMissing ? 'Не задано' : lot.qualityName || '—',
+          permissionLabel: lot.permissionLabel,
+          qualityFlag: lot.qualityMissing ? 'Нет в регистре (по умолчанию: Годен)' : '',
+          documentNumber: lot.documentNumber || '',
+          updatedAt: lot.updatedAt ? String(lot.updatedAt).replace('T', ' ').slice(0, 19) : '',
+          quantity: lot.quantity,
+          reserved: lot.reserved,
+          free: lot.free,
+        },
+        1,
+        true
+      );
+      for (const wh of lot.warehouses) {
+        addTreeRow(
+          {
+            label: `    ${wh.warehouseName}`,
+            warehouseName: wh.warehouseName,
+            quantity: wh.quantity,
+            reserved: wh.reserved,
+            free: wh.free,
+          },
+          2,
+          false
+        );
+      }
+    }
+  }
+
+  const detail = wb.addWorksheet('Детализация');
+  detail.columns = [
+    { header: 'Материал', key: 'materialName', width: 36 },
+    { header: 'Тип', key: 'materialType', width: 20 },
+    { header: 'Ед.', key: 'unit', width: 8 },
+    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Контрагент', key: 'counterpartyName', width: 24 },
+    { header: 'Срок годности', key: 'expiryDate', width: 14 },
+    { header: 'Качество', key: 'qualityDisplay', width: 22 },
+    { header: 'Разрешение', key: 'permissionLabel', width: 16 },
+    { header: 'Нет в регистре', key: 'qualityMissing', width: 14 },
+    { header: 'Документ', key: 'documentNumber', width: 18 },
+    { header: 'Склад', key: 'warehouseName', width: 22 },
+    { header: 'Остаток', key: 'quantity', width: 12 },
+    { header: 'Резерв', key: 'reserved', width: 12 },
+    { header: 'Свободно', key: 'free', width: 12 },
+  ];
+  for (const row of rows) {
+    detail.addRow({
+      ...row,
+      qualityDisplay: row.qualityMissing ? 'Не задано' : row.qualityName || '—',
+      qualityMissing: row.qualityMissing ? 'да' : 'нет',
+    });
+  }
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="quality-stock-${stamp}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+router.get('/quality-history', requirePermission('report_quality_history', 'read'), (_req, res) => {
+  res.json(qualityHistoryReport());
+});
+
+router.post('/quality-history.xlsx', requirePermission('report_quality_history', 'read'), async (req, res) => {
+  const rows = filterQualityHistoryReport(qualityHistoryReport(), req.body?.ids);
+  const groups = groupQualityHistoryRows(rows);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Vilar OP';
+
+  const tree = wb.addWorksheet('Иерархия');
+  tree.columns = [
+    { header: 'Группировка', key: 'label', width: 40 },
+    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Дата', key: 'at', width: 20 },
+    { header: 'Действие', key: 'actionLabel', width: 14 },
+    { header: 'Документ', key: 'documentNumber', width: 18 },
+    { header: 'Качество', key: 'qualityName', width: 22 },
+    { header: 'Разрешение', key: 'permissionLabel', width: 16 },
+    { header: 'Пользователь', key: 'userName', width: 20 },
+  ];
+  tree.properties.outlineLevelRow = 2;
+
+  const addTreeRow = (values, level, bold) => {
+    const row = tree.addRow(values);
+    row.outlineLevel = level;
+    if (bold) row.font = { bold: true };
+  };
+
+  for (const mat of groups) {
+    addTreeRow({ label: mat.name, type: mat.type }, 0, true);
+    for (const lot of mat.lots) {
+      addTreeRow({ label: `  ${lot.lotNumber}`, lotNumber: lot.lotNumber }, 1, true);
+      for (const ev of lot.events) {
+        addTreeRow(
+          {
+            label: `    ${ev.actionLabel}`,
+            lotNumber: lot.lotNumber,
+            at: String(ev.at || '').replace('T', ' ').slice(0, 19),
+            actionLabel: ev.actionLabel,
+            documentNumber: ev.documentNumber,
+            qualityName: ev.qualityName,
+            permissionLabel: ev.permissionLabel,
+            userName: ev.userName,
+          },
+          2,
+          false
+        );
+      }
+    }
+  }
+
+  const detail = wb.addWorksheet('Детализация');
+  detail.columns = [
+    { header: 'Дата', key: 'at', width: 20 },
+    { header: 'Действие', key: 'actionLabel', width: 14 },
+    { header: 'Документ', key: 'documentNumber', width: 18 },
+    { header: 'Материал', key: 'materialName', width: 36 },
+    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Качество', key: 'qualityName', width: 22 },
+    { header: 'Разрешение', key: 'permissionLabel', width: 16 },
+    { header: 'Пользователь', key: 'userName', width: 20 },
+  ];
+  for (const row of rows) {
+    detail.addRow({
+      ...row,
+      at: String(row.at || '').replace('T', ' ').slice(0, 19),
+    });
+  }
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="quality-history-${stamp}.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
 });

@@ -2839,6 +2839,31 @@ button.danger-outline:hover {
   background: #fff;
 }
 
+.report-tree-detail td {
+  background: #fafbfc;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+
+.report-quality-missing td {
+  background: #f0f3f5;
+}
+
+.report-quality-unfit td {
+  background: #fdecea;
+}
+
+.report-quality-conditional td {
+  background: #fff8e6;
+}
+
+.report-quality-badge {
+  font-size: 0.78em;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .report-num {
   text-align: right;
   font-variant-numeric: tabular-nums;

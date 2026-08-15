@@ -276,6 +276,22 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }),
+  qualityStockReport: () =>
+    request<import('./types').QualityStockReportRow[]>('/reports/quality-stock'),
+  exportQualityStockReportXlsx: (ids: string[]) =>
+    downloadFile(
+      `/reports/quality-stock.xlsx`,
+      `quality-stock-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      { method: 'POST', body: JSON.stringify({ ids }) }
+    ),
+  qualityHistoryReport: () =>
+    request<import('./types').QualityHistoryReportRow[]>('/reports/quality-history'),
+  exportQualityHistoryReportXlsx: (ids: string[]) =>
+    downloadFile(
+      `/reports/quality-history.xlsx`,
+      `quality-history-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      { method: 'POST', body: JSON.stringify({ ids }) }
+    ),
 
   qualityDocumentTypes: () =>
     request<{
