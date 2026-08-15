@@ -2,8 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: гостевой «Вход» | **эталон** |
-| `feature/login-rate-limit` | Rate limit login (IP+логин), до HTTPS | **активна** |
+| `main` | Стабильный снимок: rate limit login + гостевой «Вход» | **эталон** |
+| `feature/login-rate-limit` | Rate limit login (IP+логин), до HTTPS | слита в main |
 | `feature/auth-gate-landing` | Гостевой экран только «Вход»; SECURITY_PUBLIC_VM | слита в main |
 | `fix/http-randomuuid-fallback` | Create на http://IP: fallback UUID | слита в main |
 | `feature/admin-data-reset-demo-backups` | Админ: очистка, демо, резервные копии | слита в main |
