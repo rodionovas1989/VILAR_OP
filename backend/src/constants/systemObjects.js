@@ -37,9 +37,10 @@ export const STOCK_OBJECTS = [
 ];
 
 export const QUALITY_OBJECTS = [
-  { id: 'quality_documents', label: 'Документы качества' },
-  { id: 'quality_register', label: 'Регистр качества' },
-  { id: 'quality_history', label: 'История качества' },
+  { id: 'lot_qualities', label: 'Качества партий' },
+  { id: 'quality_documents', label: 'Управление качеством' },
+  { id: 'quality_register', label: 'Качества партий (состояние)' },
+  { id: 'quality_history', label: 'Качества партий (история)' },
 ];
 
 export const REPORT_OBJECTS = [

@@ -336,6 +336,11 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.counterpartyId = undefined;
       pick.counterpartyName = undefined;
       pick.expiryDate = undefined;
+      pick.qualityPermission = undefined;
+      pick.qualityPermissionLabel = undefined;
+      pick.qualityName = undefined;
+      pick.qualityMessage = undefined;
+      pick.qualityAllowed = undefined;
       pick.ok = false;
     } else {
       const lots = await api.lotsAvailable(pick.materialId, algorithm);
@@ -347,6 +352,11 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           counterpartyId?: string;
           counterparty?: { name: string };
           expiryDate: string;
+          qualityPermission?: string;
+          qualityPermissionLabel?: string;
+          qualityName?: string | null;
+          qualityMessage?: string | null;
+          qualityAllowed?: boolean;
         }[]
       ).find((l) => l.id === lotId);
       pick.lotNumber = lot?.number;
@@ -354,7 +364,12 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.counterpartyId = lot?.counterpartyId;
       pick.counterpartyName = lot?.counterparty?.name || '—';
       pick.expiryDate = lot?.expiryDate;
-      pick.ok = !!lot && lot.freeQty >= pick.quantity;
+      pick.qualityPermission = lot?.qualityPermission;
+      pick.qualityPermissionLabel = lot?.qualityPermissionLabel;
+      pick.qualityName = lot?.qualityName;
+      pick.qualityMessage = lot?.qualityMessage;
+      pick.qualityAllowed = lot?.qualityAllowed;
+      pick.ok = !!lot && lot.freeQty >= pick.quantity && lot.qualityAllowed !== false;
     }
     next[orderIdx] = { ...next[orderIdx], picks: next[orderIdx].picks.map((p, i) => (i === pickIdx ? pick : p)) };
     setSuggestions(recomputeSuggestionOk(next));
@@ -364,6 +379,25 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     setBusy(true);
     setMessage('');
     try {
+      const conditionalNotes = suggestions
+        .flatMap((s) =>
+          s.picks
+            .filter((p) => p.lotId && p.qualityPermission === 'conditional')
+            .map(
+              (p) =>
+                `${p.materialName || p.materialId} / ${p.lotNumber || p.lotId}: ${p.qualityMessage || 'Условно годен'}`
+            )
+        );
+      if (conditionalNotes.length) {
+        if (
+          !confirm(
+            `Есть партии «Условно годен» — резерв будет разрешён:\n- ${conditionalNotes.join('\n- ')}\n\nПродолжить?`
+          )
+        ) {
+          setBusy(false);
+          return;
+        }
+      }
       const items = suggestions.map((s) => ({
         orderId: s.orderId,
         picks: s.picks.map((p) => ({
@@ -858,7 +892,9 @@ function recomputeSuggestionOk(suggestions: SuggestResult[]): SuggestResult[] {
       const baseFree = Number(p.freeQty ?? 0);
       const already = lotId ? usedByLot.get(lotId) || 0 : 0;
       const remain = baseFree - already;
-      const ok = !!lotId && remain + 1e-9 >= Number(p.quantity);
+      const qtyOk = !!lotId && remain + 1e-9 >= Number(p.quantity);
+      const qualityOk = p.qualityAllowed !== false;
+      const ok = qtyOk && qualityOk;
       if (lotId) usedByLot.set(lotId, already + Number(p.quantity || 0));
       return { ...p, ok };
     }),
@@ -973,8 +1009,11 @@ function PickRow({
       freeQty: number;
       counterparty?: { name: string };
       expiryDate?: string;
-      blocked?: boolean;
-      blockReason?: string | null;
+      qualityPermission?: string;
+      qualityPermissionLabel?: string;
+      qualityName?: string | null;
+      qualityMessage?: string | null;
+      qualityAllowed?: boolean;
     }[]
   >([]);
   const loaded = useRef(false);
@@ -987,33 +1026,48 @@ function PickRow({
 
   const ok = !!pick.ok;
   const selectedLot = lots.find((l) => l.id === pick.lotId);
-  const lotBlocked = Boolean(selectedLot?.blocked);
+  const qualityUnfit = selectedLot?.qualityAllowed === false || pick.qualityAllowed === false;
+  const qualityConditional =
+    !qualityUnfit &&
+    (selectedLot?.qualityPermission === 'conditional' || pick.qualityPermission === 'conditional');
+  const qualityMessage = selectedLot?.qualityMessage || pick.qualityMessage;
 
   return (
-    <tr className={`${ok ? 'pick-ok' : 'pick-bad'}${lotBlocked ? ' pick-lot-blocked' : ''}`}>
+    <tr
+      className={`${ok && !qualityUnfit ? 'pick-ok' : 'pick-bad'}${qualityUnfit ? ' pick-lot-blocked' : ''}${qualityConditional ? ' pick-lot-conditional' : ''}`}
+    >
       <td>{pick.materialName}</td>
       <td className="col-center num">{pick.quantity}</td>
       <td>
         <select
-          className={`${ok ? '' : 'select-bad'}${lotBlocked ? ' select-lot-blocked' : ''}`}
+          className={`${ok && !qualityUnfit ? '' : 'select-bad'}${qualityUnfit ? ' select-lot-blocked' : ''}`}
           value={pick.lotId || ''}
           onChange={(e) => onChangeLot(e.target.value)}
         >
           <option value="">— не выбрана —</option>
           {lots.map((l) => (
-            <option key={l.id} value={l.id} className={l.blocked ? 'option-lot-blocked' : undefined}>
-              {l.blocked ? '⛔ ' : ''}
+            <option
+              key={l.id}
+              value={l.id}
+              className={l.qualityAllowed === false ? 'option-lot-blocked' : undefined}
+            >
+              {l.qualityAllowed === false ? '⛔ ' : l.qualityPermission === 'conditional' ? '⚠ ' : ''}
               {l.number} (своб. {l.freeQty})
-              {l.blocked && l.blockReason ? ` — ${l.blockReason}` : ''}
+              {l.qualityName ? ` — ${l.qualityName}` : ''}
             </option>
           ))}
         </select>
-        {lotBlocked && (
+        {qualityUnfit && (
           <div className="pick-lot-block-reason">
-            Партия заблокирована: {selectedLot?.blockReason || 'без указания причины'}
+            {qualityMessage || 'Партия не годна по качеству'}
           </div>
         )}
-        {!ok && (
+        {qualityConditional && (
+          <div className="pick-lot-conditional-reason">
+            {qualityMessage || 'Условно годен — можно брать в работу'}
+          </div>
+        )}
+        {!ok && !qualityUnfit && (
           <div className="pick-problem">
             {!pick.lotId
               ? 'Партия не подобрана'

@@ -11,7 +11,14 @@ export type StockDocumentType =
   | 'production_receipt'
   | 'shipment';
 
-export type QualityDocumentType = 'quality_incoming' | 'quality_release' | 'quality_lot_block';
+export type QualityDocumentType = 'quality_management';
+
+export interface QualityDocumentLine {
+  id: string;
+  materialId: string;
+  lotId: string;
+  qualityId: string;
+}
 
 
 export interface User {
@@ -161,6 +168,7 @@ export interface QualityDocument {
   type: QualityDocumentType;
   number: string;
   date: string;
+  time?: string | null;
   status: DocumentStatus;
   lotId?: string | null;
   materialId?: string | null;
@@ -168,5 +176,5 @@ export interface QualityDocument {
   createdByUserId: string;
   createdAt: string;
   comment?: string;
-  lines?: unknown[];
+  lines?: QualityDocumentLine[];
 }

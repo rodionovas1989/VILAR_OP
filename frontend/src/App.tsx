@@ -12,7 +12,7 @@ import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
 import HomePage from './components/HomePage';
 import LoginModal from './components/LoginModal';
-import QualityDocumentsPage from './components/QualityDocumentsPage';
+import QualityManagementPage from './components/QualityManagementPage';
 import DocumentTypePage from './components/DocumentTypePage';
 import { CrudPage, FieldDef } from './components/CrudPage';
 import ProductionOrderPage from './components/ProductionOrderPage';
@@ -57,6 +57,9 @@ export default function App() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [specs, setSpecs] = useState<Specification[]>([]);
   const [plannedVolumes, setPlannedVolumes] = useState<PlannedSeriesVolume[]>([]);
+  const [lotQualities, setLotQualities] = useState<
+    { id: string; name: string; permission: string; active?: boolean; comment?: string }[]
+  >([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const contentRef = useRef<HTMLElement>(null);
 
@@ -89,7 +92,7 @@ export default function App() {
 
   const reloadDicts = async () => {
     const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
-    const [m, c, l, s, w, wh, sp, pv, rl] = await Promise.all([
+    const [m, c, l, s, w, wh, sp, pv, rl, lq] = await Promise.all([
       listOrEmpty<Material>('materials'),
       listOrEmpty<Counterparty>('counterparties'),
       listOrEmpty<Lot>('lots'),
@@ -99,6 +102,9 @@ export default function App() {
       listOrEmpty<Specification>('specifications'),
       listOrEmpty<PlannedSeriesVolume>('planned_series_volumes'),
       listOrEmpty<Role>('roles'),
+      listOrEmpty<{ id: string; name: string; permission: string; active?: boolean; comment?: string }>(
+        'lot_qualities'
+      ),
     ]);
     setMaterials(m);
     setCounterparties(c);
@@ -109,6 +115,7 @@ export default function App() {
     setSpecs(sp);
     setPlannedVolumes(pv);
     setRoles(rl);
+    setLotQualities(lq);
   };
 
   useEffect(() => {
@@ -516,46 +523,110 @@ export default function App() {
             ]}
           />
         );
+      case 'lot_qualities':
+        return (
+          <CrudPage
+            title="Качества партий"
+            collection="lot_qualities"
+            fields={[
+              { key: 'name', label: 'Название', required: true },
+              {
+                key: 'permission',
+                label: 'Разрешение',
+                type: 'select',
+                required: true,
+                options: [
+                  { value: 'fit', label: 'Годен' },
+                  { value: 'conditional', label: 'Условно годен' },
+                  { value: 'unfit', label: 'Не годен' },
+                ],
+              },
+              { key: 'comment', label: 'Описание / сценарий' },
+              {
+                key: 'active',
+                label: 'Активно',
+                type: 'select',
+                defaultValue: 'true',
+                options: [
+                  { value: 'true', label: 'да' },
+                  { value: 'false', label: 'нет' },
+                ],
+              },
+            ]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'permission',
+                label: 'Разрешение',
+                render: (r) =>
+                  ({ fit: 'Годен', conditional: 'Условно годен', unfit: 'Не годен' } as Record<string, string>)[
+                    String(r.permission)
+                  ] || String(r.permission),
+              },
+              { key: 'comment', label: 'Описание' },
+              {
+                key: 'active',
+                label: 'Активно',
+                render: (r) => (r.active === false || r.active === 'false' ? 'нет' : 'да'),
+              },
+            ]}
+            transformIn={(row) => ({
+              ...row,
+              active: row.active === false || row.active === 'false' ? 'false' : 'true',
+            })}
+            transformOut={(row) => ({
+              ...row,
+              active: row.active !== 'false' && row.active !== false,
+            })}
+          />
+        );
       case 'quality_documents':
-        return <QualityDocumentsPage lots={lots} materials={materials} />;
+        return (
+          <QualityManagementPage materials={materials} lots={lots} lotQualities={lotQualities} />
+        );
       case 'quality_register':
         return (
           <CrudPage
-            title="Регистр качества (активные статусы партий)"
+            title="Качества партий (состояние)"
             collection="quality_register"
             readOnly
             fields={[
               { key: 'lotId', label: 'Партия', type: 'select', required: true, options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
               { key: 'materialId', label: 'Материал', type: 'select', options: opt(materials) },
-              { key: 'status', label: 'Статус', required: true },
+              { key: 'qualityName', label: 'Качество' },
+              { key: 'permissionLabel', label: 'Разрешение' },
               { key: 'documentNumber', label: 'Документ' },
             ]}
             columns={[
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
-              { key: 'status', label: 'Статус' },
+              { key: 'qualityName', label: 'Качество' },
+              { key: 'permissionLabel', label: 'Разрешение', render: (r) => String(r.permissionLabel || r.permission || '') },
               { key: 'documentNumber', label: 'Документ' },
-              { key: 'documentStatus', label: 'Статус док.' },
+              { key: 'updatedAt', label: 'Обновлено' },
             ]}
           />
         );
       case 'quality_history':
         return (
           <CrudPage
-            title="История качества"
+            title="Качества партий (история)"
             collection="quality_history"
             readOnly
             fields={[
               { key: 'documentNumber', label: 'Документ', required: true },
-              { key: 'action', label: 'Действие', required: true },
+              { key: 'action', label: 'Действие' },
+              { key: 'lotId', label: 'Партия' },
+              { key: 'qualityName', label: 'Качество' },
+              { key: 'permissionLabel', label: 'Разрешение' },
             ]}
             columns={[
-              { key: 'atDate', label: 'Дата', render: (r) => dateFromIso(String(r.at || '')) },
-              { key: 'atTime', label: 'Время', render: (r) => displayTimeFromIso(String(r.at || '')) },
-              { key: 'documentNumber', label: 'Документ' },
-              { key: 'documentType', label: 'Тип' },
-              { key: 'documentStatus', label: 'Статус' },
+              { key: 'at', label: 'Когда' },
               { key: 'action', label: 'Действие' },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'lotId', label: 'Партия', render: (r) => (r.lotId ? lotNum(String(r.lotId)) : '—') },
+              { key: 'qualityName', label: 'Качество' },
+              { key: 'permissionLabel', label: 'Разрешение', render: (r) => String(r.permissionLabel || r.permission || '') },
             ]}
           />
         );

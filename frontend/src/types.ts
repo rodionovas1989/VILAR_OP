@@ -152,6 +152,11 @@ export interface MaterialPick {
   expiryDate?: string;
   freeQty?: number;
   ok?: boolean;
+  qualityPermission?: string;
+  qualityPermissionLabel?: string;
+  qualityName?: string | null;
+  qualityMessage?: string | null;
+  qualityAllowed?: boolean;
 }
 
 export interface ReleasedSeriesComponent {

@@ -36,6 +36,7 @@ const COLLECTIONS = [
   'active_reservations',
   'reservation_history',
   'document_sequences',
+  'lot_qualities',
   'quality_documents',
   'quality_register',
   'quality_history',
@@ -175,6 +176,7 @@ export function ensureCollections() {
   migrateRolePermissionKeys();
   migrateStockDocumentsToTyped();
   migrateLegacyReservationsToDocuments();
+  migrateLotQualitiesDefaults();
 }
 
 /** Пользователь Admin при пустой/миграции БД. Пароль: VILAR_ADMIN_PASSWORD (не светить в UI). */
@@ -450,6 +452,36 @@ function migrateLegacyReservationsToDocuments() {
   }
 
   writeAll('reservations', []);
+}
+
+/** Стартовые сценарии качества партий (пользователь может править справочник) */
+function migrateLotQualitiesDefaults() {
+  const existing = readAll('lot_qualities');
+  if (existing.length) return;
+  const seed = [
+    {
+      id: 'lq-fit',
+      name: 'Годен',
+      permission: 'fit',
+      comment: 'Разрешено к использованию без ограничений',
+      active: true,
+    },
+    {
+      id: 'lq-conditional',
+      name: 'Условно годен',
+      permission: 'conditional',
+      comment: 'Разрешено с предупреждением при планировании / закрытии',
+      active: true,
+    },
+    {
+      id: 'lq-block',
+      name: 'Блокировка',
+      permission: 'unfit',
+      comment: 'Полный запрет использования партии',
+      active: true,
+    },
+  ];
+  writeAll('lot_qualities', seed);
 }
 
 function nextLocalNumber(code, dateStr) {

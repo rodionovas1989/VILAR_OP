@@ -3,6 +3,7 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | v0.2.0: QBL, cookie-сессии, чат, changelog, Helmet | **эталон** |
+| `feature/quality-lot-permissions-redesign` | Справочник качеств, единый QCM, регистры, проверки в планировании/закрытии | **активна** |
 | `feature/roadmap-batch-remaining` | W1–W4 ROADMAP batch | **слита** в main |
 | `feature/admin-login-audit-envfile` | Журнал входов, скачать бэкап, EnvironmentFile | слита в main |
 | `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon | слита в main |

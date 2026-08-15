@@ -31,7 +31,8 @@ backend/
   src/services/stock.js      — свободный остаток, склады
   src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
-  src/services/quality.js    — качество (QIN/QRL/QBL; QBL → blocked на партии)
+  src/services/quality.js    — качество: QCM документ, регистры, resolveLotQuality
+  src/constants/lotQuality.js — разрешения Годен / Условно / Не годен
   src/services/chat.js       — общий чат
   src/constants/documentTypes.js
   src/routes/planning.js     — /api/planning/* (+ GET order-trace/:id)
@@ -68,6 +69,7 @@ frontend/
   src/components/AdminLoginAuditPage.tsx — журнал входов
   src/components/AdminChangelogPage.tsx — что нового (CHANGELOG.md)
   src/components/HeaderChat.tsx — чат в шапке
+  src/components/QualityManagementPage.tsx — единый документ качества
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка
