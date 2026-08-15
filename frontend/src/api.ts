@@ -279,6 +279,8 @@ export const api = {
       permissions: { id: string; label: string }[];
     }>('/quality/meta/types'),
   listQualityDocuments: () => request<import('./types.documents').QualityDocument[]>('/quality/documents'),
+  getQualityDocument: (id: string) =>
+    request<import('./types.documents').QualityDocument>(`/quality/documents/${id}`),
   createQualityDocument: (body: unknown) =>
     request<import('./types.documents').QualityDocument>('/quality/documents', {
       method: 'POST',

@@ -10,6 +10,7 @@ import AdminLoginAuditPage from './components/AdminLoginAuditPage';
 import AdminChangelogPage from './components/AdminChangelogPage';
 import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
+import RecentObjectsStrip from './components/RecentObjectsStrip';
 import HomePage from './components/HomePage';
 import LoginModal from './components/LoginModal';
 import QualityManagementPage from './components/QualityManagementPage';
@@ -786,6 +787,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <AppHeader />
+      <RecentObjectsStrip currentPage={page} onNavigate={navigateTo} />
       <LoginModal />
       <div className="layout">
       <aside className="sidebar">

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { useListTable, ListColumn } from '../hooks/useListTable';
+import { useRecentEntityBridge } from '../hooks/useRecentEntityBridge';
+import { RecentMode, useRecentObjects } from '../auth/RecentObjectsContext';
 import {
   canCreateObject,
   canEditDocumentFields,
@@ -87,6 +89,7 @@ function buildDocumentActions(
 
 export default function DocumentTypePage({ documentType, materials, lots, warehouses }: Props) {
   const { user, openLogin } = useAuth();
+  const { remember, drop } = useRecentObjects();
   const objectId = `doc_${documentType}`;
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
@@ -225,6 +228,14 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const applySavedDoc = (saved: StockDocument, mode: FormMode) => {
     setEditing(cloneDoc(saved));
     setFormMode(mode);
+    if (saved.id && (mode === 'view' || mode === 'edit')) {
+      remember({
+        pageId: objectId,
+        entityId: saved.id,
+        label: saved.number,
+        mode,
+      });
+    }
   };
 
   const formModeAfterPost = (saved: StockDocument): FormMode =>
@@ -284,6 +295,9 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       time: doc.time || displayDocTime(doc),
       lines: (doc.lines || []).map((l) => ({ ...l })),
     });
+    if (doc.id) {
+      remember({ pageId: objectId, entityId: doc.id, label: doc.number, mode: 'edit' });
+    }
   };
 
   const openView = (doc: StockDocument) => {
@@ -293,7 +307,36 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       time: doc.time || displayDocTime(doc),
       lines: (doc.lines || []).map((l) => ({ ...l })),
     });
+    if (doc.id) {
+      remember({ pageId: objectId, entityId: doc.id, label: doc.number, mode: 'view' });
+    }
   };
+
+  const openFromRecent = async (entityId: string, mode: RecentMode) => {
+    let doc = rows.find((r) => r.id === entityId);
+    if (!doc) {
+      try {
+        doc = await api.getDocument(documentType, entityId);
+      } catch {
+        drop(objectId, entityId);
+        setError('Документ не найден или недоступен');
+        return;
+      }
+    }
+    if (mode === 'edit' && canEditDocumentRecord(permissions, objectId, doc.status)) {
+      openEdit(doc);
+      return;
+    }
+    openView(doc);
+  };
+
+  useRecentEntityBridge({
+    pageId: objectId,
+    entityId: editing?.id || null,
+    formMode,
+    openEntity: openFromRecent,
+    closeModal: closeForm,
+  });
 
   const buildBody = (doc: StockDocument) => ({
     date: doc.date,

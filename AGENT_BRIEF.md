@@ -81,7 +81,10 @@ frontend/
   src/components/DocumentTraceModal.tsx  — отдельное окно по пиктограмме у статуса
   src/constants/navConfig.ts           — навигация + каталог pageId/kind
   src/auth/FavoritesContext.tsx        — избранное пользователя
+  src/auth/RecentObjectsContext.tsx    — последние открытые (полоска под шапкой)
+  src/components/RecentObjectsStrip.tsx
   src/components/AppHeader.tsx
+  src/hooks/useRecentEntityBridge.ts   — deep-open / close из полоски
   src/components/AuthGate.tsx            — гостевой экран только «Вход» (без бренда)
   src/components/HomePage.tsx          — главная: колонки по типу объекта, избранное вертикально
   src/components/ReleasedSeriesReportPage.tsx — отчёт выпущенных серий

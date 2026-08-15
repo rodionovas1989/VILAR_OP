@@ -8,6 +8,8 @@ import {
   canViewObject,
 } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
+import { RecentMode, useRecentObjects } from '../auth/RecentObjectsContext';
+import { useRecentEntityBridge } from '../hooks/useRecentEntityBridge';
 import { displayTimeFromIso, nowTime } from '../utils/docDateTime';
 import { userDisplayName } from '../utils/userDisplay';
 import AccessDenied from './AccessDenied';
@@ -57,6 +59,7 @@ function lotsForMaterial(lots: Lot[], materialId: string) {
 
 export default function QualityManagementPage({ materials, lots, lotQualities }: Props) {
   const { user, openLogin } = useAuth();
+  const { remember, drop } = useRecentObjects();
   const objectId = 'quality_documents';
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
@@ -156,12 +159,44 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
     if (!canEditDocumentRecord(permissions, objectId, doc.status)) return;
     setFormMode('edit');
     setEditing({ ...cloneDoc(doc), time: doc.time || timeOf(doc) });
+    if (doc.id) {
+      remember({ pageId: objectId, entityId: doc.id, label: doc.number, mode: 'edit' });
+    }
   };
 
   const openView = (doc: QualityDocument) => {
     setFormMode('view');
     setEditing({ ...cloneDoc(doc), time: doc.time || timeOf(doc) });
+    if (doc.id) {
+      remember({ pageId: objectId, entityId: doc.id, label: doc.number, mode: 'view' });
+    }
   };
+
+  const openFromRecent = async (entityId: string, mode: RecentMode) => {
+    let doc = rows.find((r) => r.id === entityId);
+    if (!doc) {
+      try {
+        doc = await api.getQualityDocument(entityId);
+      } catch {
+        drop(objectId, entityId);
+        setError('Документ не найден или недоступен');
+        return;
+      }
+    }
+    if (mode === 'edit' && canEditDocumentRecord(permissions, objectId, doc.status)) {
+      openEdit(doc);
+      return;
+    }
+    openView(doc);
+  };
+
+  useRecentEntityBridge({
+    pageId: objectId,
+    entityId: editing?.id || null,
+    formMode,
+    openEntity: openFromRecent,
+    closeModal: closeForm,
+  });
 
   const docStatus = editing?.status || 'draft';
   const canEditFields = editing
@@ -204,6 +239,9 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
         : await api.createQualityDocument({ ...body, createdByUserId: user?.id });
       setEditing(cloneDoc(saved));
       setFormMode('edit');
+      if (saved.id) {
+        remember({ pageId: objectId, entityId: saved.id, label: saved.number, mode: 'edit' });
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -221,6 +259,9 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
       const saved = await api.postQualityDocument(editing.id, user?.id || '');
       setEditing(cloneDoc(saved));
       setFormMode('view');
+      if (saved.id) {
+        remember({ pageId: objectId, entityId: saved.id, label: saved.number, mode: 'view' });
+      }
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

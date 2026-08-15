@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { useListTable, ListColumn } from '../hooks/useListTable';
+import { useRecentEntityBridge } from '../hooks/useRecentEntityBridge';
 import {
   canCreateObject,
   canModifyObject,
   canViewObject,
 } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
+import { RecentMode, useRecentObjects } from '../auth/RecentObjectsContext';
 import {
   Lot,
   Material,
@@ -128,6 +130,7 @@ export default function ProductionOrderPage({
   warehouses = [],
 }: Props) {
   const { user } = useAuth();
+  const { remember, drop } = useRecentObjects();
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
   const canView = canViewObject(permissions, OBJECT_ID, loggedIn);
@@ -148,6 +151,8 @@ export default function ProductionOrderPage({
   const serNum = (id: string) => series.find((s) => s.id === id)?.number || id;
   const wcName = (id: string) => workCenters.find((w) => w.id === id)?.name || id;
   const lotNum = (id: string) => lots.find((l) => l.id === id)?.number || id;
+  const orderLabel = (order: ProductionOrder) =>
+    `${matName(order.materialId)} / ${serNum(order.seriesId)}`;
 
   const plannedQtyFor = (materialId: string, workCenterId: string) => {
     if (!materialId || !workCenterId) return null;
@@ -275,13 +280,45 @@ export default function ProductionOrderPage({
   const openView = (order: ProductionOrder) => {
     setFormMode('view');
     setEditing(cloneOrder(order));
+    if (order.id) {
+      remember({ pageId: OBJECT_ID, entityId: order.id, label: orderLabel(order), mode: 'view' });
+    }
   };
 
   const openEdit = (order: ProductionOrder) => {
     if (order.status !== 'новый' || !canModify) return;
     setFormMode('edit');
     setEditing(cloneOrder(order));
+    if (order.id) {
+      remember({ pageId: OBJECT_ID, entityId: order.id, label: orderLabel(order), mode: 'edit' });
+    }
   };
+
+  const openFromRecent = async (entityId: string, mode: RecentMode) => {
+    let order = rows.find((r) => r.id === entityId);
+    if (!order) {
+      try {
+        order = await api.get<ProductionOrder>('production_orders', entityId);
+      } catch {
+        drop(OBJECT_ID, entityId);
+        setError('Заказ не найден или недоступен');
+        return;
+      }
+    }
+    if (mode === 'edit' && order.status === 'новый' && canModify) {
+      openEdit(order);
+      return;
+    }
+    openView(order);
+  };
+
+  useRecentEntityBridge({
+    pageId: OBJECT_ID,
+    entityId: editing?.id || null,
+    formMode,
+    openEntity: openFromRecent,
+    closeModal: closeForm,
+  });
 
   const persist = async (order: ProductionOrder): Promise<ProductionOrder> => {
     const err = validate(order);
@@ -296,6 +333,14 @@ export default function ProductionOrderPage({
   const applySaved = (saved: ProductionOrder, mode: FormMode) => {
     setEditing(cloneOrder(saved));
     setFormMode(mode);
+    if (saved.id && (mode === 'view' || mode === 'edit')) {
+      remember({
+        pageId: OBJECT_ID,
+        entityId: saved.id,
+        label: orderLabel(saved),
+        mode,
+      });
+    }
   };
 
   const saveOrder = async () => {

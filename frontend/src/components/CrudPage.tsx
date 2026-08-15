@@ -7,7 +7,9 @@ import {
   canViewObject,
 } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
+import { RecentMode, useRecentObjects } from '../auth/RecentObjectsContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
+import { useRecentEntityBridge } from '../hooks/useRecentEntityBridge';
 import AccessDenied from './AccessDenied';
 import IconButton from './IconButton';
 import PageTitle from './PageTitle';
@@ -103,6 +105,7 @@ export function CrudPage({
   readOnly = false,
 }: Props) {
   const { user } = useAuth();
+  const { remember, drop } = useRecentObjects();
   const loggedIn = Boolean(user);
   const objectId = permissionObjectId ?? pagePermissionId(collection);
   const pageId = pageIdProp ?? collection;
@@ -119,6 +122,9 @@ export function CrudPage({
   const [bulkStatus, setBulkStatus] = useState('');
   const [statusBusy, setStatusBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
+
+  const rowLabel = (row: Record<string, unknown>) =>
+    String(row.name || row.number || row.id || '');
 
   const listColumns = useMemo((): ListColumn<Record<string, unknown>>[] => {
     return columns.map((col) => ({
@@ -178,7 +184,43 @@ export function CrudPage({
     if (!Array.isArray(base.lines)) base.lines = [];
     if (!Array.isArray(base.approvedSuppliers)) base.approvedSuppliers = [];
     setEditing(base);
+    if (row.id) {
+      remember({
+        pageId,
+        entityId: String(row.id),
+        label: rowLabel(row),
+        mode: 'edit',
+      });
+    }
   };
+
+  const closeForm = () => setEditing(null);
+
+  const openFromRecent = async (entityId: string, _mode: RecentMode) => {
+    let row = rows.find((r) => String(r.id) === entityId);
+    if (!row) {
+      try {
+        row = await api.get<Record<string, unknown>>(collection, entityId);
+      } catch {
+        drop(pageId, entityId);
+        setError('Запись не найдена или недоступна');
+        return;
+      }
+    }
+    if (!canModify) {
+      setError('Недостаточно прав на изменение');
+      return;
+    }
+    openEdit(row);
+  };
+
+  useRecentEntityBridge({
+    pageId,
+    entityId: editing?.id ? String(editing.id) : null,
+    formMode: editing?.id ? 'edit' : editing ? 'create' : 'create',
+    openEntity: openFromRecent,
+    closeModal: closeForm,
+  });
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -202,8 +244,25 @@ export function CrudPage({
         setError(invalid);
         return;
       }
-      if (editingId) await api.update(collection, editingId, body);
-      else await api.create(collection, body);
+      if (editingId) {
+        await api.update(collection, editingId, body);
+        remember({
+          pageId,
+          entityId: editingId,
+          label: rowLabel({ ...body, id: editingId, name: body.name ?? editing.name, number: body.number ?? editing.number }),
+          mode: 'edit',
+        });
+      } else {
+        const created = await api.create<Record<string, unknown>>(collection, body);
+        if (created?.id) {
+          remember({
+            pageId,
+            entityId: String(created.id),
+            label: rowLabel(created),
+            mode: 'edit',
+          });
+        }
+      }
       setEditing(null);
       await load();
     } catch (err) {
