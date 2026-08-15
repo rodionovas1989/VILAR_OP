@@ -19,9 +19,7 @@ export function canViewObject(
   objectId: string,
   loggedIn = true
 ): boolean {
-  if (!loggedIn) {
-    return !objectId.startsWith('admin_');
-  }
+  if (!loggedIn) return false;
   return getObjectAccessLevel(permissions, objectId) !== 'none';
 }
 

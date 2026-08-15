@@ -53,6 +53,114 @@ textarea {
   overflow: hidden;
 }
 
+.auth-boot {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--muted);
+  font-size: 0.95rem;
+  background: #1a2330;
+}
+
+.auth-gate {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 24px 16px;
+  background:
+    linear-gradient(165deg, #121a24 0%, #1c2838 42%, #243447 100%);
+}
+
+.auth-gate-panel {
+  width: min(100%, 360px);
+  padding: 28px 28px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(247, 250, 252, 0.96);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.auth-gate-title {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-size: 1.55rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.auth-gate-hint {
+  margin: 0 0 22px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.auth-gate-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-gate-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.auth-gate-form input[type='text'],
+.auth-gate-form input[type='password'],
+.auth-gate-form input:not([type]) {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--text);
+}
+
+.auth-gate-form input:focus {
+  outline: 2px solid rgba(26, 122, 98, 0.35);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.auth-gate-form .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.auth-gate-form .checkbox-row input {
+  width: auto;
+}
+
+.auth-gate-submit {
+  margin-top: 4px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--side);
+  color: #e8f1f7;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-gate-submit:hover:not(:disabled) {
+  background: var(--side-2);
+}
+
+.auth-gate-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.auth-gate .error {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
 .app-header {
   display: flex;
   align-items: center;

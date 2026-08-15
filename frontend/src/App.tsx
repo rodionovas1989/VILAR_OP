@@ -7,6 +7,7 @@ import AccessDenied from './components/AccessDenied';
 import AdminExportDictionaries from './components/AdminExportDictionaries';
 import AdminDataMaintenance from './components/AdminDataMaintenance';
 import AppHeader from './components/AppHeader';
+import AuthGate from './components/AuthGate';
 import HomePage from './components/HomePage';
 import LoginModal from './components/LoginModal';
 import QualityDocumentsPage from './components/QualityDocumentsPage';
@@ -691,6 +692,18 @@ export default function App() {
   ) : (
     <AccessDenied />
   );
+
+  useEffect(() => {
+    document.title = user ? 'Вилар — оперативное планирование' : 'Вход';
+  }, [user]);
+
+  if (authLoading) {
+    return <div className="auth-boot">Загрузка…</div>;
+  }
+
+  if (!user) {
+    return <AuthGate />;
+  }
 
   return (
     <div className="app-shell">

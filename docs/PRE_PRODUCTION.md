@@ -29,7 +29,8 @@
 | 4 | CORS только на origin фронта | **готово** (на площадке задать `CORS_ORIGIN`) | |
 | 5 | Production: `npm start` + `frontend/dist` | Скрипт: `SERVE_FRONTEND=1`; ежедневный запуск пока Vite | низкая |
 | 6 | Backup `vilar.sqlite` | Скрипт `backup.bat`; **поставить расписание** на площадке | процесс |
-| 7 | HTTPS / reverse proxy в LAN | Если не только localhost | средняя |
+| 7 | HTTPS / reverse proxy + ограничение IP / VPN | Если ВМ в интернете — см. `docs/SECURITY_PUBLIC_VM.md` | средняя |
+| 7a | Rate limit login, Helmet, бэкапы вне ВМ | Пилот на публичной ВМ | средняя |
 | 8 | Журнал аудита (кто провёл) | userId из токена уже пишется в документы; отдельный журнал — позже | |
 | 9 | Не запускать `npm run seed` на боевых данных | **готово для install/setup** | |
 

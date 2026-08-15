@@ -1,8 +1,10 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон после релиза)
+## Ветка: feature/auth-gate-landing (активна)
 
-Слито: `fix/http-randomuuid-fallback` — «Создать» документ на пилотной ВМ по `http://IP` (не secure context).
+Гости видят только нейтральный экран «Вход» (без «Вилар», меню, логотипа). После авторизации — полный shell.
+Документ рисков/плана для публичной ВМ: `docs/SECURITY_PUBLIC_VM.md`.
+
 Релизы: локальная ветка → main → ВМ (`.cursor/rules/releases-and-updates.mdc`).
 
 ### На ВМ

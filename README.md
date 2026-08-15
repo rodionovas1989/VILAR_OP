@@ -74,6 +74,7 @@ npm test
 - `docs/GMP_SERIES_RULES.md` — правила серий/партий
 - `docs/ORDER_STATUS_GUARDS.md` — переходы статусов заказа
 - `docs/PRE_PRODUCTION.md` — чеклист перед площадкой
+- `docs/SECURITY_PUBLIC_VM.md` — риски открытой ВМ и план усиления
 - `docs/ROADMAP.md` — дорожная карта и отложенные идеи
 - `PROJECT_CONTEXT.md` — контекст ветки
 - `DEPLOYMENT.md` — запуск

@@ -44,6 +44,7 @@ export function canAccessPage(
   permissions: PermissionMap | undefined,
   loggedIn: boolean
 ): boolean {
+  if (!loggedIn) return false;
   if (pageId === 'home') return true;
   return canViewObject(permissions, pagePermissionId(pageId), loggedIn);
 }
