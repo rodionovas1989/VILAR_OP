@@ -21,11 +21,7 @@ function assertOrderStatus(order, allowed, action) {
 
 function resolveActorUserId(userId) {
   if (userId && store.getById('users', userId)) return userId;
-  const admin = store.getById('users', 'user-admin');
-  if (admin) return admin.id;
-  const any = store.readAll('users').find((u) => u.active !== false);
-  if (!any) throw new Error('Нет пользователя для проведения документов. Войдите в систему.');
-  return any.id;
+  throw new Error('Не авторизован: нет пользователя для проведения. Войдите в систему.');
 }
 
 export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
@@ -35,6 +31,8 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
     .map((l) => ({
       ...l,
       freeQty: freeQtyByLot(l.id),
+      blocked: Boolean(l.blocked),
+      blockReason: l.blockReason || null,
       counterparty: store.getById('counterparties', l.counterpartyId),
     }))
     .filter((l) => l.freeQty > 0 && new Date(l.expiryDate) >= new Date());
@@ -287,7 +285,7 @@ function ensureGpLot(order, outputQty, whFg) {
   return { gpLot, outputQty, whFg };
 }
 
-export function completeOrder(orderId, userId) {
+export function completeOrder(orderId, userId, opts = {}) {
   return store.runWrite(() => {
     const order = store.getById('production_orders', orderId);
     if (!order) throw new Error('Заказ не найден');
@@ -305,9 +303,13 @@ export function completeOrder(orderId, userId) {
     if (!factLines.length) throw new Error('Нет строк состава — завершение невозможно');
     if (!(outputQty > 0)) throw new Error('Количество выпуска должно быть больше 0');
 
-    const whComp = warehouseByType('компоненты')?.id;
-    const whFg = warehouseByType('ГП')?.id;
+    const whCompDefault = warehouseByType('компоненты')?.id;
+    const whFgDefault = warehouseByType('ГП')?.id;
+    const whComp = opts.warehouseFromId || whCompDefault;
+    const whFg = opts.warehouseToId || whFgDefault;
     if (!whComp || !whFg) throw new Error('Не заданы склады компонентов и ГП');
+    if (!store.getById('warehouses', whComp)) throw new Error('Склад списания не найден');
+    if (!store.getById('warehouses', whFg)) throw new Error('Склад выпуска не найден');
 
     let resDoc = resolvePostedReservation(order);
     if (!resDoc) {

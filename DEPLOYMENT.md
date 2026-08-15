@@ -54,7 +54,8 @@ npm run dev
 - `VITE_API_URL` — базовый URL API для фронта (по умолчанию `http://localhost:3001/api`)
 - `AUTH_SECRET` — секрет JWT; если не задан, пишется в `backend/data/auth_secret`
 - `VILAR_ADMIN_PASSWORD` — пароль пользователя `Admin` при создании БД / при апгрейде слабого `Admin`/`Admin` (не короче 8 символов). **Не коммитьте** боевой пароль. Если не задан при первом создании — в консоль один раз печатается временный пароль.
-- `CORS_ORIGIN` — список origin через запятую (по умолчанию `http://localhost:5173,http://127.0.0.1:5173`)
+- `CORS_ORIGIN` — список origin через запятую (по умолчанию `http://localhost:5173,http://127.0.0.1:5173`). На проде: `https://vilar-prod.ru` (и www при необходимости). С cookie-сессиями обязателен явный origin + credentials.
+- `COOKIE_SECURE` — `1`/`true` для Secure-флага cookie (также включается при `NODE_ENV=production`)
 - `LOGIN_RATE_MAX` — макс. попыток входа с одного IP / логина за окно (по умолчанию `10`)
 - `LOGIN_RATE_WINDOW_MS` — окно в мс (по умолчанию `900000` = 15 мин)
 - `TRUST_PROXY` — `1` только за nginx/Caddy (тогда учитывается `X-Forwarded-For` для rate limit)
@@ -84,9 +85,12 @@ npm run dev
 
 ## API
 
-- `POST /api/auth/login` — `{ login, password, rememberMe }` (без токена)
+- `POST /api/auth/login` — `{ login, password, rememberMe }` → Set-Cookie `vilar_session` (+ token в JSON на переходный период)
+- `POST /api/auth/logout` — очищает cookie
 - `GET /api/health` — без токена
-- Остальные `/api/*` — `Authorization: Bearer …`
+- Остальные `/api/*` — cookie-сессия или `Authorization: Bearer …`
+- `GET/POST /api/chat/messages` — общий чат (auth)
+- `GET /api/admin/changelog` — markdown из `docs/CHANGELOG.md`
 - Проведение: `POST /api/documents/:type/:id/post` — userId берётся из токена, не из тела
 - `GET /api/quality/documents` — документы качества
 - `GET /api/reports/released-series` — отчёт выпущенных серий

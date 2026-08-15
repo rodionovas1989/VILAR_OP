@@ -28,8 +28,10 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function readStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+function clearLegacyTokenStorage() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REMEMBER_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -37,54 +39,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [loginOpen, setLoginOpen] = useState(false);
 
-  const applyToken = useCallback((token: string | null) => {
-    setAuthToken(token);
-    if (!token) {
-      setUser(null);
-      return;
-    }
+  const logout = useCallback(() => {
+    clearLegacyTokenStorage();
+    setAuthToken(null);
+    setUser(null);
+    api.authLogout().catch(() => {});
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REMEMBER_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    applyToken(null);
-    api.authLogout().catch(() => {});
-  }, [applyToken]);
-
-  const login = useCallback(
-    async (loginName: string, password: string, rememberMe: boolean) => {
-      const res = await api.authLogin(loginName, password, rememberMe);
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-      if (rememberMe) {
-        localStorage.setItem(TOKEN_KEY, res.token);
-        localStorage.setItem(REMEMBER_KEY, '1');
-      } else {
-        sessionStorage.setItem(TOKEN_KEY, res.token);
-        localStorage.removeItem(REMEMBER_KEY);
-      }
-      applyToken(res.token);
-      setUser(res.user);
-      setLoginOpen(false);
-    },
-    [applyToken]
-  );
+  const login = useCallback(async (loginName: string, password: string, rememberMe: boolean) => {
+    const res = await api.authLogin(loginName, password, rememberMe);
+    clearLegacyTokenStorage();
+    // Сессия в httpOnly cookie; Bearer из storage больше не используем
+    setAuthToken(null);
+    setUser(res.user);
+    setLoginOpen(false);
+  }, []);
 
   useEffect(() => {
-    const token = readStoredToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    applyToken(token);
+    // Очистить старые токены из storage (миграция с Bearer-only)
+    clearLegacyTokenStorage();
+    setAuthToken(null);
     api
       .authMe()
       .then((u) => setUser(u))
-      .catch(() => logout())
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, [applyToken, logout]);
+  }, []);
 
   const value = useMemo(
     () => ({

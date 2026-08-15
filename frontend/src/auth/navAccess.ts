@@ -15,6 +15,8 @@ export function pagePermissionId(pageId: string): string {
       return 'admin_data_maintenance';
     case 'admin_login_audit':
       return 'admin_login_audit';
+    case 'admin_changelog':
+      return 'admin_changelog';
     case 'admin_feedback':
       return 'admin_feedback';
     case 'admin_user_guide':

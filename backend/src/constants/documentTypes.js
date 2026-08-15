@@ -75,6 +75,10 @@ export const QUALITY_DOCUMENT_TYPES = {
     code: 'QRL',
     label: 'Допуск к использованию',
   },
+  quality_lot_block: {
+    code: 'QBL',
+    label: 'Блокировка партии',
+  },
 };
 
 export const DOCUMENT_STATUS = {

@@ -55,6 +55,7 @@ export const ADMIN_OBJECTS = [
   { id: 'admin_feedback', label: 'Обратная связь' },
   { id: 'admin_data_maintenance', label: 'Данные и резервные копии' },
   { id: 'admin_login_audit', label: 'Журнал входов' },
+  { id: 'admin_changelog', label: 'Что нового' },
 ];
 
 export const SYSTEM_OBJECT_GROUPS = [

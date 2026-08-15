@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { OrderLine, ProductionOrder } from '../types';
+import { OrderLine, ProductionOrder, Warehouse } from '../types';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import { useAuth } from '../auth/AuthContext';
@@ -11,6 +11,7 @@ type Dicts = {
   workCenters: { id: string; name: string }[];
   lots: { id: string; number: string; materialId: string; counterpartyId?: string | null }[];
   counterparties: { id: string; name: string }[];
+  warehouses: Warehouse[];
 };
 
 type Props = { dictionaries: Dicts };
@@ -43,9 +44,20 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   const [actualQuantity, setActualQuantity] = useState(0);
   const [actualLines, setActualLines] = useState<OrderLine[]>([]);
   const [lotOptions, setLotOptions] = useState<Record<string, LotOpt[]>>({});
+  const [warehouseFromId, setWarehouseFromId] = useState('');
+  const [warehouseToId, setWarehouseToId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const defaultWhFrom = useMemo(
+    () => dictionaries.warehouses.find((w) => w.type === 'компоненты')?.id || '',
+    [dictionaries.warehouses]
+  );
+  const defaultWhTo = useMemo(
+    () => dictionaries.warehouses.find((w) => w.type === 'ГП')?.id || '',
+    [dictionaries.warehouses]
+  );
 
   const load = async () => {
     const data = await api.list<ProductionOrder>('production_orders');
@@ -68,6 +80,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setTab('fact');
     setError('');
     setMessage('');
+    setWarehouseFromId(defaultWhFrom);
+    setWarehouseToId(defaultWhTo);
     const planQty = Number(order.quantity) || 0;
     const factQty =
       order.actualQuantity != null && Number(order.actualQuantity) > 0
@@ -150,7 +164,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setMessage('');
     try {
       await api.saveProductionFact(selected.id, { actualQuantity, actualLines });
-      await api.completeOrder(selected.id, user?.id);
+      await api.completeOrder(selected.id, {
+        userId: user?.id,
+        warehouseFromId: warehouseFromId || undefined,
+        warehouseToId: warehouseToId || undefined,
+      });
       setMessage('Производство завершено: PRI + PRR проведены, резерв выполнен');
       setSelectedId(null);
       await load();
@@ -215,6 +233,34 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               disabled={busy}
               onChange={(e) => onFactQtyChange(Number(e.target.value))}
             />
+          </label>
+          <label>
+            <span className="muted">Склад списания (компоненты)</span>
+            <select
+              value={warehouseFromId}
+              disabled={busy}
+              onChange={(e) => setWarehouseFromId(e.target.value)}
+            >
+              {dictionaries.warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.type})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="muted">Склад выпуска (ГП)</span>
+            <select
+              value={warehouseToId}
+              disabled={busy}
+              onChange={(e) => setWarehouseToId(e.target.value)}
+            >
+              {dictionaries.warehouses.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} ({w.type})
+                </option>
+              ))}
+            </select>
           </label>
         </div>
 

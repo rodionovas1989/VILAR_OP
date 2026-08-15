@@ -21,22 +21,24 @@ backend/
   src/sqlite.js              — обёртка node:sqlite (без better-sqlite3 / node-gyp)
   src/routes/admin.js            — экспорт словарей; backups / clear / demo
   src/services/dataMaintenance.js — слепки sqlite, очистка, демо-seed
-  src/services/auth.js           — login/JWT; warnIfDefaultAdminPassword
+  src/services/auth.js           — login; httpOnly cookie + переходный Bearer
   src/utils/adminBootstrap.js    — VILAR_ADMIN_PASSWORD / временный пароль Admin
   src/utils/password.js          — scrypt hash
   src/store.js               — CRUD SQLite (JSON-документы в таблице records); bootstrap Admin
-  src/middleware/access.js   — JWT + RBAC на маршрутах
+  src/middleware/access.js   — cookie/Bearer + RBAC на маршрутах
   src/middleware/loginRateLimit.js — лимит попыток POST /auth/login (IP + логин)
   src/constants/collectionAccess.js — коллекция → objectId; запрет generic-записи регистров
   src/services/stock.js      — свободный остаток, склады
   src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
-  src/services/quality.js    — качество (заглушка)
+  src/services/quality.js    — качество (QIN/QRL/QBL; QBL → blocked на партии)
+  src/services/chat.js       — общий чат
   src/constants/documentTypes.js
   src/routes/planning.js     — /api/planning/* (+ GET order-trace/:id)
   src/routes/documents.js    — /api/documents/* (+ GET :id/related)
   tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, guards
   src/routes/quality.js      — /api/quality/*
+  src/routes/chat.js         — /api/chat/*
   src/routes/reports.js      — /api/reports/* (выпущенные серии, запасы, Excel)
   src/services/reports.js
   src/routes/feedback.js     — /api/feedback
@@ -45,7 +47,7 @@ backend/
   src/services/permissions.js    — матрица прав роли
   src/services/favorites.js      — избранное per user (+ RBAC filter)
   src/constants/navPages.js      — pageId → objectId для избранного
-  src/routes/admin.js        — /api/admin/* (экспорт справочников)
+  src/routes/admin.js        — /api/admin/* (экспорт, backups, login-audit, changelog)
   data/roles.json
   docs/ORDER_STATUS_GUARDS.md
   docs/PRE_PRODUCTION.md
@@ -64,6 +66,8 @@ frontend/
   src/components/AdminExportDictionaries.tsx — экспорт справочников
   src/components/AdminDataMaintenance.tsx — очистка / демо / резервные копии (+ скачать на ПК)
   src/components/AdminLoginAuditPage.tsx — журнал входов
+  src/components/AdminChangelogPage.tsx — что нового (CHANGELOG.md)
+  src/components/HeaderChat.tsx — чат в шапке
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка

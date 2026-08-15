@@ -1849,6 +1849,28 @@ button.danger-outline:hover {
   background: #fff8f7;
 }
 
+.pick-lot-blocked td {
+  background: #ffe8e6;
+}
+
+.select-lot-blocked {
+  border-color: #c62828 !important;
+  background: #ffebee;
+  color: #b71c1c;
+  font-weight: 600;
+}
+
+.pick-lot-block-reason {
+  margin-top: 4px;
+  color: #b71c1c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lot-block-row td {
+  background: #fff5f3;
+}
+
 .ok-mark {
   display: inline-flex;
   align-items: center;
@@ -2689,4 +2711,108 @@ button.danger-outline:hover {
     padding-right: 0;
     padding-bottom: 8px;
   }
+}
+
+.changelog-md {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface-2, #f6f7f9);
+  border: 1px solid var(--line, #dde1e6);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  max-height: min(70vh, 720px);
+  overflow: auto;
+}
+
+.header-chat {
+  position: relative;
+}
+
+.header-chat-toggle.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.header-chat-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(360px, 92vw);
+  max-height: min(70vh, 480px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #1a1f26;
+  border: 1px solid #cfd6de;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18);
+  z-index: 40;
+}
+
+.header-chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e6ebf0;
+}
+
+.header-chat-list {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 180px;
+}
+
+.header-chat-msg {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f3f5f8;
+}
+
+.header-chat-msg.mine {
+  background: #e8f3ef;
+}
+
+.header-chat-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #667085;
+  margin-bottom: 4px;
+}
+
+.header-chat-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+}
+
+.header-chat-error {
+  color: #b42318;
+  font-size: 12px;
+  padding: 0 12px 6px;
+}
+
+.header-chat-form {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #e6ebf0;
+}
+
+.header-chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-chat-form button {
+  min-width: 40px;
 }

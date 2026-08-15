@@ -7,6 +7,7 @@ import AccessDenied from './components/AccessDenied';
 import AdminExportDictionaries from './components/AdminExportDictionaries';
 import AdminDataMaintenance from './components/AdminDataMaintenance';
 import AdminLoginAuditPage from './components/AdminLoginAuditPage';
+import AdminChangelogPage from './components/AdminChangelogPage';
 import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
 import HomePage from './components/HomePage';
@@ -648,6 +649,8 @@ export default function App() {
         return <AdminDataMaintenance />;
       case 'admin_login_audit':
         return <AdminLoginAuditPage />;
+      case 'admin_changelog':
+        return <AdminChangelogPage />;
       case 'production_desktop':
         return (
           <ProductionDesktop
@@ -662,6 +665,7 @@ export default function App() {
                 counterpartyId: l.counterpartyId,
               })),
               counterparties: counterparties.map((c) => ({ id: c.id, name: c.name })),
+              warehouses,
             }}
           />
         );

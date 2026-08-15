@@ -1,5 +1,6 @@
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+/** Переходный Bearer; основной контур — httpOnly cookie + credentials. */
 let authToken: string | null = null;
 
 export function setAuthToken(token: string | null) {
@@ -18,6 +19,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     res = await fetch(`${API_BASE}${path}`, {
       ...init,
       headers,
+      credentials: 'include',
     });
   } catch {
     throw new Error(
@@ -38,7 +40,7 @@ async function downloadFile(path: string, filename: string, init?: RequestInit):
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...init, headers });
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
   } catch {
     throw new Error(
       'Сервер недоступен. Запустите backend (npm run backend в корне проекта, порт 3001).'
@@ -107,8 +109,14 @@ export const api = {
     const qs = q.toString();
     return request<MaterialBalanceMatrix>(`/planning/material-balance-matrix${qs ? `?${qs}` : ''}`);
   },
-  completeOrder: (id: string, userId?: string) =>
-    request(`/planning/complete/${id}`, { method: 'POST', body: JSON.stringify({ userId }) }),
+  completeOrder: (
+    id: string,
+    opts?: { userId?: string; warehouseFromId?: string; warehouseToId?: string }
+  ) =>
+    request(`/planning/complete/${id}`, {
+      method: 'POST',
+      body: JSON.stringify(opts || {}),
+    }),
   cancelOrder: (id: string, userId?: string) =>
     request(`/planning/cancel/${id}`, { method: 'POST', body: JSON.stringify({ userId }) }),
   saveProductionFact: (
@@ -284,6 +292,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ userId }),
     }),
+
+  getChangelog: () => request<{ markdown: string }>('/admin/changelog'),
+  listChatMessages: () =>
+    request<
+      { id: string; userId: string; userName: string; text: string; createdAt: string }[]
+    >('/chat/messages'),
+  postChatMessage: (text: string) =>
+    request<{ id: string; userId: string; userName: string; text: string; createdAt: string }>(
+      '/chat/messages',
+      { method: 'POST', body: JSON.stringify({ text }) }
+    ),
 };
 
 export type GanttTask = {
