@@ -62,7 +62,8 @@ frontend/
   src/components/CounterpartyBadge.tsx    — зелёный/жёлтый бейдж
   src/components/ProductionDesktop.tsx       — управление заказами (план/факт)
   src/components/AdminExportDictionaries.tsx — экспорт справочников
-  src/components/AdminDataMaintenance.tsx — очистка / демо / резервные копии
+  src/components/AdminDataMaintenance.tsx — очистка / демо / резервные копии (+ скачать на ПК)
+  src/components/AdminLoginAuditPage.tsx — журнал входов
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка

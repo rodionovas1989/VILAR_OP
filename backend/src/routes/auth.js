@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import * as auth from '../services/auth.js';
 import * as favorites from '../services/favorites.js';
-import { loginRateLimit } from '../middleware/loginRateLimit.js';
+import * as loginAudit from '../services/loginAudit.js';
+import { loginRateLimit, clientIp } from '../middleware/loginRateLimit.js';
 
 const router = Router();
 
@@ -15,10 +16,25 @@ function requireUser(req, res) {
 }
 
 router.post('/login', loginRateLimit, (req, res) => {
+  const ip = clientIp(req);
+  const loginName = String(req.body?.login || '').trim();
   try {
     const { login, password, rememberMe } = req.body || {};
-    res.json(auth.login(login, password, rememberMe));
+    const result = auth.login(login, password, rememberMe);
+    loginAudit.recordLoginAttempt({
+      ok: true,
+      login: loginName,
+      userId: result.user?.id,
+      ip,
+    });
+    res.json(result);
   } catch (e) {
+    loginAudit.recordLoginAttempt({
+      ok: false,
+      login: loginName,
+      ip,
+      reason: e.message || String(e),
+    });
     res.status(401).json({ error: e.message || String(e) });
   }
 });

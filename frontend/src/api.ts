@@ -140,6 +140,19 @@ export const api = {
     }),
   deleteBackup: (id: string) =>
     request(`/admin/backups/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  downloadBackup: (id: string) =>
+    downloadFile(`/admin/backups/${encodeURIComponent(id)}/download`, `vilar-backup-${id}.sqlite`),
+  listLoginAudit: (limit = 200) =>
+    request<{
+      items: {
+        at: string;
+        ok: boolean;
+        login: string;
+        userId?: string | null;
+        ip?: string;
+        reason?: string | null;
+      }[];
+    }>(`/admin/login-audit?limit=${limit}`),
   clearAllData: (confirm: string) =>
     request('/admin/data/clear', { method: 'POST', body: JSON.stringify({ confirm }) }),
   loadDemoData: (confirm: string) =>

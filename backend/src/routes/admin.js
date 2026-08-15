@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import { COLLECTIONS, readAll } from '../store.js';
 import { requirePermission } from '../middleware/access.js';
 import * as dataMaintenance from '../services/dataMaintenance.js';
+import * as loginAudit from '../services/loginAudit.js';
 
 /** Справочники, доступные для экспорта из Администрирования */
 export const DICTIONARY_COLLECTIONS = [
@@ -136,6 +137,25 @@ router.post('/data/demo', requirePermission('admin_data_maintenance', 'modify'),
   try {
     assertConfirm(req.body, 'DEMO');
     res.json(dataMaintenance.loadDemoData());
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.get('/backups/:id/download', requirePermission('admin_data_maintenance', 'read'), (req, res) => {
+  try {
+    const filePath = dataMaintenance.getBackupSqlitePath(req.params.id);
+    const name = `vilar-backup-${req.params.id}.sqlite`;
+    res.download(filePath, name);
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.get('/login-audit', requirePermission('admin_login_audit', 'read'), (req, res) => {
+  try {
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
+    res.json({ items: loginAudit.listLoginAttempts({ limit }) });
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
   }

@@ -131,6 +131,14 @@ function replaceLiveDbFromFile(srcSqlite) {
   }
 }
 
+export function getBackupSqlitePath(id) {
+  const safe = String(id || '').replace(/[^a-zA-Z0-9._-]/g, '');
+  if (!safe || safe !== id) throw new Error('Некорректный id архива');
+  const sqlite = path.join(getBackupsDir(), safe, 'vilar.sqlite');
+  if (!fs.existsSync(sqlite)) throw new Error('Архив не найден');
+  return sqlite;
+}
+
 export function listBackups() {
   ensureBackupsDir();
   const names = fs.readdirSync(getBackupsDir(), { withFileTypes: true }).filter((d) => d.isDirectory());
@@ -154,6 +162,7 @@ export function listBackups() {
   items.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   return items;
 }
+
 
 export function createBackup({ label = '', reason = 'manual' } = {}) {
   ensureCollections();

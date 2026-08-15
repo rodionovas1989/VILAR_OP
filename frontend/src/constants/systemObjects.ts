@@ -56,6 +56,7 @@ export const ADMIN_OBJECTS: SystemObject[] = [
   { id: 'admin_export', label: 'Экспорт справочников' },
   { id: 'admin_feedback', label: 'Обратная связь' },
   { id: 'admin_data_maintenance', label: 'Данные и резервные копии' },
+  { id: 'admin_login_audit', label: 'Журнал входов' },
 ];
 
 export const SYSTEM_OBJECT_GROUPS = [

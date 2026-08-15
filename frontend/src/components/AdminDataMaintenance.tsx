@@ -79,7 +79,8 @@ export default function AdminDataMaintenance() {
 
       <p className="hint">
         Опасные операции доступны только администратору. Перед очисткой, демо и восстановлением сервер сам
-        сохраняет слепок текущей базы в пул архивов.
+        сохраняет слепок текущей базы в пул архивов. Чтобы хранить копию <strong>вне сервера</strong>, создайте
+        слепок и нажмите «Скачать» — файл сохранится на ваш компьютер (ваш ПК или ПК админа на площадке).
       </p>
 
       {error && (
@@ -141,6 +142,16 @@ export default function AdminDataMaintenance() {
                   </td>
                   <td>{formatBytes(b.sizeBytes)}</td>
                   <td className="row-actions">
+                    <button
+                      type="button"
+                      className="ghost"
+                      disabled={busy}
+                      onClick={() => {
+                        void run(() => api.downloadBackup(b.id), 'Файл скачивается на ваш компьютер');
+                      }}
+                    >
+                      Скачать
+                    </button>
                     {canWrite && (
                       <>
                         <button

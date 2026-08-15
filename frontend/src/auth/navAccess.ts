@@ -13,6 +13,8 @@ export function pagePermissionId(pageId: string): string {
       return 'admin_export';
     case 'admin_data_maintenance':
       return 'admin_data_maintenance';
+    case 'admin_login_audit':
+      return 'admin_login_audit';
     case 'admin_feedback':
       return 'admin_feedback';
     case 'admin_user_guide':

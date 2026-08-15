@@ -1,0 +1,33 @@
+---
+description: После merge в main синхронизировать docs; чеклист documentTypes FE/BE
+alwaysApply: true
+---
+
+# Документация и релизы (дополнение)
+
+См. также `releases-and-updates.mdc`.
+
+## После изменений, попавших в `main`
+
+В том же PR/коммите или сразу после merge обновлять по смыслу:
+
+- `BRANCH_INFO.md`, `PROJECT_CONTEXT.md`
+- `docs/ROADMAP.md` — статусы «готово / в работе / отложено» под **факт кода**
+- `README.md` / `DEPLOYMENT.md` / `AGENT_BRIEF.md` — если менялись стек, запуск, карта файлов
+- `docs/SECURITY_PUBLIC_VM.md` — если менялась ИБ пилота
+
+Не оставлять в ROADMAP пункты «в работе», если фича уже в `main`.
+
+## Типы документов (FE ↔ BE)
+
+Пока нет общего пакета `shared/`: при добавлении или смене типа документа править **оба**:
+
+- `backend/src/constants/documentTypes.js`
+- `frontend/src/constants/documentTypes.ts`
+
+и связанные nav / RBAC / handlers. Общий пакет — идея на потом (ROADMAP).
+
+## Версии и журнал для пользователей
+
+Идея (ещё не обязательна в каждом релизе): git-теги `vX.Y.Z` + пользовательский changelog в Администрировании. Когда появится — тег при релизе на `main` и запись в changelog.
+---

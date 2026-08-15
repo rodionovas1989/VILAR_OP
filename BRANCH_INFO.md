@@ -2,7 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: свой логотип + favicon | **эталон** |
+| `main` | Стабильный снимок: HTTPS + SSH harden | **эталон** |
+| `feature/admin-login-audit-envfile` | Журнал входов, скачать бэкап, EnvironmentFile | **активна** |
 | `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon (без чужого бренда) | слита в main |
 | `feature/login-rate-limit` | Rate limit login (IP+логин), до HTTPS | слита в main |
 | `feature/auth-gate-landing` | Гостевой экран только «Вход»; SECURITY_PUBLIC_VM | слита в main |

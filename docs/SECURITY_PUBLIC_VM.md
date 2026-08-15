@@ -58,14 +58,9 @@
 2. ~~HTTPS~~ → **сделано** (`docs/HTTPS_SETUP.md`, скрипт `local/setup-https.sh`)
 3. ~~Rate limit на login~~ → **сделано**
 4. ~~SSH только по ключу~~ → **сделано** (пароль/root выкл.; шпаргалка в `local/YANDEX_CLOUD.md`, не в git)
-5. **Бэкап sqlite вне ВМ** + проверка восстановления.
-
-### Этап B — усиление приложения (1–2 недели)
-
-6. **Helmet** / security headers (CSP, frame deny, HSTS после HTTPS).
-7. **Сессии:** httpOnly Secure cookie вместо долгого токена в `localStorage`.
-8. **Журнал входа** (успех/неуспех, IP, login).
-9. Не светить лишнее в `/api/health`.
+5. **Бэкап sqlite вне ВМ** — кнопка «Скачать» слепка на компьютер админа (регламент вручную).
+6. ~~Helmet~~ → ещё нет; **журнал входов** — сделано (Админ).
+7. **EnvironmentFile** для пароля Admin — сделано на ВМ (`/etc/vilar-op.env`).
 
 ### Этап C — эксплуатация ВМ
 

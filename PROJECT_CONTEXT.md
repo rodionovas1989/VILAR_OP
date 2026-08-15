@@ -1,11 +1,16 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main
+## Ветка: feature/admin-login-audit-envfile
 
-Ревью 2026-08-15: обновлены `docs/ROADMAP.md`, canvas-ревью. Пилот HTTPS + SSH harden.
-Следующее по ИБ/эксплуатации: **бэкап sqlite вне ВМ**.
+Журнал входов, скачивание бэкапа на ПК, EnvironmentFile секретов, правила docs-sync, ROADMAP.
 
-### На ВМ
-- URL: https://vilar-prod.ru
-- SSH: только ключ (`local/YANDEX_CLOUD.md`)
-- Деплой: git bundle + `VITE_API_URL=https://vilar-prod.ru/api`
+### Решения заказчика (зафиксированы)
+- Поставщики — мягко пока
+- Блокировка партии документом + красная подсветка (план)
+- Cookie-сессии — можно планировать до нагрузки пользователей
+- Бэкап вне ВМ = «Скачать» слепок на компьютер админа
+- Чат в шапке — идея к обсуждению
+
+### На ВМ после merge
+- https://vilar-prod.ru
+- `/etc/vilar-op.env` (chmod 600)
