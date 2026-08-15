@@ -1,12 +1,12 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон после релиза)
+## Ветка: main (эталон)
 
-Слито: свой hi-tech логотип + favicon; чужой бренд-марк убран.
-Ожидание: верификация `vilar-prod.ru` → HTTPS (`docs/HTTPS_SETUP.md`).
+HTTPS на пилоте: **https://vilar-prod.ru** (nginx + Let’s Encrypt).
+Старый URL `:3001` снаружи закрыт. Далее: бэкапы вне ВМ, SSH hardening.
 
 ### На ВМ
-- URL: http://51.250.73.169:3001
-- Домен: vilar-prod.ru (DNS ждёт VERIFIED в реестре .ru)
-- systemd: `vilar-op`
-- Деплой: git bundle с ПК
+- URL: https://vilar-prod.ru
+- systemd: `vilar-op` + `nginx`
+- CORS: `https://vilar-prod.ru`, TRUST_PROXY=1
+- Деплой кода: git bundle; после деплоя фронт собирать с `VITE_API_URL=https://vilar-prod.ru/api`
