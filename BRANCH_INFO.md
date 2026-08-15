@@ -2,7 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Журнал входов, скачать бэкап, docs-sync | **эталон** |
+| `main` | Журнал входов, скачать бэкап, docs-sync | **эталон** (до merge roadmap-batch) |
+| `feature/roadmap-batch-remaining` | W1–W4: actor/series/helmet/склады, QBL, cookies, чат+changelog | **активна** |
 | `feature/admin-login-audit-envfile` | Журнал входов, скачать бэкап, EnvironmentFile | слита в main |
 | `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon | слита в main |
 | `feature/login-rate-limit` | Rate limit login | слита в main |

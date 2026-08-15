@@ -1,4 +1,5 @@
 import { useAuth } from '../auth/AuthContext';
+import HeaderChat from './HeaderChat';
 
 export default function AppHeader() {
   const { user, loading, openLogin, logout } = useAuth();
@@ -17,6 +18,7 @@ export default function AppHeader() {
           <span className="app-header-muted">…</span>
         ) : user ? (
           <>
+            <HeaderChat />
             <span className="app-header-name" title={user.login}>
               {user.name}
             </span>

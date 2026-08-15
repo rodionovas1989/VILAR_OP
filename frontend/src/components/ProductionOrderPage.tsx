@@ -318,7 +318,7 @@ export default function ProductionOrderPage({
     setBusy(true);
     setError('');
     try {
-      await api.completeOrder(editing.id, user?.id);
+      await api.completeOrder(editing.id, { userId: user?.id });
       const fresh = await api.get<ProductionOrder>('production_orders', editing.id);
       applySaved(fresh, 'view');
       await load();

@@ -967,7 +967,15 @@ function PickRow({
   onChangeLot: (lotId: string) => void;
 }) {
   const [lots, setLots] = useState<
-    { id: string; number: string; freeQty: number; counterparty?: { name: string }; expiryDate?: string }[]
+    {
+      id: string;
+      number: string;
+      freeQty: number;
+      counterparty?: { name: string };
+      expiryDate?: string;
+      blocked?: boolean;
+      blockReason?: string | null;
+    }[]
   >([]);
   const loaded = useRef(false);
 
@@ -978,24 +986,33 @@ function PickRow({
   }, [pick.materialId, algorithm]);
 
   const ok = !!pick.ok;
+  const selectedLot = lots.find((l) => l.id === pick.lotId);
+  const lotBlocked = Boolean(selectedLot?.blocked);
 
   return (
-    <tr className={ok ? 'pick-ok' : 'pick-bad'}>
+    <tr className={`${ok ? 'pick-ok' : 'pick-bad'}${lotBlocked ? ' pick-lot-blocked' : ''}`}>
       <td>{pick.materialName}</td>
       <td className="col-center num">{pick.quantity}</td>
       <td>
         <select
-          className={ok ? '' : 'select-bad'}
+          className={`${ok ? '' : 'select-bad'}${lotBlocked ? ' select-lot-blocked' : ''}`}
           value={pick.lotId || ''}
           onChange={(e) => onChangeLot(e.target.value)}
         >
           <option value="">— не выбрана —</option>
           {lots.map((l) => (
-            <option key={l.id} value={l.id}>
+            <option key={l.id} value={l.id} className={l.blocked ? 'option-lot-blocked' : undefined}>
+              {l.blocked ? '⛔ ' : ''}
               {l.number} (своб. {l.freeQty})
+              {l.blocked && l.blockReason ? ` — ${l.blockReason}` : ''}
             </option>
           ))}
         </select>
+        {lotBlocked && (
+          <div className="pick-lot-block-reason">
+            Партия заблокирована: {selectedLot?.blockReason || 'без указания причины'}
+          </div>
+        )}
         {!ok && (
           <div className="pick-problem">
             {!pick.lotId

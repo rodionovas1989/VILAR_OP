@@ -71,7 +71,12 @@ router.post('/confirm-materials-bulk', canPlan, (req, res) => {
 
 router.post('/complete/:id', canProduce, (req, res) => {
   try {
-    res.json(planning.completeOrder(req.params.id, actorId(req)));
+    res.json(
+      planning.completeOrder(req.params.id, actorId(req), {
+        warehouseFromId: req.body?.warehouseFromId,
+        warehouseToId: req.body?.warehouseToId,
+      })
+    );
   } catch (e) {
     res.status(400).json({ error: e.message });
   }

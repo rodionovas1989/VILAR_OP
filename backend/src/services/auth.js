@@ -29,6 +29,25 @@ function loadAuthSecret() {
 const SECRET = loadAuthSecret();
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
+export const AUTH_COOKIE_NAME = 'vilar_session';
+
+function cookieSecure() {
+  return (
+    process.env.COOKIE_SECURE === '1' ||
+    process.env.COOKIE_SECURE === 'true' ||
+    process.env.NODE_ENV === 'production'
+  );
+}
+
+export function sessionCookieOptions(ttlMs) {
+  return {
+    httpOnly: true,
+    secure: cookieSecure(),
+    sameSite: 'lax',
+    maxAge: ttlMs,
+    path: '/',
+  };
+}
 
 function signToken(userId, ttlMs) {
   const exp = Date.now() + ttlMs;
@@ -88,7 +107,13 @@ export function publicUser(user) {
   };
 }
 
+/** Cookie (предпочтительно) или Authorization Bearer — переходный период. */
 export function userFromRequest(req) {
+  const fromCookie = req.cookies?.[AUTH_COOKIE_NAME];
+  if (fromCookie) {
+    const user = verifyToken(fromCookie);
+    if (user) return user;
+  }
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   return verifyToken(token);

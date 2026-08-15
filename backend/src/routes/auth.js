@@ -21,12 +21,14 @@ router.post('/login', loginRateLimit, (req, res) => {
   try {
     const { login, password, rememberMe } = req.body || {};
     const result = auth.login(login, password, rememberMe);
+    res.cookie(auth.AUTH_COOKIE_NAME, result.token, auth.sessionCookieOptions(result.expiresInMs));
     loginAudit.recordLoginAttempt({
       ok: true,
       login: loginName,
       userId: result.user?.id,
       ip,
     });
+    // token остаётся в JSON на один релиз (переходный Bearer); клиент может не сохранять
     res.json(result);
   } catch (e) {
     loginAudit.recordLoginAttempt({
@@ -45,8 +47,13 @@ router.get('/me', (req, res) => {
   res.json(auth.publicUser(user));
 });
 
-router.post('/logout', (_req, res) => {
-  // Stateless JWT: выход на клиенте (удаление токена). Эндпоинт — для будущего audit log.
+router.post('/logout', (req, res) => {
+  res.clearCookie(auth.AUTH_COOKIE_NAME, {
+    httpOnly: true,
+    secure: auth.sessionCookieOptions(0).secure,
+    sameSite: 'lax',
+    path: '/',
+  });
   res.json({ ok: true });
 });
 

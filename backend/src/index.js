@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -13,6 +15,7 @@ import qualityRouter from './routes/quality.js';
 import reportsRouter from './routes/reports.js';
 import feedbackRouter from './routes/feedback.js';
 import authRouter from './routes/auth.js';
+import chatRouter from './routes/chat.js';
 import { requireAuthUnlessPublic, actorId, requireCollectionAccess } from './middleware/access.js';
 import { isGenericWriteClosed } from './constants/collectionAccess.js';
 import * as planning from './services/planning.js';
@@ -32,13 +35,21 @@ const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://12
   .map((s) => s.trim())
   .filter(Boolean);
 app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use(
   cors({
     origin(origin, cb) {
       if (!origin || corsOrigins.includes(origin)) return cb(null, true);
       cb(null, false);
     },
+    credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 
 if (
@@ -53,6 +64,15 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 app.use('/api', requireAuthUnlessPublic);
 app.use('/api/auth', authRouter);
+
+function assertSeriesNumberUnique(item, excludeId) {
+  const number = String(item.number || '').trim();
+  if (!number) throw new Error('Укажите номер серии');
+  item.number = number;
+  const dup = readAll('series').find((r) => r.number === number && r.id !== excludeId);
+  if (dup) throw new Error('Серия с таким номером уже есть');
+  return item;
+}
 
 function assertPlannedVolumeUnique(item, excludeId) {
   const materialId = item.materialId;
@@ -134,6 +154,14 @@ for (const name of COLLECTIONS) {
         beforeUpdate: (merged, current) => assertPlannedVolumeUnique(merged, current.id),
       })
     );
+  } else if (name === 'series') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => assertSeriesNumberUnique(item, item.id),
+        beforeUpdate: (merged, current) => assertSeriesNumberUnique(merged, current.id),
+      })
+    );
   } else if (name === 'users') {
     app.use(
       `/api/${name}`,
@@ -162,6 +190,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/quality', qualityRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/feedback', feedbackRouter);
+app.use('/api/chat', chatRouter);
 
 app.get('/api/export/:collection.xlsx', (req, res, next) => {
   const name = req.params.collection;

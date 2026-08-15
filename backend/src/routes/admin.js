@@ -1,9 +1,14 @@
 import { Router } from 'express';
 import ExcelJS from 'exceljs';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { COLLECTIONS, readAll } from '../store.js';
 import { requirePermission } from '../middleware/access.js';
 import * as dataMaintenance from '../services/dataMaintenance.js';
 import * as loginAudit from '../services/loginAudit.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Справочники, доступные для экспорта из Администрирования */
 export const DICTIONARY_COLLECTIONS = [
@@ -156,6 +161,18 @@ router.get('/login-audit', requirePermission('admin_login_audit', 'read'), (req,
   try {
     const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 200));
     res.json({ items: loginAudit.listLoginAttempts({ limit }) });
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.get('/changelog', requirePermission('admin_changelog', 'read'), (_req, res) => {
+  try {
+    const changelogPath = path.join(__dirname, '..', '..', '..', 'docs', 'CHANGELOG.md');
+    if (!fs.existsSync(changelogPath)) {
+      return res.json({ markdown: '# Changelog\n\nФайл docs/CHANGELOG.md пока отсутствует.\n' });
+    }
+    res.json({ markdown: fs.readFileSync(changelogPath, 'utf8') });
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
   }

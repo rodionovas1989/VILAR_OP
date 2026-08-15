@@ -51,6 +51,9 @@ export interface Lot {
   counterpartyId: string | null;
   productionDate: string;
   expiryDate: string;
+  blocked?: boolean;
+  blockReason?: string | null;
+  blockDocumentId?: string | null;
 }
 
 export interface Series {
