@@ -19,6 +19,7 @@ const DOC_TYPE: Record<string, string> = {
   production_issue: 'Списание в производство',
   production_receipt: 'Выпуск из производства',
   shipment: 'Отгрузка',
+  quality_management: 'Управление качеством',
 };
 
 const ORDER_STATUS: Record<string, string> = {
@@ -64,6 +65,8 @@ export default function DocumentTracePanel({
   const active = trace?.activeReservations || [];
   const stock = isDocumentTrace(trace) ? trace.stock || [] : [];
   const order = trace?.productionOrder || null;
+  const qualityHistory = isDocumentTrace(trace) ? trace.qualityHistory || [] : [];
+  const qualityRegister = isDocumentTrace(trace) ? trace.qualityRegister || [] : [];
 
   const empty =
     !loading &&
@@ -72,7 +75,9 @@ export default function DocumentTracePanel({
     !history.length &&
     !active.length &&
     !stock.length &&
-    !order;
+    !order &&
+    !qualityHistory.length &&
+    !qualityRegister.length;
 
   return (
     <div className="trace-panel">
@@ -85,6 +90,82 @@ export default function DocumentTracePanel({
           Заказ: {order.id ? `${order.id.slice(0, 8)}…` : '—'} · {ORDER_STATUS[order.status] || order.status} · выпуск{' '}
           {order.quantity} · {matName(order.materialId)}
         </p>
+      )}
+
+      {qualityHistory.length > 0 && (
+        <div className="trace-block">
+          <h4 className="trace-heading">Движения качества</h4>
+          <div className="trace-table-wrap">
+            <table className="data-table doc-lines-table">
+              <thead>
+                <tr>
+                  <th>Когда</th>
+                  <th>Действие</th>
+                  <th>Материал</th>
+                  <th>Партия</th>
+                  <th>Качество</th>
+                  <th>Разрешение</th>
+                  <th>Статус док.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualityHistory.map((h) => (
+                  <tr key={h.id}>
+                    <td>
+                      {dateFromIso(h.at)} {displayTimeFromIso(h.at)}
+                    </td>
+                    <td>{h.action === 'post' ? 'проведение' : h.action === 'cancel' ? 'отмена' : h.action}</td>
+                    <td>{matName(h.materialId)}</td>
+                    <td>{lotNum(h.lotId)}</td>
+                    <td>{h.qualityName || '—'}</td>
+                    <td>{h.permissionLabel || h.permission || '—'}</td>
+                    <td>{DOC_STATUS[h.documentStatus || ''] || h.documentStatus || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {qualityRegister.length > 0 && (
+        <div className="trace-block">
+          <h4 className="trace-heading">Текущее состояние партий (регистр)</h4>
+          <div className="trace-table-wrap">
+            <table className="data-table doc-lines-table">
+              <thead>
+                <tr>
+                  <th>Партия</th>
+                  <th>Материал</th>
+                  <th>Качество</th>
+                  <th>Разрешение</th>
+                  <th>Документ</th>
+                  <th>Обновлено</th>
+                </tr>
+              </thead>
+              <tbody>
+                {qualityRegister.map((r) => (
+                  <tr key={r.id}>
+                    <td>{lotNum(r.lotId)}</td>
+                    <td>{matName(r.materialId)}</td>
+                    <td>{r.qualityName || '—'}</td>
+                    <td>{r.permissionLabel || r.permission || '—'}</td>
+                    <td>{r.documentNumber || '—'}</td>
+                    <td>
+                      {r.updatedAt ? (
+                        <>
+                          {dateFromIso(r.updatedAt)} {displayTimeFromIso(r.updatedAt)}
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {docs.length > 0 && (

@@ -3,6 +3,7 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | Качества партий + QCM документ, cookie-сессии, чат | **эталон** |
+| `feature/quality-doc-trace-movements` | Движения в карточке документа качества (как у складских) | **активна** |
 | `feature/quality-lot-permissions-redesign` | Справочник качеств, единый QCM, регистры, проверки | **слита** в main |
 | `feature/roadmap-batch-remaining` | W1–W4 ROADMAP batch | **слита** в main |
 | `feature/admin-login-audit-envfile` | Журнал входов, скачать бэкап, EnvironmentFile | слита в main |

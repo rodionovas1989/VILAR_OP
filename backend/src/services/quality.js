@@ -339,4 +339,39 @@ export function assertLotsQualityForUse(lotIds, contextLabel = 'Операция
   return warnings;
 }
 
+/** Движения качества и текущее состояние партий по строкам документа — как related у складских */
+export function getQualityDocumentTrace(id) {
+  const doc = getQualityDocument(id);
+  if (!doc) return null;
+
+  const qualityHistory = store
+    .readAll('quality_history')
+    .filter((h) => h.documentId === id || h.documentNumber === doc.number)
+    .sort((a, b) => String(b.at).localeCompare(String(a.at)));
+
+  const lotIds = [...new Set((doc.lines || []).map((l) => l.lotId).filter(Boolean))];
+  const qualityRegister = store
+    .readAll('quality_register')
+    .filter((r) => lotIds.includes(r.lotId))
+    .sort((a, b) => String(a.lotId).localeCompare(String(b.lotId)));
+
+  return {
+    document: {
+      id: doc.id,
+      type: doc.type,
+      number: doc.number,
+      status: doc.status,
+      date: doc.date,
+    },
+    movements: [],
+    reservationHistory: [],
+    activeReservations: [],
+    relatedDocuments: [],
+    productionOrder: null,
+    stock: [],
+    qualityHistory,
+    qualityRegister,
+  };
+}
+
 export { QUALITY_DOCUMENT_TYPES, QUALITY_DOCUMENT_STATUS, LOT_QUALITY_PERMISSIONS, QUALITY_MANAGEMENT_TYPE };
