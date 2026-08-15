@@ -32,6 +32,7 @@ backend/
   src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
   src/services/quality.js    — качество: QCM документ, регистры, resolveLotQuality
+  src/services/referentialIntegrity.js — запрет удаления справочников при наличии ссылок
   src/constants/lotQuality.js — разрешения Годен / Условно / Не годен
   src/services/chat.js       — общий чат
   src/constants/documentTypes.js
@@ -70,6 +71,7 @@ frontend/
   src/components/AdminChangelogPage.tsx — что нового (CHANGELOG.md)
   src/components/HeaderChat.tsx — чат в шапке
   src/components/QualityManagementPage.tsx — единый документ качества
+  src/content/userGuide.ts                — руководство пользователя (Админ → Руководство)
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка
@@ -96,7 +98,6 @@ frontend/
   src/components/PermissionMatrix.tsx
   src/auth/permissions.ts                — проверка read/create/modify
   src/constants/systemObjects.ts
-  src/components/QualityDocumentsPage.tsx  — качество (заглушка)
   src/components/IconButton.tsx              — кнопки-пиктограммы действий
 ```
 

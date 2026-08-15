@@ -214,8 +214,14 @@ export function CrudPage({
   const bulkDelete = async () => {
     if (!selected.size || !canModify) return;
     if (!confirm(`Удалить выбранные (${selected.size})?`)) return;
-    await api.bulkDelete(collection, [...selected]);
-    await load();
+    setError('');
+    try {
+      await api.bulkDelete(collection, [...selected]);
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const openStatusModal = () => {
@@ -290,7 +296,7 @@ export function CrudPage({
           activeFilterCount={listTable.activeFilterCount}
         />
       )}
-      {error && <div className="alert">{error}</div>}
+      {error && <div className="alert error alert-multiline">{error}</div>}
       {loading ? (
         <p>Загрузка…</p>
       ) : (

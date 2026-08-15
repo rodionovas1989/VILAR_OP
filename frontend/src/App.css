@@ -1069,6 +1069,10 @@ th {
   color: #7a271a;
 }
 
+.alert-multiline {
+  white-space: pre-wrap;
+}
+
 .admin-export-panel {
   background: var(--panel);
   border: 1px solid var(--line);
