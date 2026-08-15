@@ -182,13 +182,11 @@ textarea {
 
 .app-header-logo {
   height: 40px;
-  width: auto;
-  max-width: 200px;
+  width: 40px;
   object-fit: contain;
-  object-position: left center;
   display: block;
   flex-shrink: 0;
-  mix-blend-mode: lighten;
+  border-radius: 8px;
 }
 
 .app-header-title {

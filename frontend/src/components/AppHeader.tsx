@@ -6,7 +6,7 @@ export default function AppHeader() {
   return (
     <header className="app-header">
       <div className="app-header-brand">
-        <img src="/vilar-logo.png" alt="Фармцентр ВИЛАР" className="app-header-logo" />
+        <img src="/app-logo.png" alt="" className="app-header-logo" />
         <div className="app-header-title">
           <span className="app-header-title-main">Вилар</span>
           <span className="app-header-title-sub">Оперативное планирование</span>

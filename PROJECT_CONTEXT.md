@@ -1,11 +1,12 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон после релиза)
+## Ветка: feature/favicon-vilar-logo (активна)
 
-Слито: rate limit login (до HTTPS). Далее по плану — HTTPS, бэкапы вне ВМ, SSH.
-См. `docs/SECURITY_PUBLIC_VM.md`.
+Свой логотип (hi-tech / производство+планирование) в шапке и favicon вкладки.
+Чужой `vilar-logo.png` убран из `frontend/public`.
+
+Ожидание: верификация домена `vilar-prod.ru` → HTTPS.
 
 ### На ВМ
 - URL: http://51.250.73.169:3001
-- systemd: `vilar-op`
-- Деплой: git bundle с ПК
+- Домен: vilar-prod.ru (DNS ждёт VERIFIED в реестре .ru)
