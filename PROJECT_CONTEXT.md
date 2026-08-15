@@ -2,11 +2,10 @@
 
 ## Ветка: main (эталон)
 
-HTTPS на пилоте: **https://vilar-prod.ru** (nginx + Let’s Encrypt).
-Старый URL `:3001` снаружи закрыт. Далее: бэкапы вне ВМ, SSH hardening.
+HTTPS на пилоте: **https://vilar-prod.ru**. SSH усилен (только ключ). Далее: бэкапы sqlite вне ВМ.
 
 ### На ВМ
 - URL: https://vilar-prod.ru
 - systemd: `vilar-op` + `nginx`
-- CORS: `https://vilar-prod.ru`, TRUST_PROXY=1
-- Деплой кода: git bundle; после деплоя фронт собирать с `VITE_API_URL=https://vilar-prod.ru/api`
+- SSH: `ubuntu_gertag` + ключ; см. шпаргалку `local/YANDEX_CLOUD.md` (не в git)
+- Деплой: git bundle; фронт с `VITE_API_URL=https://vilar-prod.ru/api`

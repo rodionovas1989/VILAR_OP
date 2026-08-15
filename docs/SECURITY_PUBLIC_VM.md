@@ -50,13 +50,14 @@
 - [x] Auth + RBAC на API, scrypt, CORS
 - [x] Rate limit на `POST /api/auth/login` (по IP и логину; до HTTPS ок)
 - [x] HTTPS: `https://vilar-prod.ru` (nginx + Let’s Encrypt; порт 3001 снаружи закрыт)
+- [x] SSH: только ключ, без пароля и без root (`99-vilar-harden.conf`); IP-whitelist SSH не используем (динамический домашний IP + Cursor)
 
 ### Этап A — следующее по порядку (публичный пилот)
 
 1. ~~Белый список IP~~ → **отложено как идея**
 2. ~~HTTPS~~ → **сделано** (`docs/HTTPS_SETUP.md`, скрипт `local/setup-https.sh`)
 3. ~~Rate limit на login~~ → **сделано**
-4. **SSH только по ключу**, парольный вход выключен; по возможности сузить 22.
+4. ~~SSH только по ключу~~ → **сделано** (пароль/root выкл.; шпаргалка в `local/YANDEX_CLOUD.md`, не в git)
 5. **Бэкап sqlite вне ВМ** + проверка восстановления.
 
 ### Этап B — усиление приложения (1–2 недели)
