@@ -1,11 +1,11 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон)
+## Ветка: main
 
-HTTPS на пилоте: **https://vilar-prod.ru**. SSH усилен (только ключ). Далее: бэкапы sqlite вне ВМ.
+Ревью 2026-08-15: обновлены `docs/ROADMAP.md`, canvas-ревью. Пилот HTTPS + SSH harden.
+Следующее по ИБ/эксплуатации: **бэкап sqlite вне ВМ**.
 
 ### На ВМ
 - URL: https://vilar-prod.ru
-- systemd: `vilar-op` + `nginx`
-- SSH: `ubuntu_gertag` + ключ; см. шпаргалку `local/YANDEX_CLOUD.md` (не в git)
-- Деплой: git bundle; фронт с `VITE_API_URL=https://vilar-prod.ru/api`
+- SSH: только ключ (`local/YANDEX_CLOUD.md`)
+- Деплой: git bundle + `VITE_API_URL=https://vilar-prod.ru/api`

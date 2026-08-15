@@ -7,7 +7,7 @@
 | Слой | Технология | Зачем |
 |------|------------|--------|
 | Frontend | React + Vite + TypeScript | Веб-интерфейсы CRUD и рабочий стол планирования |
-| Backend | Node.js + Express | REST API, файловое хранилище JSON, Excel через `exceljs` |
+| Backend | Node.js + Express | REST API, Excel через `exceljs` |
 | Данные | SQLite (`backend/data/vilar.sqlite`) через `node:sqlite` | WAL + транзакции; без Visual Studio / native-сборки |
 | Gantt | [Apache ECharts](https://echarts.apache.org/) (Apache-2.0) | Загрузка РЦ: дорожки = рабочие центры, параллельные заказы |
 
@@ -76,7 +76,7 @@ npm test
 - `docs/PRE_PRODUCTION.md` — чеклист перед площадкой
 - `docs/SECURITY_PUBLIC_VM.md` — риски открытой ВМ и план усиления
 - `docs/HTTPS_SETUP.md` — домен, DNS, nginx, Let’s Encrypt на пилотной ВМ
-- `docs/ROADMAP.md` — дорожная карта и отложенные идеи
+- `docs/ROADMAP.md` — дорожная карта (актуализация 2026-08-15)
 - `PROJECT_CONTEXT.md` — контекст ветки
 - `DEPLOYMENT.md` — запуск
 - `AGENT_BRIEF.md` — карта проекта для агентов
