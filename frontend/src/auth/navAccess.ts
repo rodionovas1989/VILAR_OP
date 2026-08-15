@@ -21,6 +21,8 @@ export function pagePermissionId(pageId: string): string {
       return 'admin_feedback';
     case 'admin_user_guide':
       return 'admin_user_guide';
+    case 'admin_legal':
+      return 'admin_legal';
     default:
       return pageId;
   }

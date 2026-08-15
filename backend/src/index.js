@@ -20,6 +20,7 @@ import { requireAuthUnlessPublic, actorId, requireCollectionAccess } from './mid
 import { isGenericWriteClosed } from './constants/collectionAccess.js';
 import * as planning from './services/planning.js';
 import { warnIfDefaultAdminPassword } from './services/auth.js';
+import * as loginAudit from './services/loginAudit.js';
 import {
   prepareUserCreate,
   prepareUserUpdate,
@@ -29,6 +30,7 @@ import { assertLotQualityPermission } from './constants/lotQuality.js';
 
 ensureCollections();
 warnIfDefaultAdminPassword();
+loginAudit.compactLoginAudit();
 
 const app = express();
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')

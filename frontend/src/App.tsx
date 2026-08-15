@@ -11,6 +11,8 @@ import AdminChangelogPage from './components/AdminChangelogPage';
 import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
 import RecentObjectsStrip from './components/RecentObjectsStrip';
+import PdnAcceptGate from './components/PdnAcceptGate';
+import LegalDocumentsPage from './components/LegalDocumentsPage';
 import HomePage from './components/HomePage';
 import LoginModal from './components/LoginModal';
 import QualityManagementPage from './components/QualityManagementPage';
@@ -23,6 +25,7 @@ import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
 import StockReportPage from './components/StockReportPage';
 import FeedbackPage from './components/FeedbackPage';
 import UserGuidePage from './components/UserGuidePage';
+import { ADMIN_USERS_PDN_HINT, SYSTEM_DISCLAIMER } from './content/legal';
 import RolesPage from './components/RolesPage';
 import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
@@ -47,7 +50,7 @@ function opt(list: { id: string; name?: string; number?: string }[]) {
 }
 
 export default function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, needsPdnAccept } = useAuth();
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [page, setPage] = useState('home');
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -637,9 +640,13 @@ export default function App() {
         return <FeedbackPage />;
       case 'admin_user_guide':
         return <UserGuidePage />;
+      case 'admin_legal':
+        return <LegalDocumentsPage />;
       case 'users':
         return (
-          <CrudPage
+          <>
+            <p className="hint">{ADMIN_USERS_PDN_HINT}</p>
+            <CrudPage
             title="Пользователи"
             collection="users"
             transformIn={(row) => {
@@ -649,6 +656,8 @@ export default function App() {
             transformOut={(row) => {
               const body = { ...row };
               if (!body.password) delete body.password;
+              delete body.pdnAcceptedAt;
+              delete body.pdnPolicyVersion;
               return body;
             }}
             validate={(row) => {
@@ -696,8 +705,20 @@ export default function App() {
                 render: (row) => roles.find((r) => r.id === row.roleId)?.name || String(row.roleId || '—'),
               },
               { key: 'active', label: 'Активен' },
+              {
+                key: 'pdn',
+                label: 'ПДн',
+                filterable: false,
+                render: (row) => {
+                  const ver = row.pdnPolicyVersion ? String(row.pdnPolicyVersion) : '';
+                  const at = row.pdnAcceptedAt ? String(row.pdnAcceptedAt).slice(0, 10) : '';
+                  if (!ver || !at) return 'не принята';
+                  return `${at} / ${ver}`;
+                },
+              },
             ]}
           />
+          </>
         );
       case 'production_orders':
         return (
@@ -784,6 +805,10 @@ export default function App() {
     return <AuthGate />;
   }
 
+  if (needsPdnAccept) {
+    return <PdnAcceptGate />;
+  }
+
   return (
     <div className="app-shell">
       <AppHeader />
@@ -828,7 +853,10 @@ export default function App() {
           ))}
         </nav>
       </aside>
-      <main ref={contentRef} className="content">{content}</main>
+      <main ref={contentRef} className="content">
+        {content}
+        <p className="app-legal-footer">{SYSTEM_DISCLAIMER}</p>
+      </main>
       </div>
     </div>
   );

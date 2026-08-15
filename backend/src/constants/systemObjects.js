@@ -50,6 +50,7 @@ export const REPORT_OBJECTS = [
 
 export const ADMIN_OBJECTS = [
   { id: 'admin_user_guide', label: 'Руководство пользователя' },
+  { id: 'admin_legal', label: 'Политика ПДн и правовая информация' },
   { id: 'admin_users', label: 'Пользователи' },
   { id: 'admin_roles', label: 'Роли' },
   { id: 'admin_export', label: 'Экспорт справочников' },
@@ -103,6 +104,7 @@ export function storekeeperPermissions() {
   }
   out.admin_feedback = { read: true, create: true, modify: false };
   out.admin_user_guide = { read: true, create: false, modify: false };
+  out.admin_legal = { read: true, create: false, modify: false };
   return out;
 }
 
@@ -125,6 +127,7 @@ export function plannerPermissions() {
   }
   out.admin_feedback = { read: true, create: true, modify: false };
   out.admin_user_guide = { read: true, create: false, modify: false };
+  out.admin_legal = { read: true, create: false, modify: false };
   return out;
 }
 

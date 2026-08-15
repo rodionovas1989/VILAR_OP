@@ -67,6 +67,11 @@ export const api = {
     ),
   authMe: () => request<import('./auth/AuthContext').AuthUser>('/auth/me'),
   authLogout: () => request('/auth/logout', { method: 'POST' }),
+  acceptPdn: (policyVersion: string) =>
+    request<{ user: import('./auth/AuthContext').AuthUser }>('/auth/accept-pdn', {
+      method: 'POST',
+      body: JSON.stringify({ policyVersion }),
+    }),
   getFavorites: () =>
     request<{ items: { pageId: string; addedAt: string }[] }>('/auth/favorites'),
   saveFavorites: (items: { pageId: string; addedAt?: string }[]) =>

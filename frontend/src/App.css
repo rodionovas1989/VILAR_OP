@@ -161,6 +161,151 @@ textarea {
   font-size: 0.88rem;
 }
 
+.auth-gate-cookies {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.auth-gate-legal-link {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+button.linkish {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  font: inherit;
+}
+
+.legal-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(18, 26, 36, 0.55);
+}
+
+.legal-modal {
+  width: min(720px, 100%);
+  max-height: min(88vh, 900px);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.legal-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.legal-modal-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.legal-modal-body {
+  padding: 12px 16px 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.pdn-accept-gate {
+  display: grid;
+  place-items: center;
+  min-height: 100%;
+  padding: 20px 12px;
+  background: linear-gradient(165deg, #121a24 0%, #1c2838 42%, #243447 100%);
+}
+
+.pdn-accept-panel {
+  width: min(100%, 720px);
+  max-height: min(92vh, 960px);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 22px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(247, 250, 252, 0.98);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.pdn-accept-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin: 8px 0 14px;
+  padding-right: 6px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 10px 12px;
+}
+
+.pdn-accept-form {
+  display: grid;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.pdn-accept-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pdn-accept-actions .auth-gate-submit {
+  margin-top: 0;
+  width: auto;
+}
+
+.legal-policy-section {
+  margin-bottom: 14px;
+}
+
+.legal-policy-section h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.legal-policy-section p {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.legal-disclaimer,
+.app-legal-footer {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.app-legal-footer {
+  margin: 16px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.legal-documents-page {
+  overflow-y: auto;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -411,6 +556,10 @@ textarea {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+.content > .hint {
+  flex-shrink: 0;
 }
 
 .page {

@@ -52,6 +52,7 @@ export const REPORT_OBJECTS: SystemObject[] = [
 
 export const ADMIN_OBJECTS: SystemObject[] = [
   { id: 'admin_user_guide', label: 'Руководство пользователя' },
+  { id: 'admin_legal', label: 'Политика ПДн и правовая информация' },
   { id: 'admin_users', label: 'Пользователи' },
   { id: 'admin_roles', label: 'Роли' },
   { id: 'admin_export', label: 'Экспорт справочников' },

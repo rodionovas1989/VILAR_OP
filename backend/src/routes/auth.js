@@ -47,6 +47,17 @@ router.get('/me', (req, res) => {
   res.json(auth.publicUser(user));
 });
 
+router.post('/accept-pdn', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  try {
+    const updated = auth.acceptPdnPolicy(user.id, req.body?.policyVersion);
+    res.json({ user: updated });
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
 router.post('/logout', (req, res) => {
   res.clearCookie(auth.AUTH_COOKIE_NAME, {
     httpOnly: true,

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { DATA_DIR } from '../store.js';
+import { PDN_POLICY_VERSION } from '../constants/legal.js';
 
 export { hashPassword, verifyPassword } from '../utils/password.js';
 
@@ -104,7 +105,25 @@ export function publicUser(user) {
     roleName: role?.name || null,
     permissions,
     active: user.active !== false,
+    pdnAcceptedAt: user.pdnAcceptedAt || null,
+    pdnPolicyVersion: user.pdnPolicyVersion || null,
   };
+}
+
+export function acceptPdnPolicy(userId, policyVersion) {
+  const expected = PDN_POLICY_VERSION;
+  if (String(policyVersion || '') !== expected) {
+    throw new Error('Устаревшая версия Политики. Обновите страницу и примите актуальную версию.');
+  }
+  const user = store.getById('users', userId);
+  if (!user || user.active === false) throw new Error('Пользователь не найден');
+  const next = {
+    ...user,
+    pdnAcceptedAt: new Date().toISOString(),
+    pdnPolicyVersion: expected,
+  };
+  store.update('users', userId, next);
+  return publicUser(next);
 }
 
 /** Cookie (предпочтительно) или Authorization Bearer — переходный период. */

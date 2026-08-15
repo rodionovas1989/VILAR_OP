@@ -25,6 +25,8 @@ export function prepareUserCreate(item) {
   item.login = login;
   item.passwordHash = hashPassword(password);
   item.active = item.active !== false && item.active !== 'false';
+  delete item.pdnAcceptedAt;
+  delete item.pdnPolicyVersion;
   delete item._allUsers;
   return item;
 }
@@ -34,6 +36,11 @@ export function prepareUserUpdate(merged, current) {
   delete merged.password;
 
   if (merged.passwordHash !== undefined) delete merged.passwordHash;
+  // Принятие ПДн только через POST /auth/accept-pdn
+  delete merged.pdnAcceptedAt;
+  delete merged.pdnPolicyVersion;
+  if (current?.pdnAcceptedAt) merged.pdnAcceptedAt = current.pdnAcceptedAt;
+  if (current?.pdnPolicyVersion) merged.pdnPolicyVersion = current.pdnPolicyVersion;
 
   if (merged.name !== undefined) merged.name = String(merged.name).trim();
   if (merged.login !== undefined) {

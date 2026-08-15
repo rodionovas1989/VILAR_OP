@@ -72,6 +72,8 @@ frontend/
   src/components/HeaderChat.tsx — чат в шапке
   src/components/QualityManagementPage.tsx — единый документ качества
   src/content/userGuide.ts                — руководство пользователя (Админ → Руководство)
+  src/content/legal/                      — Политика ПДн, cookies, дисклеймер (версия PDN_POLICY_VERSION)
+  docs/LEGAL_PDN.md                       — оргчеклист и модель согласия без саморегистрации
   src/components/ColumnFilterDropdown.tsx    — отбор колонки (чекбоксы)
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка

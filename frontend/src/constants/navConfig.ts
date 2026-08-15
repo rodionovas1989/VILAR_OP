@@ -92,6 +92,7 @@ export const NAV: NavGroup[] = [
     label: 'Администрирование',
     items: [
       { id: 'admin_user_guide', label: 'Руководство пользователя', kind: 'admin' },
+      { id: 'admin_legal', label: 'Политика ПДн и правовая информация', kind: 'admin' },
       { id: 'users', label: 'Пользователи', kind: 'admin' },
       { id: 'roles', label: 'Роли', kind: 'admin' },
       { id: 'admin_export_dictionaries', label: 'Экспорт справочников', kind: 'admin' },

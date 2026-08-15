@@ -1,5 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
+import { COOKIES_NOTICE_SHORT, PDN_POLICY_VERSION } from '../content/legal';
+import LegalPolicyBody from './LegalPolicyBody';
 
 /** Full-screen login only — no product or company branding for guests. */
 export default function AuthGate() {
@@ -9,6 +11,7 @@ export default function AuthGate() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -62,6 +65,13 @@ export default function AuthGate() {
             />
             Запомнить на этом компьютере
           </label>
+          <p className="auth-gate-cookies">{COOKIES_NOTICE_SHORT}</p>
+          <p className="auth-gate-legal-link">
+            <button type="button" className="linkish" onClick={() => setPolicyOpen(true)}>
+              Политика обработки персональных данных
+            </button>
+            <span className="muted"> (версия {PDN_POLICY_VERSION})</span>
+          </p>
           {error && (
             <p className="error" role="alert">
               {error}
@@ -72,6 +82,21 @@ export default function AuthGate() {
           </button>
         </form>
       </div>
+      {policyOpen && (
+        <div className="legal-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="legal-modal">
+            <div className="legal-modal-header">
+              <h2>Политика обработки персональных данных</h2>
+              <button type="button" className="ghost" onClick={() => setPolicyOpen(false)}>
+                Закрыть
+              </button>
+            </div>
+            <div className="legal-modal-body">
+              <LegalPolicyBody />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
