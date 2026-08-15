@@ -2,8 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: rate limit + гостевой «Вход» | **эталон** |
-| `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon (без чужого бренда) | **активна** |
+| `main` | Стабильный снимок: свой логотип + favicon | **эталон** |
+| `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon (без чужого бренда) | слита в main |
 | `feature/login-rate-limit` | Rate limit login (IP+логин), до HTTPS | слита в main |
 | `feature/auth-gate-landing` | Гостевой экран только «Вход»; SECURITY_PUBLIC_VM | слита в main |
 | `fix/http-randomuuid-fallback` | Create на http://IP: fallback UUID | слита в main |
