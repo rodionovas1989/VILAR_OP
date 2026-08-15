@@ -1,31 +1,31 @@
 # BRANCH_INFO
 
-| Ветка | Описание | Статус |
+| Р’РµС‚РєР° | РћРїРёСЃР°РЅРёРµ | РЎС‚Р°С‚СѓСЃ |
 |-------|----------|--------|
-| `main` | Качества партий + QCM документ, cookie-сессии, чат | **эталон** |
-| `feature/legal-pdn-notices` | Политика ПДн, cookies, принятие при входе, ротация журнала | **слита** в main |
-| `feature/recent-opened-strip` | Полоска последних открытых объектов под шапкой | **слита** в main |
-| `feature/ref-integrity-delete-guards` | Запрет удаления справочников при ссылках; обновление userGuide по качеству | **слита** в main |
-| `feature/quality-doc-trace-movements` | Движения в карточке документа качества (как у складских) | **слита** в main |
-| `feature/quality-lot-permissions-redesign` | Справочник качеств, единый QCM, регистры, проверки | **слита** в main |
-| `feature/roadmap-batch-remaining` | W1–W4 ROADMAP batch | **слита** в main |
-| `feature/admin-login-audit-envfile` | Журнал входов, скачать бэкап, EnvironmentFile | слита в main |
-| `feature/favicon-vilar-logo` | Свой hi-tech логотип + favicon | слита в main |
-| `feature/login-rate-limit` | Rate limit login | слита в main |
-| `feature/auth-gate-landing` | Гостевой экран «Вход» | слита в main |
-| `fix/http-randomuuid-fallback` | UUID fallback на http://IP | слита в main |
-| `feature/admin-data-reset-demo-backups` | Админ: очистка, демо, бэкапы | слита в main |
-| `fix/admin-login-no-hint-strong-password` | VILAR_ADMIN_PASSWORD | слита в main |
-| `fix/sqlite-builtin-no-gyp` | node:sqlite | слита в main |
-| `feature/reports-released-series` | Отчёты; обратная связь | слита в main |
-| `feature/launch-sqlite-reservations` | SQLite, RES, RBAC | слита в main |
-| `feature/stock-documents` | Документы движений | слита в main |
-| `feature/initial-ops-planning` | Каркас ОП | слита в main |
-| `feature/planning-orders-matrix` | Установка/запуск | слита в main |
-| `feature/echarts-resource-gantt` | ECharts Гант | слита в main |
-| `feature/planned-series-volumes` | Плановые объёмы | слита в main |
-| `feature/spec-approved-suppliers` | Поставщики | слита в main |
-| `feature/admin-export-dictionaries` | Экспорт справочников | слита в main |
-| `feature/crud-ux-spec-type-filters` | Отборы | слита в main |
-| `feature/spec-kg-per-1000-packs` | кг на 1000 уп | слита в main |
-| `feature/production-desktop-warehouses` | Производство план/факт | слита в main |
+| `main` | РљР°С‡РµСЃС‚РІР° РїР°СЂС‚РёР№ + QCM РґРѕРєСѓРјРµРЅС‚, cookie-СЃРµСЃСЃРёРё, С‡Р°С‚ | **СЌС‚Р°Р»РѕРЅ** |
+| `feature/legal-pdn-notices` | РџРѕР»РёС‚РёРєР° РџР”РЅ, cookies, РїСЂРёРЅСЏС‚РёРµ РїСЂРё РІС…РѕРґРµ, СЂРѕС‚Р°С†РёСЏ Р¶СѓСЂРЅР°Р»Р° | **СЃР»РёС‚Р°** РІ main |
+| `feature/recent-opened-strip` | РџРѕР»РѕСЃРєР° РїРѕСЃР»РµРґРЅРёС… РѕС‚РєСЂС‹С‚С‹С… РѕР±СЉРµРєС‚РѕРІ РїРѕРґ С€Р°РїРєРѕР№ | **СЃР»РёС‚Р°** РІ main |
+| `feature/ref-integrity-delete-guards` | Р—Р°РїСЂРµС‚ СѓРґР°Р»РµРЅРёСЏ СЃРїСЂР°РІРѕС‡РЅРёРєРѕРІ РїСЂРё СЃСЃС‹Р»РєР°С…; РѕР±РЅРѕРІР»РµРЅРёРµ userGuide РїРѕ РєР°С‡РµСЃС‚РІСѓ | **СЃР»РёС‚Р°** РІ main |
+| `feature/quality-doc-trace-movements` | Р”РІРёР¶РµРЅРёСЏ РІ РєР°СЂС‚РѕС‡РєРµ РґРѕРєСѓРјРµРЅС‚Р° РєР°С‡РµСЃС‚РІР° (РєР°Рє Сѓ СЃРєР»Р°РґСЃРєРёС…) | **СЃР»РёС‚Р°** РІ main |
+| `feature/quality-lot-permissions-redesign` | РЎРїСЂР°РІРѕС‡РЅРёРє РєР°С‡РµСЃС‚РІ, РµРґРёРЅС‹Р№ QCM, СЂРµРіРёСЃС‚СЂС‹, РїСЂРѕРІРµСЂРєРё | **СЃР»РёС‚Р°** РІ main |
+| `feature/roadmap-batch-remaining` | W1вЂ“W4 ROADMAP batch | **СЃР»РёС‚Р°** РІ main |
+| `feature/admin-login-audit-envfile` | Р–СѓСЂРЅР°Р» РІС…РѕРґРѕРІ, СЃРєР°С‡Р°С‚СЊ Р±СЌРєР°Рї, EnvironmentFile | СЃР»РёС‚Р° РІ main |
+| `feature/favicon-vilar-logo` | РЎРІРѕР№ hi-tech Р»РѕРіРѕС‚РёРї + favicon | СЃР»РёС‚Р° РІ main |
+| `feature/login-rate-limit` | Rate limit login | СЃР»РёС‚Р° РІ main |
+| `feature/auth-gate-landing` | Р“РѕСЃС‚РµРІРѕР№ СЌРєСЂР°РЅ В«Р’С…РѕРґВ» | СЃР»РёС‚Р° РІ main |
+| `fix/http-randomuuid-fallback` | UUID fallback РЅР° http://IP | СЃР»РёС‚Р° РІ main |
+| `feature/admin-data-reset-demo-backups` | РђРґРјРёРЅ: РѕС‡РёСЃС‚РєР°, РґРµРјРѕ, Р±СЌРєР°РїС‹ | СЃР»РёС‚Р° РІ main |
+| `fix/admin-login-no-hint-strong-password` | VILAR_ADMIN_PASSWORD | СЃР»РёС‚Р° РІ main |
+| `fix/sqlite-builtin-no-gyp` | node:sqlite | СЃР»РёС‚Р° РІ main |
+| `feature/reports-released-series` | РћС‚С‡С‘С‚С‹; РѕР±СЂР°С‚РЅР°СЏ СЃРІСЏР·СЊ | СЃР»РёС‚Р° РІ main |
+| `feature/launch-sqlite-reservations` | SQLite, RES, RBAC | СЃР»РёС‚Р° РІ main |
+| `feature/stock-documents` | Р”РѕРєСѓРјРµРЅС‚С‹ РґРІРёР¶РµРЅРёР№ | СЃР»РёС‚Р° РІ main |
+| `feature/initial-ops-planning` | РљР°СЂРєР°СЃ РћРџ | СЃР»РёС‚Р° РІ main |
+| `feature/planning-orders-matrix` | РЈСЃС‚Р°РЅРѕРІРєР°/Р·Р°РїСѓСЃРє | СЃР»РёС‚Р° РІ main |
+| `feature/echarts-resource-gantt` | ECharts Р“Р°РЅС‚ | СЃР»РёС‚Р° РІ main |
+| `feature/planned-series-volumes` | РџР»Р°РЅРѕРІС‹Рµ РѕР±СЉС‘РјС‹ | СЃР»РёС‚Р° РІ main |
+| `feature/spec-approved-suppliers` | РџРѕСЃС‚Р°РІС‰РёРєРё | СЃР»РёС‚Р° РІ main |
+| `feature/admin-export-dictionaries` | Р­РєСЃРїРѕСЂС‚ СЃРїСЂР°РІРѕС‡РЅРёРєРѕРІ | СЃР»РёС‚Р° РІ main |
+| `feature/crud-ux-spec-type-filters` | РћС‚Р±РѕСЂС‹ | СЃР»РёС‚Р° РІ main |
+| `feature/spec-kg-per-1000-packs` | РєРі РЅР° 1000 СѓРї | СЃР»РёС‚Р° РІ main |
+| `feature/production-desktop-warehouses` | РџСЂРѕРёР·РІРѕРґСЃС‚РІРѕ РїР»Р°РЅ/С„Р°РєС‚ | СЃР»РёС‚Р° РІ main |
