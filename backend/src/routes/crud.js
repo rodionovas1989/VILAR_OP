@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { randomUUID } from 'crypto';
 import * as store from '../store.js';
 import { requireCollectionAccess } from '../middleware/access.js';
+import { assertCanDelete, isProtectedDictionary } from '../services/referentialIntegrity.js';
 
 export function crudRouter(collection, { beforeCreate, beforeUpdate, sanitize, readOnly = false } = {}) {
   const router = Router();
@@ -56,7 +57,10 @@ export function crudRouter(collection, { beforeCreate, beforeUpdate, sanitize, r
   router.post('/bulk-delete', readOnly ? denyWrite : requireCollectionAccess(collection, 'write'), (req, res) => {
     try {
       const ids = req.body?.ids || [];
-      const n = store.runWrite(() => store.removeMany(collection, ids));
+      const n = store.runWrite(() => {
+        if (isProtectedDictionary(collection)) assertCanDelete(collection, ids);
+        return store.removeMany(collection, ids);
+      });
       res.json({ deleted: n });
     } catch (e) {
       res.status(400).json({ error: e.message || String(e) });
@@ -65,7 +69,10 @@ export function crudRouter(collection, { beforeCreate, beforeUpdate, sanitize, r
 
   router.delete('/:id', readOnly ? denyWrite : requireCollectionAccess(collection, 'write'), (req, res) => {
     try {
-      const n = store.runWrite(() => store.removeMany(collection, [req.params.id]));
+      const n = store.runWrite(() => {
+        if (isProtectedDictionary(collection)) assertCanDelete(collection, [req.params.id]);
+        return store.removeMany(collection, [req.params.id]);
+      });
       if (!n) return res.status(404).json({ error: 'Не найдено' });
       res.json({ deleted: 1 });
     } catch (e) {
