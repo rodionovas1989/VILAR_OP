@@ -1,9 +1,9 @@
-# BRANCH_INFO
+﻿# BRANCH_INFO
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | Качества партий + QCM документ, cookie-сессии, чат | **эталон** |
-| `feature/legal-pdn-notices` | Политика ПДн, cookies, принятие при входе, ротация журнала | **слита** в main |
+| `feature/legal-pdn-notices` | Политика ПДн, cookies, принятие при входе, ротация журнала | **активна** |
 | `feature/recent-opened-strip` | Полоска последних открытых объектов под шапкой | **слита** в main |
 | `feature/ref-integrity-delete-guards` | Запрет удаления справочников при ссылках; обновление userGuide по качеству | **слита** в main |
 | `feature/quality-doc-trace-movements` | Движения в карточке документа качества (как у складских) | **слита** в main |
