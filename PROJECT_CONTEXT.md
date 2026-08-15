@@ -1,9 +1,9 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: feature/auth-gate-landing (активна)
+## Ветка: main (эталон после релиза)
 
-Гости видят только нейтральный экран «Вход» (без «Вилар», меню, логотипа). После авторизации — полный shell.
-Документ рисков/плана для публичной ВМ: `docs/SECURITY_PUBLIC_VM.md`.
+Слито: `feature/auth-gate-landing` — гости видят только «Вход»; после login — полный UI.
+Риски/план публичной ВМ: `docs/SECURITY_PUBLIC_VM.md`.
 
 Релизы: локальная ветка → main → ВМ (`.cursor/rules/releases-and-updates.mdc`).
 
