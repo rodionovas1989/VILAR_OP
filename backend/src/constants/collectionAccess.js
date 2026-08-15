@@ -20,6 +20,7 @@ export const COLLECTION_TO_OBJECT = {
   quality_documents: 'quality_documents',
   quality_register: 'quality_register',
   quality_history: 'quality_history',
+  lot_qualities: 'lot_qualities',
   user_favorites: 'admin_users',
   feedback: 'admin_feedback',
 };

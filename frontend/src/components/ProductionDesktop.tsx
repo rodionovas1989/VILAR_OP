@@ -16,7 +16,16 @@ type Dicts = {
 
 type Props = { dictionaries: Dicts };
 
-type LotOpt = { id: string; number: string; freeQty: number };
+type LotOpt = {
+  id: string;
+  number: string;
+  freeQty: number;
+  qualityPermission?: string;
+  qualityPermissionLabel?: string;
+  qualityName?: string | null;
+  qualityMessage?: string | null;
+  qualityAllowed?: boolean;
+};
 
 function nameOf(id: string, list: { id: string; name?: string; number?: string }[]) {
   return list.find((x) => x.id === id)?.name || list.find((x) => x.id === id)?.number || id;
@@ -156,7 +165,35 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
   const completeProduction = async () => {
     if (!selected) return;
-    if (!confirm('Завершить производство по фактическим данным? Будут проведены списание в производство (PRI), выпуск ГП (PRR) и выполнен документ резервирования.')) {
+    const unfit = actualLines
+      .map((l) => {
+        const opt = (lotOptions[l.materialId] || []).find((o) => o.id === l.lotId);
+        return opt?.qualityAllowed === false
+          ? `${nameOf(l.lotId, dictionaries.lots)}: ${opt.qualityMessage || 'Не годен'}`
+          : null;
+      })
+      .filter(Boolean);
+    if (unfit.length) {
+      setError(`Нельзя завершить: партии не годны по качеству. ${unfit.join('; ')}`);
+      return;
+    }
+    const conditional = actualLines
+      .map((l) => {
+        const opt = (lotOptions[l.materialId] || []).find((o) => o.id === l.lotId);
+        return opt?.qualityPermission === 'conditional'
+          ? `${nameOf(l.lotId, dictionaries.lots)}: ${opt.qualityMessage || 'Условно годен'}`
+          : null;
+      })
+      .filter(Boolean);
+    const warn =
+      conditional.length > 0
+        ? `\n\nВнимание (условно годен):\n- ${conditional.join('\n- ')}\n`
+        : '';
+    if (
+      !confirm(
+        `Завершить производство по фактическим данным? Будут проведены списание в производство (PRI), выпуск ГП (PRR) и выполнен документ резервирования.${warn}`
+      )
+    ) {
       return;
     }
     setBusy(true);
@@ -325,11 +362,18 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 {actualLines.map((l) => {
                   const opts = lotOptions[l.materialId] || [];
                   const hasCurrent = opts.some((o) => o.id === l.lotId);
+                  const selectedOpt = opts.find((o) => o.id === l.lotId);
+                  const unfit = selectedOpt?.qualityAllowed === false;
+                  const conditional = selectedOpt?.qualityPermission === 'conditional';
                   return (
-                    <tr key={`fact-${l.materialId}`}>
+                    <tr
+                      key={`fact-${l.materialId}`}
+                      className={unfit ? 'pick-lot-blocked' : conditional ? 'pick-lot-conditional' : undefined}
+                    >
                       <td>{nameOf(l.materialId, dictionaries.materials)}</td>
                       <td>
                         <select
+                          className={unfit ? 'select-lot-blocked' : undefined}
                           value={l.lotId}
                           disabled={busy}
                           onChange={(e) => changeFactLot(l.materialId, e.target.value)}
@@ -339,10 +383,22 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           )}
                           {opts.map((o) => (
                             <option key={o.id} value={o.id}>
+                              {o.qualityAllowed === false ? '⛔ ' : o.qualityPermission === 'conditional' ? '⚠ ' : ''}
                               {o.number} (своб. {o.freeQty})
+                              {o.qualityName ? ` — ${o.qualityName}` : ''}
                             </option>
                           ))}
                         </select>
+                        {unfit && (
+                          <div className="pick-lot-block-reason">
+                            {selectedOpt?.qualityMessage || 'Партия не годна по качеству'}
+                          </div>
+                        )}
+                        {conditional && !unfit && (
+                          <div className="pick-lot-conditional-reason">
+                            {selectedOpt?.qualityMessage || 'Условно годен'}
+                          </div>
+                        )}
                       </td>
                       <td>{lotCp(l.lotId)}</td>
                       <td className="col-center">

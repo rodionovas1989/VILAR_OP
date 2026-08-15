@@ -273,13 +273,20 @@ export const api = {
     }),
 
   qualityDocumentTypes: () =>
-    request<{ types: { id: string; code: string; label: string }[]; statuses: Record<string, string> }>(
-      '/quality/meta/types'
-    ),
+    request<{
+      types: { id: string; code: string; label: string }[];
+      statuses: Record<string, string>;
+      permissions: { id: string; label: string }[];
+    }>('/quality/meta/types'),
   listQualityDocuments: () => request<import('./types.documents').QualityDocument[]>('/quality/documents'),
   createQualityDocument: (body: unknown) =>
     request<import('./types.documents').QualityDocument>('/quality/documents', {
       method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateQualityDocument: (id: string, body: unknown) =>
+    request<import('./types.documents').QualityDocument>(`/quality/documents/${id}`, {
+      method: 'PUT',
       body: JSON.stringify(body),
     }),
   postQualityDocument: (id: string, userId: string) =>

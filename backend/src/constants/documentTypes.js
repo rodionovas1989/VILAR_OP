@@ -65,33 +65,20 @@ export const DOCUMENT_TYPES = {
   },
 };
 
-/** Типы документов управления качеством (изолированная подсистема) */
-export const QUALITY_DOCUMENT_TYPES = {
-  quality_incoming: {
-    code: 'QIN',
-    label: 'Поступление на контроль',
-  },
-  quality_release: {
-    code: 'QRL',
-    label: 'Допуск к использованию',
-  },
-  quality_lot_block: {
-    code: 'QBL',
-    label: 'Блокировка партии',
-  },
-};
+/** Типы документов управления качеством — см. constants/lotQuality.js */
+export {
+  QUALITY_DOCUMENT_TYPES,
+  QUALITY_DOCUMENT_STATUS,
+  assertQualityDocumentType,
+  QUALITY_MANAGEMENT_TYPE,
+  LOT_QUALITY_PERMISSIONS,
+} from './lotQuality.js';
 
 export const DOCUMENT_STATUS = {
   draft: 'Создан',
   posted: 'Проведён',
   cancelled: 'Отменён',
   fulfilled: 'Выполнен',
-};
-
-export const QUALITY_DOCUMENT_STATUS = {
-  draft: 'Создан',
-  posted: 'Проведён',
-  cancelled: 'Отменён',
 };
 
 export function documentTypeByCode(code) {
@@ -109,8 +96,3 @@ export function collectionForType(type) {
 }
 
 export const ALL_DOCUMENT_COLLECTIONS = Object.values(DOCUMENT_TYPES).map((m) => m.collection);
-
-export function assertQualityDocumentType(type) {
-  if (!QUALITY_DOCUMENT_TYPES[type]) throw new Error(`Неизвестный тип документа качества: ${type}`);
-  return type;
-}

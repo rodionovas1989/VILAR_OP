@@ -35,6 +35,7 @@ export const NAV_PAGE_IDS = new Set([
   'planning_desktop',
   'production_desktop',
   'quality_documents',
+  'lot_qualities',
   'quality_register',
   'quality_history',
   'report_released_series',

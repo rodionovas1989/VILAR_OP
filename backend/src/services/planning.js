@@ -1,6 +1,7 @@
 import * as store from '../store.js';
 import * as documents from './documents.js';
 import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
+import { resolveLotQuality, assertLotsQualityForUse } from './quality.js';
 
 export { warehouseByType, stockRowForLot, freeQtyByLot };
 
@@ -28,20 +29,26 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
   const lots = store
     .readAll('lots')
     .filter((l) => l.materialId === materialId)
-    .map((l) => ({
-      ...l,
-      freeQty: freeQtyByLot(l.id),
-      blocked: Boolean(l.blocked),
-      blockReason: l.blockReason || null,
-      counterparty: store.getById('counterparties', l.counterpartyId),
-    }))
+    .map((l) => {
+      const quality = resolveLotQuality(l.id);
+      return {
+        ...l,
+        freeQty: freeQtyByLot(l.id),
+        counterparty: store.getById('counterparties', l.counterpartyId),
+        qualityPermission: quality.permission,
+        qualityPermissionLabel: quality.permissionLabel,
+        qualityName: quality.qualityName,
+        qualityMessage: quality.message,
+        qualityAllowed: quality.allowed,
+        qualityDefaulted: quality.defaulted,
+      };
+    })
     .filter((l) => l.freeQty > 0 && new Date(l.expiryDate) >= new Date());
 
   lots.sort((a, b) => {
     if (algorithm === 'FIFO') {
       return new Date(a.productionDate) - new Date(b.productionDate);
     }
-    // FEFO
     return new Date(a.expiryDate) - new Date(b.expiryDate);
   });
   return lots;
@@ -65,9 +72,10 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
     const need = Number(((Number(line.qtyPerUnit) * Number(order.quantity)) / 1000).toFixed(6));
     const lots = availableLotsForMaterial(line.materialId, algorithm);
     const material = store.getById('materials', line.materialId);
-    const suitable = lots.find((l) => l.freeQty >= need);
+    const suitable = lots.find((l) => l.freeQty >= need && l.qualityAllowed !== false);
 
     if (!suitable) {
+      const anyQty = lots.find((l) => l.freeQty >= need);
       warnings.push({
         materialId: line.materialId,
         materialName: material?.name,
@@ -75,19 +83,27 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
         message:
           lots.length === 0
             ? 'Нет доступных партий'
-            : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
+            : anyQty && !anyQty.qualityAllowed
+              ? 'Есть остаток, но партия не годна по качеству'
+              : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
         candidates: lots.slice(0, 5),
       });
+      const fallback = lots[0] || null;
       picks.push({
         materialId: line.materialId,
         materialName: material?.name,
         quantity: need,
-        lotId: lots[0]?.id || null,
-        lotNumber: lots[0]?.number || null,
-        counterpartyId: lots[0]?.counterpartyId,
-        counterpartyName: lots[0]?.counterparty?.name,
-        expiryDate: lots[0]?.expiryDate,
-        freeQty: lots[0]?.freeQty || 0,
+        lotId: fallback?.id || null,
+        lotNumber: fallback?.number || null,
+        counterpartyId: fallback?.counterpartyId,
+        counterpartyName: fallback?.counterparty?.name,
+        expiryDate: fallback?.expiryDate,
+        freeQty: fallback?.freeQty || 0,
+        qualityPermission: fallback?.qualityPermission,
+        qualityPermissionLabel: fallback?.qualityPermissionLabel,
+        qualityName: fallback?.qualityName,
+        qualityMessage: fallback?.qualityMessage,
+        qualityAllowed: fallback?.qualityAllowed,
         ok: false,
       });
     } else {
@@ -101,6 +117,11 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
         counterpartyName: suitable.counterparty?.name,
         expiryDate: suitable.expiryDate,
         freeQty: suitable.freeQty,
+        qualityPermission: suitable.qualityPermission,
+        qualityPermissionLabel: suitable.qualityPermissionLabel,
+        qualityName: suitable.qualityName,
+        qualityMessage: suitable.qualityMessage,
+        qualityAllowed: suitable.qualityAllowed,
         ok: true,
       });
     }
@@ -159,6 +180,11 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
       throw new Error('Партия не соответствует материалу');
     }
   }
+
+  assertLotsQualityForUse(
+    picks.map((p) => p.lotId),
+    'Подтверждение резерва'
+  );
 
   closeOpenReservationForOrder(orderId, actorId);
 
@@ -230,6 +256,10 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
         throw new Error('Партия в факте не соответствует материалу');
       }
     }
+    assertLotsQualityForUse(
+      actualLines.map((l) => l.lotId),
+      'Сохранение факта'
+    );
     return store.update('production_orders', orderId, {
       actualQuantity: Number(actualQuantity),
       actualLines: actualLines.map((l) => ({
@@ -302,6 +332,11 @@ export function completeOrder(orderId, userId, opts = {}) {
 
     if (!factLines.length) throw new Error('Нет строк состава — завершение невозможно');
     if (!(outputQty > 0)) throw new Error('Количество выпуска должно быть больше 0');
+
+    assertLotsQualityForUse(
+      factLines.map((l) => l.lotId),
+      'Завершение производства'
+    );
 
     const whCompDefault = warehouseByType('компоненты')?.id;
     const whFgDefault = warehouseByType('ГП')?.id;

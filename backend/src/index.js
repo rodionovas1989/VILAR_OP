@@ -25,6 +25,7 @@ import {
   prepareUserUpdate,
   sanitizeUser,
 } from './services/users.js';
+import { assertLotQualityPermission } from './constants/lotQuality.js';
 
 ensureCollections();
 warnIfDefaultAdminPassword();
@@ -160,6 +161,25 @@ for (const name of COLLECTIONS) {
       crudRouter(name, {
         beforeCreate: (item) => assertSeriesNumberUnique(item, item.id),
         beforeUpdate: (merged, current) => assertSeriesNumberUnique(merged, current.id),
+      })
+    );
+  } else if (name === 'lot_qualities') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => {
+          item.name = String(item.name || '').trim();
+          if (!item.name) throw new Error('Укажите название качества');
+          item.permission = assertLotQualityPermission(item.permission);
+          if (item.active === undefined) item.active = true;
+          return item;
+        },
+        beforeUpdate: (merged) => {
+          merged.name = String(merged.name || '').trim();
+          if (!merged.name) throw new Error('Укажите название качества');
+          merged.permission = assertLotQualityPermission(merged.permission);
+          return merged;
+        },
       })
     );
   } else if (name === 'users') {

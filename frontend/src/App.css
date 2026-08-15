@@ -1867,6 +1867,17 @@ button.danger-outline:hover {
   font-weight: 600;
 }
 
+.pick-lot-conditional td {
+  background: #fff8e6;
+}
+
+.pick-lot-conditional-reason {
+  margin-top: 4px;
+  color: #8a6d00;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .lot-block-row td {
   background: #fff5f3;
 }

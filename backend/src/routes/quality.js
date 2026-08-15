@@ -1,24 +1,29 @@
 import { Router } from 'express';
-import { readAll } from '../store.js';
 import * as quality from '../services/quality.js';
+import { readAll } from '../store.js';
 import { actorId, requirePermission } from '../middleware/access.js';
+import { LOT_QUALITY_PERMISSIONS, QUALITY_MANAGEMENT_TYPE } from '../constants/lotQuality.js';
 
 const router = Router();
+
+router.get('/meta', requirePermission('quality_documents', 'read'), (_req, res) => {
+  res.json({
+    type: QUALITY_MANAGEMENT_TYPE,
+    permissions: Object.values(LOT_QUALITY_PERMISSIONS),
+    statuses: quality.QUALITY_DOCUMENT_STATUS,
+  });
+});
 
 router.get('/meta/types', requirePermission('quality_documents', 'read'), (_req, res) => {
   res.json({
     types: Object.entries(quality.QUALITY_DOCUMENT_TYPES).map(([id, m]) => ({ id, ...m })),
     statuses: quality.QUALITY_DOCUMENT_STATUS,
+    permissions: Object.values(LOT_QUALITY_PERMISSIONS),
   });
 });
 
 router.get('/documents', requirePermission('quality_documents', 'read'), (req, res) => {
-  res.json(
-    quality.listQualityDocuments({
-      type: req.query.type,
-      status: req.query.status,
-    })
-  );
+  res.json(quality.listQualityDocuments({ status: req.query.status }));
 });
 
 router.get('/documents/:id', requirePermission('quality_documents', 'read'), (req, res) => {
@@ -29,7 +34,7 @@ router.get('/documents/:id', requirePermission('quality_documents', 'read'), (re
 
 router.post('/documents', requirePermission('quality_documents', 'create'), (req, res) => {
   try {
-    const body = { ...req.body, createdByUserId: actorId(req) };
+    const body = { ...req.body, createdByUserId: actorId(req) || req.body?.createdByUserId };
     res.status(201).json(quality.createQualityDocument(body));
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
@@ -66,6 +71,10 @@ router.get('/register', requirePermission('quality_register', 'read'), (_req, re
 
 router.get('/history', requirePermission('quality_history', 'read'), (_req, res) => {
   res.json(readAll('quality_history'));
+});
+
+router.get('/lot/:lotId', requirePermission('quality_register', 'read'), (req, res) => {
+  res.json(quality.resolveLotQuality(req.params.lotId));
 });
 
 export default router;
