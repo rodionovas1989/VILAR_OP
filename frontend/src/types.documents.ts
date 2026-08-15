@@ -133,6 +133,35 @@ export interface StockRow {
   quantity: number;
 }
 
+export interface QualityHistoryTraceRow {
+  id: string;
+  at: string;
+  action: string;
+  documentId?: string;
+  documentNumber?: string;
+  documentStatus?: string;
+  lotId?: string | null;
+  materialId?: string | null;
+  qualityId?: string | null;
+  qualityName?: string | null;
+  permission?: string | null;
+  permissionLabel?: string | null;
+  userId?: string | null;
+}
+
+export interface QualityRegisterTraceRow {
+  id: string;
+  lotId: string;
+  materialId?: string | null;
+  qualityId?: string | null;
+  qualityName?: string | null;
+  permission?: string | null;
+  permissionLabel?: string | null;
+  documentId?: string | null;
+  documentNumber?: string | null;
+  updatedAt?: string | null;
+}
+
 export interface DocumentTrace {
   document: TraceDocumentRef;
   movements: MaterialMovementRow[];
@@ -147,6 +176,9 @@ export interface DocumentTrace {
     materialId?: string | null;
   } | null;
   stock: StockRow[];
+  /** Только для документа качества */
+  qualityHistory?: QualityHistoryTraceRow[];
+  qualityRegister?: QualityRegisterTraceRow[];
 }
 
 export interface OrderTrace {

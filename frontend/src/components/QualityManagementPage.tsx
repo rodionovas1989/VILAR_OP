@@ -12,11 +12,12 @@ import { displayTimeFromIso, nowTime } from '../utils/docDateTime';
 import { userDisplayName } from '../utils/userDisplay';
 import AccessDenied from './AccessDenied';
 import ActionsMenu, { ActionMenuItem } from './ActionsMenu';
+import DocumentTraceModal from './DocumentTraceModal';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
 import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
-import { QualityDocument, QualityDocumentLine } from '../types.documents';
+import { DocumentTrace, QualityDocument, QualityDocumentLine } from '../types.documents';
 import { Lot, Material } from '../types';
 import { newId } from '../utils/id';
 
@@ -66,6 +67,9 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(false);
+  const [trace, setTrace] = useState<DocumentTrace | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
 
   const userLabel = (userId?: string | null) => userDisplayName(users, userId);
   const activeQualities = useMemo(
@@ -86,6 +90,26 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
     load().catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
+  useEffect(() => {
+    if (!traceOpen || !editing?.id) return;
+    let cancelled = false;
+    setTraceLoading(true);
+    api
+      .getQualityDocumentRelated(editing.id)
+      .then((data) => {
+        if (!cancelled) setTrace(data);
+      })
+      .catch(() => {
+        if (!cancelled) setTrace(null);
+      })
+      .finally(() => {
+        if (!cancelled) setTraceLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [traceOpen, editing?.id, editing?.status, editing?.number]);
+
   if (!canViewObject(permissions, objectId, loggedIn)) {
     return <AccessDenied title="Управление качеством" />;
   }
@@ -99,6 +123,8 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
     setEditing(null);
     setFormMode('create');
     setError('');
+    setTraceOpen(false);
+    setTrace(null);
   };
 
   const startCreate = () => {
@@ -306,7 +332,29 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
           onClose={closeForm}
           wide
           className="modal-doc"
-          headerExtra={<ActionsMenu items={actions} onSelect={onAction} disabled={busy} />}
+          headerExtra={
+            <>
+              <span className="doc-status-cluster">
+                {editing.id ? (
+                  <IconButton
+                    icon="links"
+                    label="Движения и связанные объекты"
+                    tone="muted"
+                    onClick={() => setTraceOpen(true)}
+                  />
+                ) : null}
+                <span className={`doc-status-badge doc-status-${editing.status || 'draft'}`}>
+                  {STATUS_LABEL[editing.status] || editing.status}
+                </span>
+              </span>
+              <ActionsMenu items={actions} onSelect={onAction} disabled={busy} />
+            </>
+          }
+          footer={
+            <button type="button" className="ghost" onClick={closeForm}>
+              Закрыть
+            </button>
+          }
         >
           <form
             className="doc-form"
@@ -448,6 +496,20 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
           </form>
         </Modal>
       )}
+
+      <DocumentTraceModal
+        open={traceOpen && Boolean(editing?.id)}
+        onClose={() => setTraceOpen(false)}
+        heading={
+          editing?.number
+            ? `Движения: Управление качеством ${editing.number}`
+            : 'Движения документа качества'
+        }
+        trace={trace}
+        loading={traceLoading}
+        materials={materials}
+        lots={lots}
+      />
     </div>
   );
 }

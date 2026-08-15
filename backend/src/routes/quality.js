@@ -32,6 +32,12 @@ router.get('/documents/:id', requirePermission('quality_documents', 'read'), (re
   res.json(doc);
 });
 
+router.get('/documents/:id/related', requirePermission('quality_documents', 'read'), (req, res) => {
+  const trace = quality.getQualityDocumentTrace(req.params.id);
+  if (!trace) return res.status(404).json({ error: 'Не найдено' });
+  res.json(trace);
+});
+
 router.post('/documents', requirePermission('quality_documents', 'create'), (req, res) => {
   try {
     const body = { ...req.body, createdByUserId: actorId(req) || req.body?.createdByUserId };

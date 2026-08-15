@@ -299,6 +299,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ userId }),
     }),
+  getQualityDocumentRelated: (id: string) =>
+    request<import('./types.documents').DocumentTrace>(`/quality/documents/${id}/related`),
 
   getChangelog: () => request<{ markdown: string }>('/admin/changelog'),
   listChatMessages: () =>
