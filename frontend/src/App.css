@@ -1967,6 +1967,33 @@ button.danger-outline:hover {
   margin-top: 4px;
 }
 
+.scenario-scope {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+}
+
+.scenario-scope legend {
+  padding: 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.scenario-checklist {
+  max-height: 200px;
+  overflow: auto;
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.scenario-form .checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .form-grid label {
   display: grid;
   gap: 6px;
@@ -2361,7 +2388,7 @@ button.danger-outline:hover {
 
 .prod-order-head {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px 16px;
   padding: 14px 16px;
   margin-bottom: 12px;
@@ -2370,17 +2397,93 @@ button.danger-outline:hover {
   border-radius: 10px;
 }
 
-.prod-fact-qty {
+.prod-head-field {
   display: grid;
   gap: 4px;
+  min-width: 0;
+  align-content: start;
 }
 
-.prod-fact-qty input {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 6px 8px;
-  background: #fff;
-  max-width: 160px;
+.prod-head-field > .muted {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.prod-head-field strong {
+  display: block;
+  padding: 7px 4px 7px 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prod-order-head select,
+.prod-order-head input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: none;
+  border-bottom: 1px solid #c5d3de;
+  border-radius: 0;
+  background: transparent;
+  padding: 7px 4px;
+  box-shadow: none;
+}
+
+.prod-order-head select:focus,
+.prod-order-head input:focus {
+  outline: none;
+  border-bottom-color: var(--accent);
+  background: rgba(26, 122, 98, 0.04);
+}
+
+@media (max-width: 1100px) {
+  .prod-order-head {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.prod-lines-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.prod-lines-table th:nth-child(1),
+.prod-lines-table td:nth-child(1) {
+  width: 28%;
+}
+
+.prod-lines-table th:nth-child(2),
+.prod-lines-table td:nth-child(2) {
+  width: 34%;
+}
+
+.prod-lines-table th:nth-child(3),
+.prod-lines-table td:nth-child(3) {
+  width: 22%;
+}
+
+.prod-lines-table th:nth-child(4),
+.prod-lines-table td:nth-child(4) {
+  width: 16%;
+}
+
+.prod-lot-cell {
+  min-width: 0;
+  vertical-align: top;
+}
+
+.prod-lot-quality {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.prod-qty-cell input {
+  max-width: 120px;
+  margin-inline: auto;
 }
 
 .production-desktop .col-center {

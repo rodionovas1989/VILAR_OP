@@ -25,6 +25,7 @@ import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
 import StockReportPage from './components/StockReportPage';
 import QualityStockReportPage from './components/QualityStockReportPage';
 import QualityHistoryReportPage from './components/QualityHistoryReportPage';
+import QualityScenariosPage from './components/QualityScenariosPage';
 import FeedbackPage from './components/FeedbackPage';
 import UserGuidePage from './components/UserGuidePage';
 import { ADMIN_USERS_PDN_HINT, SYSTEM_DISCLAIMER } from './content/legal';
@@ -636,6 +637,8 @@ export default function App() {
             ]}
           />
         );
+      case 'quality_scenarios':
+        return <QualityScenariosPage />;
       case 'roles':
         return <RolesPage />;
       case 'admin_feedback':

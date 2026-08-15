@@ -2,6 +2,7 @@ import * as store from '../store.js';
 import * as documents from './documents.js';
 import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
 import { resolveLotQuality, assertLotsQualityForUse } from './quality.js';
+import { onLotCreated } from './scenarios.js';
 
 export { warehouseByType, stockRowForLot, freeQtyByLot };
 
@@ -298,7 +299,7 @@ function fulfillReservationForOrder(order, priDoc, actorId, fallbackRes) {
   });
 }
 
-function ensureGpLot(order, outputQty, whFg) {
+function ensureGpLot(order, outputQty, whFg, actorUserId) {
   const series = store.getById('series', order.seriesId);
   const gpNumber = `ГП-${series?.number || order.id.slice(0, 8)}`;
   let gpLot = store.readAll('lots').find((l) => l.number === gpNumber);
@@ -311,6 +312,7 @@ function ensureGpLot(order, outputQty, whFg) {
       productionDate: new Date().toISOString().slice(0, 10),
       expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 730).toISOString().slice(0, 10),
     });
+    if (actorUserId) onLotCreated(gpLot, actorUserId);
   }
   return { gpLot, outputQty, whFg };
 }
@@ -381,7 +383,7 @@ export function completeOrder(orderId, userId, opts = {}) {
       priDoc = documents.postDocumentUnchecked('production_issue', draft.id, actorId);
     }
 
-    const { gpLot } = ensureGpLot(order, outputQty, whFg);
+    const { gpLot } = ensureGpLot(order, outputQty, whFg, actorId);
 
     let prrDoc = findPostedDocForOrder('production_receipt', orderId);
     if (!prrDoc) {

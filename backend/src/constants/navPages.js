@@ -38,6 +38,7 @@ export const NAV_PAGE_IDS = new Set([
   'lot_qualities',
   'quality_register',
   'quality_history',
+  'quality_scenarios',
   'report_released_series',
   'report_stock',
   'report_quality_stock',

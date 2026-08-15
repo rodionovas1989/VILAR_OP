@@ -21,6 +21,7 @@ export const COLLECTION_TO_OBJECT = {
   quality_register: 'quality_register',
   quality_history: 'quality_history',
   lot_qualities: 'lot_qualities',
+  quality_scenarios: 'quality_scenarios',
   user_favorites: 'admin_users',
   feedback: 'admin_feedback',
 };

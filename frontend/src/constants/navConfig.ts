@@ -87,6 +87,7 @@ export const NAV: NavGroup[] = [
       { id: 'quality_documents', label: 'Управление качеством', kind: 'quality' },
       { id: 'quality_register', label: 'Качества партий (состояние)', kind: 'quality' },
       { id: 'quality_history', label: 'Качества партий (история)', kind: 'quality' },
+      { id: 'quality_scenarios', label: 'Сценарии', kind: 'quality' },
     ],
   },
   {

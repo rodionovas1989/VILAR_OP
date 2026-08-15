@@ -40,6 +40,7 @@ const COLLECTIONS = [
   'quality_documents',
   'quality_register',
   'quality_history',
+  'quality_scenarios',
   'user_favorites',
   'feedback',
 ];

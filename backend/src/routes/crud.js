@@ -4,7 +4,10 @@ import * as store from '../store.js';
 import { requireCollectionAccess } from '../middleware/access.js';
 import { assertCanDelete, isProtectedDictionary } from '../services/referentialIntegrity.js';
 
-export function crudRouter(collection, { beforeCreate, beforeUpdate, sanitize, readOnly = false } = {}) {
+export function crudRouter(
+  collection,
+  { beforeCreate, beforeUpdate, afterCreate, sanitize, readOnly = false } = {}
+) {
   const router = Router();
 
   const denyWrite = (_req, res) => {
@@ -29,7 +32,9 @@ export function crudRouter(collection, { beforeCreate, beforeUpdate, sanitize, r
       const created = store.runWrite(() => {
         let item = { id: randomUUID(), ...req.body };
         if (beforeCreate) item = beforeCreate(item, req) || item;
-        return store.create(collection, item);
+        const row = store.create(collection, item);
+        if (afterCreate) afterCreate(row, req);
+        return row;
       });
       res.status(201).json(sanitize ? sanitize(created) : created);
     } catch (e) {

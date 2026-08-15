@@ -32,6 +32,7 @@ backend/
   src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
   src/services/quality.js    — качество: QCM документ, регистры, resolveLotQuality
+  src/services/scenarios.js  — сценарии: onLotCreated → авто-QCM
   src/services/referentialIntegrity.js — запрет удаления справочников при наличии ссылок
   src/constants/lotQuality.js — разрешения Годен / Условно / Не годен
   src/services/chat.js       — общий чат
@@ -71,6 +72,7 @@ frontend/
   src/components/AdminChangelogPage.tsx — что нового (CHANGELOG.md)
   src/components/HeaderChat.tsx — чат в шапке
   src/components/QualityManagementPage.tsx — единый документ качества
+  src/components/QualityScenariosPage.tsx — сценарии: авто-QCM при создании партии
   src/content/userGuide.ts                — руководство пользователя (Админ → Руководство)
   src/content/legal/                      — Политика ПДн, cookies, дисклеймер (версия PDN_POLICY_VERSION)
   docs/LEGAL_PDN.md                       — оргчеклист и модель согласия без саморегистрации

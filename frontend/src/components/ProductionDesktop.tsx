@@ -244,23 +244,23 @@ export default function ProductionDesktop({ dictionaries }: Props) {
         {message && <div className="alert info">{message}</div>}
 
         <div className="prod-order-head">
-          <div>
-            <div className="muted">Продукция</div>
+          <div className="prod-head-field">
+            <span className="muted">Продукция</span>
             <strong>{nameOf(selected.materialId, dictionaries.materials)}</strong>
           </div>
-          <div>
-            <div className="muted">Серия</div>
+          <div className="prod-head-field">
+            <span className="muted">Серия</span>
             <strong>{nameOf(selected.seriesId, dictionaries.series)}</strong>
           </div>
-          <div>
-            <div className="muted">РЦ</div>
+          <div className="prod-head-field">
+            <span className="muted">РЦ</span>
             <strong>{nameOf(selected.workCenterId, dictionaries.workCenters)}</strong>
           </div>
-          <div>
-            <div className="muted">План выпуска</div>
+          <div className="prod-head-field">
+            <span className="muted">План выпуска</span>
             <strong>{selected.quantity}</strong>
           </div>
-          <label className="prod-fact-qty">
+          <label className="prod-head-field">
             <span className="muted">Факт выпуска</span>
             <input
               type="number"
@@ -271,7 +271,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               onChange={(e) => onFactQtyChange(Number(e.target.value))}
             />
           </label>
-          <label>
+          <label className="prod-head-field">
             <span className="muted">Склад списания (компоненты)</span>
             <select
               value={warehouseFromId}
@@ -285,7 +285,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               ))}
             </select>
           </label>
-          <label>
+          <label className="prod-head-field">
             <span className="muted">Склад выпуска (ГП)</span>
             <select
               value={warehouseToId}
@@ -317,7 +317,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
         {tab === 'plan' && (
           <div className="table-wrap">
-            <table>
+            <table className="data-table doc-lines-table prod-lines-table">
               <thead>
                 <tr>
                   <th>Материал</th>
@@ -349,7 +349,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
         {tab === 'fact' && (
           <div className="table-wrap">
-            <table>
+            <table className="data-table doc-lines-table prod-lines-table">
               <thead>
                 <tr>
                   <th>Материал</th>
@@ -371,7 +371,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       className={unfit ? 'pick-lot-blocked' : conditional ? 'pick-lot-conditional' : undefined}
                     >
                       <td>{nameOf(l.materialId, dictionaries.materials)}</td>
-                      <td>
+                      <td className="prod-lot-cell">
                         <select
                           className={unfit ? 'select-lot-blocked' : undefined}
                           value={l.lotId}
@@ -384,11 +384,14 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           {opts.map((o) => (
                             <option key={o.id} value={o.id}>
                               {o.qualityAllowed === false ? '⛔ ' : o.qualityPermission === 'conditional' ? '⚠ ' : ''}
-                              {o.number} (своб. {o.freeQty})
-                              {o.qualityName ? ` — ${o.qualityName}` : ''}
+                              {o.number}
+                              {o.freeQty != null ? ` · своб. ${o.freeQty}` : ''}
                             </option>
                           ))}
                         </select>
+                        {selectedOpt?.qualityName && !unfit && !conditional && (
+                          <div className="prod-lot-quality muted">{selectedOpt.qualityName}</div>
+                        )}
                         {unfit && (
                           <div className="pick-lot-block-reason">
                             {selectedOpt?.qualityMessage || 'Партия не годна по качеству'}
@@ -396,12 +399,14 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                         )}
                         {conditional && !unfit && (
                           <div className="pick-lot-conditional-reason">
-                            {selectedOpt?.qualityMessage || 'Условно годен'}
+                            {selectedOpt?.qualityMessage ||
+                              selectedOpt?.qualityName ||
+                              'Условно годен'}
                           </div>
                         )}
                       </td>
                       <td>{lotCp(l.lotId)}</td>
-                      <td className="col-center">
+                      <td className="col-center prod-qty-cell">
                         <input
                           type="number"
                           min={0}
@@ -409,7 +414,6 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           value={l.quantity}
                           disabled={busy}
                           onChange={(e) => changeFactQty(l.materialId, Number(e.target.value))}
-                          style={{ maxWidth: 120 }}
                         />
                       </td>
                     </tr>

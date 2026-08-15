@@ -41,6 +41,7 @@ export const QUALITY_OBJECTS = [
   { id: 'quality_documents', label: 'Управление качеством' },
   { id: 'quality_register', label: 'Качества партий (состояние)' },
   { id: 'quality_history', label: 'Качества партий (история)' },
+  { id: 'quality_scenarios', label: 'Сценарии' },
 ];
 
 export const REPORT_OBJECTS = [

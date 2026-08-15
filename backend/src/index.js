@@ -27,6 +27,7 @@ import {
   sanitizeUser,
 } from './services/users.js';
 import { assertLotQualityPermission } from './constants/lotQuality.js';
+import { normalizeScenario, onLotCreated } from './services/scenarios.js';
 
 ensureCollections();
 warnIfDefaultAdminPassword();
@@ -181,6 +182,34 @@ for (const name of COLLECTIONS) {
           if (!merged.name) throw new Error('Укажите название качества');
           merged.permission = assertLotQualityPermission(merged.permission);
           return merged;
+        },
+      })
+    );
+  } else if (name === 'quality_scenarios') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => {
+          const n = normalizeScenario(item);
+          n.createdAt = new Date().toISOString();
+          n.updatedAt = n.createdAt;
+          return n;
+        },
+        beforeUpdate: (merged) => {
+          const n = normalizeScenario(merged);
+          n.updatedAt = new Date().toISOString();
+          return n;
+        },
+      })
+    );
+  } else if (name === 'lots') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        afterCreate: (lot, req) => {
+          const uid = actorId(req);
+          if (!uid) throw new Error('Не авторизован: нет пользователя для сценария качества');
+          onLotCreated(lot, uid);
         },
       })
     );
