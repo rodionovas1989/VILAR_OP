@@ -50,6 +50,7 @@ backend/
   docs/ORDER_STATUS_GUARDS.md
   docs/PRE_PRODUCTION.md
   docs/SECURITY_PUBLIC_VM.md — публичная ВМ: риски и план (SG, HTTPS, rate limit, бэкапы)
+  docs/HTTPS_SETUP.md — домен + Let’s Encrypt + nginx на ВМ
 frontend/
   src/App.tsx                — меню: одна открытая подсистема (аккордеон) + страницы
   src/components/CrudPage.tsx

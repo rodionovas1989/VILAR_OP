@@ -75,6 +75,7 @@ npm test
 - `docs/ORDER_STATUS_GUARDS.md` — переходы статусов заказа
 - `docs/PRE_PRODUCTION.md` — чеклист перед площадкой
 - `docs/SECURITY_PUBLIC_VM.md` — риски открытой ВМ и план усиления
+- `docs/HTTPS_SETUP.md` — домен, DNS, nginx, Let’s Encrypt на пилотной ВМ
 - `docs/ROADMAP.md` — дорожная карта и отложенные идеи
 - `PROJECT_CONTEXT.md` — контекст ветки
 - `DEPLOYMENT.md` — запуск

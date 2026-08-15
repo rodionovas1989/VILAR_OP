@@ -71,7 +71,8 @@ npm run dev
 
 На ВМ не запускать `npm run seed` вручную. Очистка/демо/слепки — **Администрирование → Данные и резервные копии** (только Admin).
 
-Публичная ВМ: оценка рисков и план (firewall, HTTPS, бэкапы вне ВМ) — `docs/SECURITY_PUBLIC_VM.md`.
+Публичная ВМ: оценка рисков и план — `docs/SECURITY_PUBLIC_VM.md`.  
+Переход на HTTPS (домен, DNS, nginx): `docs/HTTPS_SETUP.md`.
 
 ## После установки на площадке
 
