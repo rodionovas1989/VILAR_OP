@@ -2,9 +2,10 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | Стабильный снимок: гостевой экран «Вход» + SECURITY_PUBLIC_VM | **эталон** |
-| `feature/auth-gate-landing` | Гостевой экран только «Вход»; док SECURITY_PUBLIC_VM | слита в main |
-| `fix/http-randomuuid-fallback` | Create на http://IP: fallback UUID без secure context | слита в main |
+| `main` | Стабильный снимок: гостевой «Вход» | **эталон** |
+| `feature/login-rate-limit` | Rate limit login (IP+логин), до HTTPS | **активна** |
+| `feature/auth-gate-landing` | Гостевой экран только «Вход»; SECURITY_PUBLIC_VM | слита в main |
+| `fix/http-randomuuid-fallback` | Create на http://IP: fallback UUID | слита в main |
 | `feature/admin-data-reset-demo-backups` | Админ: очистка, демо, резервные копии | слита в main |
 | `fix/admin-login-no-hint-strong-password` | Без подсказки Admin; VILAR_ADMIN_PASSWORD | слита в main |
 | `fix/sqlite-builtin-no-gyp` | SQLite через `node:sqlite` | слита в main |

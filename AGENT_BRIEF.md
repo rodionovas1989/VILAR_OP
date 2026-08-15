@@ -26,6 +26,7 @@ backend/
   src/utils/password.js          — scrypt hash
   src/store.js               — CRUD SQLite (JSON-документы в таблице records); bootstrap Admin
   src/middleware/access.js   — JWT + RBAC на маршрутах
+  src/middleware/loginRateLimit.js — лимит попыток POST /auth/login (IP + логин)
   src/constants/collectionAccess.js — коллекция → objectId; запрет generic-записи регистров
   src/services/stock.js      — свободный остаток, склады
   src/services/planning.js   — FEFO/FIFO, RES, completeOrder→PRI/PRR

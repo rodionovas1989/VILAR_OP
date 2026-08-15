@@ -1,18 +1,14 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: main (эталон после релиза)
+## Ветка: feature/login-rate-limit (активна)
 
-Слито: `feature/auth-gate-landing` — гости видят только «Вход»; после login — полный UI.
-Риски/план публичной ВМ: `docs/SECURITY_PUBLIC_VM.md`.
+Rate limit на `POST /api/auth/login` (по IP и логину, in-memory). HTTPS — следующий шаг.
+См. `docs/SECURITY_PUBLIC_VM.md`, env: `LOGIN_RATE_MAX`, `LOGIN_RATE_WINDOW_MS`, `TRUST_PROXY`.
 
 Релизы: локальная ветка → main → ВМ (`.cursor/rules/releases-and-updates.mdc`).
 
 ### На ВМ
 - URL: http://51.250.73.169:3001
 - systemd: `vilar-op`
-- Код: ветка `main` (деплой через `git bundle` с ПК, т.к. репо private)
+- Код: ветка `main` (деплой через `git bundle` с ПК)
 - Учётки: `local/CREDENTIALS.md` (не в git)
-- Бэкап перед деплоем: `~/backups/vilar-pre-deploy-*.sqlite`
-
-### Локально (не в git)
-- `local/YANDEX_CLOUD.md`, `local/CREDENTIALS.md`, `local/deploy-vm.sh`

@@ -41,6 +41,14 @@ app.use(
 );
 app.use(express.json({ limit: '10mb' }));
 
+if (
+  process.env.TRUST_PROXY === '1' ||
+  process.env.TRUST_PROXY === 'true' ||
+  process.env.TRUST_PROXY === 'yes'
+) {
+  app.set('trust proxy', 1);
+}
+
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 app.use('/api', requireAuthUnlessPublic);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as auth from '../services/auth.js';
 import * as favorites from '../services/favorites.js';
+import { loginRateLimit } from '../middleware/loginRateLimit.js';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ function requireUser(req, res) {
   return user;
 }
 
-router.post('/login', (req, res) => {
+router.post('/login', loginRateLimit, (req, res) => {
   try {
     const { login, password, rememberMe } = req.body || {};
     res.json(auth.login(login, password, rememberMe));

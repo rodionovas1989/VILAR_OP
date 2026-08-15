@@ -8,7 +8,7 @@
     "start": "node --experimental-sqlite src/index.js",
     "seed": "node --experimental-sqlite scripts/seed.js",
     "seed:if-needed": "node --experimental-sqlite scripts/seed-if-needed.js",
-    "test": "node --experimental-sqlite --test tests/chain.test.js"
+    "test": "node --experimental-sqlite --test tests/chain.test.js tests/loginRateLimit.test.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
