@@ -3,7 +3,13 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 export type ListColumn<T> = {
   key: string;
   label: string;
+  /** Отображение и значение для отбора (чекбоксы) */
   getValue: (row: T) => string;
+  /**
+   * Значение для сортировки и порядка опций в фильтре.
+   * Для дат — timestamp или ISO; иначе сортировка по getValue ломается на «01.09» vs «07.08».
+   */
+  getSortValue?: (row: T) => string | number;
   filterable?: boolean;
   sortable?: boolean;
   render?: (row: T) => ReactNode;
@@ -27,6 +33,24 @@ type PersistedListState = {
   filters: Record<string, string[]>;
   sortRules: SortRule[];
 };
+
+function compareSortValues(a: string | number, b: string | number): number {
+  if (typeof a === 'number' && typeof b === 'number') {
+    if (a === b) return 0;
+    return a < b ? -1 : 1;
+  }
+  const na = typeof a === 'number' ? a : Number(a);
+  const nb = typeof b === 'number' ? b : Number(b);
+  if (Number.isFinite(na) && Number.isFinite(nb) && String(a).trim() !== '' && String(b).trim() !== '') {
+    if (na === nb) return 0;
+    return na < nb ? -1 : 1;
+  }
+  return String(a).localeCompare(String(b), 'ru', { numeric: true });
+}
+
+function sortKeyOf<T>(col: ListColumn<T>, row: T): string | number {
+  return col.getSortValue?.(row) ?? col.getValue(row);
+}
 
 /** null — без отбора (все значения) */
 export function getColumnFilter(filters: ColumnFilters, key: string): Set<string> | null {
@@ -104,9 +128,14 @@ export function useListTable<T>(rows: T[], columns: ListColumn<T>[], options?: P
     const map: Record<string, string[]> = {};
     for (const col of columns) {
       if (col.filterable === false) continue;
-      const vals = new Set<string>();
-      for (const row of rows) vals.add(col.getValue(row));
-      map[col.key] = [...vals].sort((a, b) => a.localeCompare(b, 'ru', { numeric: true }));
+      const byDisplay = new Map<string, string | number>();
+      for (const row of rows) {
+        const display = col.getValue(row);
+        if (!byDisplay.has(display)) byDisplay.set(display, sortKeyOf(col, row));
+      }
+      map[col.key] = [...byDisplay.entries()]
+        .sort((a, b) => compareSortValues(a[1], b[1]))
+        .map(([display]) => display);
     }
     return map;
   }, [rows, columns]);
@@ -126,7 +155,7 @@ export function useListTable<T>(rows: T[], columns: ListColumn<T>[], options?: P
         for (const rule of sortRules) {
           const col = columns.find((c) => c.key === rule.key);
           if (!col || col.sortable === false) continue;
-          const cmp = col.getValue(a).localeCompare(col.getValue(b), 'ru', { numeric: true });
+          const cmp = compareSortValues(sortKeyOf(col, a), sortKeyOf(col, b));
           if (cmp !== 0) return rule.dir === 'asc' ? cmp : -cmp;
         }
         return 0;

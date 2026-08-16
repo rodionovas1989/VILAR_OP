@@ -8,6 +8,7 @@ const COLLECTION_LABELS = {
   warehouses: 'Склады',
   counterparties: 'Контрагенты',
   work_centers: 'Рабочие центры',
+  tech_maps: 'Технологические карты',
   specifications: 'Спецификации',
   planned_series_volumes: 'Плановые объёмы серий',
   lot_qualities: 'Качества партий',
@@ -182,6 +183,11 @@ export function findUsages(collection, id) {
     case 'work_centers':
       scanProductionOrders(map, id, 'work_centers');
       scanSimple(map, 'planned_series_volumes', id, ['workCenterId']);
+      scanSimple(map, 'tech_maps', id, ['workCenterId']);
+      break;
+
+    case 'tech_maps':
+      scanSimple(map, 'specifications', id, ['techMapId']);
       break;
 
     case 'specifications':
@@ -262,6 +268,7 @@ export function isProtectedDictionary(collection) {
     'warehouses',
     'counterparties',
     'work_centers',
+    'tech_maps',
     'specifications',
     'lot_qualities',
   ].includes(collection);

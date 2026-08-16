@@ -8,6 +8,7 @@ export const COLLECTION_TO_OBJECT = {
   lots: 'lots',
   series: 'series',
   work_centers: 'work_centers',
+  tech_maps: 'tech_maps',
   warehouses: 'warehouses',
   planned_series_volumes: 'planned_series_volumes',
   production_orders: 'production_orders',

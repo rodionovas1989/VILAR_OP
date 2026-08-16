@@ -90,6 +90,27 @@ function assertPlannedVolumeUnique(item, excludeId) {
   return item;
 }
 
+function assertTechMap(item) {
+  item.name = String(item.name || '').trim();
+  if (!item.name) throw new Error('Укажите название техкарты');
+  if (!item.workCenterId) throw new Error('Укажите рабочий центр');
+  if (!getById('work_centers', item.workCenterId)) throw new Error('Рабочий центр не найден');
+  return item;
+}
+
+function assertSpecification(item) {
+  item.name = String(item.name || '').trim();
+  if (!item.name) throw new Error('Укажите название спецификации');
+  if (!item.productMaterialId) throw new Error('Укажите продукт');
+  if (!getById('materials', item.productMaterialId)) throw new Error('Продукт не найден');
+  if (!item.techMapId) throw new Error('Укажите технологическую карту');
+  if (!getById('tech_maps', item.techMapId)) throw new Error('Технологическая карта не найдена');
+  if (!item.type) item.type = 'Основная';
+  if (!item.qtyBasis) item.qtyBasis = 'per1000';
+  if (!Array.isArray(item.lines)) item.lines = [];
+  return item;
+}
+
 function assertProductionOrderLinks(item) {
   const materialId = item.materialId;
   if (!materialId) throw new Error('Укажите продукт заказа');
@@ -148,6 +169,22 @@ for (const name of COLLECTIONS) {
       crudRouter(name, {
         beforeCreate: assertProductionOrderLinks,
         beforeUpdate: applyProductionOrderUpdate,
+      })
+    );
+  } else if (name === 'tech_maps') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: assertTechMap,
+        beforeUpdate: (merged) => assertTechMap(merged),
+      })
+    );
+  } else if (name === 'specifications') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: assertSpecification,
+        beforeUpdate: (merged) => assertSpecification(merged),
       })
     );
   } else if (name === 'planned_series_volumes') {

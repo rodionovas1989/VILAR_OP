@@ -56,11 +56,13 @@ function seedWorld() {
   });
   store.create('series', { id: 'ser-1', number: 'S-001', materialId: 'mat-gp' });
   store.create('work_centers', { id: 'wc-1', name: 'Линия 1' });
+  store.create('tech_maps', { id: 'tm-1', name: 'Техкарта линия 1', workCenterId: 'wc-1' });
   store.create('specifications', {
     id: 'spec-1',
     name: 'Спец препарат',
     type: 'Основная',
     productMaterialId: 'mat-gp',
+    techMapId: 'tm-1',
     qtyBasis: 'per1000',
     lines: [{ id: 'sl-1', materialId: 'mat-rm', qtyPerUnit: 2 }],
     approvedSuppliers: [{ counterpartyId: 'cp-1' }],

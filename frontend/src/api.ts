@@ -263,6 +263,16 @@ export const api = {
   getOrderTrace: (id: string) =>
     request<import('./types.documents').OrderTrace>(`/planning/order-trace/${id}`),
 
+  planSeries: (body: {
+    startDate: string;
+    endDate: string;
+    lines: { seriesId: string; quantity: number; specificationId?: string; workCenterId?: string }[];
+  }) =>
+    request<{ orders: import('./types').ProductionOrder[]; count: number }>('/planning/plan-series', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   releasedSeriesReport: () =>
     request<import('./types').ReleasedSeriesRow[]>('/reports/released-series'),
   exportReleasedSeriesXlsx: (ids: string[]) =>
@@ -270,6 +280,25 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids }),
     }),
+  planFactReport: (params?: { from?: string; to?: string; includeCancelled?: boolean }) => {
+    const q = new URLSearchParams();
+    if (params?.from) q.set('from', params.from);
+    if (params?.to) q.set('to', params.to);
+    if (params?.includeCancelled) q.set('includeCancelled', '1');
+    const qs = q.toString();
+    return request<import('./types').PlanFactReportRow[]>(`/reports/plan-fact${qs ? `?${qs}` : ''}`);
+  },
+  exportPlanFactReportXlsx: (body: {
+    ids: string[];
+    from?: string;
+    to?: string;
+    includeCancelled?: boolean;
+  }) =>
+    downloadFile(
+      `/reports/plan-fact.xlsx`,
+      `plan-fact-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      { method: 'POST', body: JSON.stringify(body) }
+    ),
   stockReport: () => request<import('./types').StockReportRow[]>('/reports/stock'),
   exportStockReportXlsx: (ids: string[]) =>
     downloadFile(`/reports/stock.xlsx`, `stock-${new Date().toISOString().slice(0, 10)}.xlsx`, {

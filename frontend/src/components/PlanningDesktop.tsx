@@ -1040,7 +1040,13 @@ function PickRow({
       <td className="col-center num">{pick.quantity}</td>
       <td>
         <select
-          className={`${ok && !qualityUnfit ? '' : 'select-bad'}${qualityUnfit ? ' select-lot-blocked' : ''}`}
+          className={[
+            ok && !qualityUnfit ? '' : 'select-bad',
+            qualityUnfit ? 'select-lot-blocked' : '',
+            qualityConditional ? 'select-lot-conditional' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           value={pick.lotId || ''}
           onChange={(e) => onChangeLot(e.target.value)}
         >

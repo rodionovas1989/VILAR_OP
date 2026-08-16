@@ -373,7 +373,12 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       <td>{nameOf(l.materialId, dictionaries.materials)}</td>
                       <td className="prod-lot-cell">
                         <select
-                          className={unfit ? 'select-lot-blocked' : undefined}
+                          className={[
+                            unfit ? 'select-lot-blocked' : '',
+                            conditional ? 'select-lot-conditional' : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
                           value={l.lotId}
                           disabled={busy}
                           onChange={(e) => changeFactLot(l.materialId, e.target.value)}

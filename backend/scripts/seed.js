@@ -232,10 +232,37 @@ function buildWorkCenters() {
   ];
 }
 
-function buildOrdersAndSeries(products, workCenters, monthStart, days = 30) {
+function buildTechMaps(workCenters) {
+  return [
+    { id: uid(), name: 'Техкарта: Линия 1', workCenterId: workCenters[0].id },
+    { id: uid(), name: 'Техкарта: Линия 2', workCenterId: workCenters[1].id },
+  ];
+}
+
+function assignTechMapsToSpecs(specifications, techMaps) {
+  specifications.forEach((spec, i) => {
+    spec.techMapId = techMaps[i % 2].id;
+  });
+}
+
+function productWorkCenterId(productId, specifications, techMapsById) {
+  const spec =
+    specifications.find(
+      (s) => s.productMaterialId === productId && (s.type || 'Основная') === 'Основная'
+    ) || specifications.find((s) => s.productMaterialId === productId);
+  return techMapsById[spec?.techMapId]?.workCenterId || null;
+}
+
+function buildOrdersAndSeries(products, workCenters, monthStart, days = 30, specifications = [], techMaps = []) {
   const series = [];
   const orders = [];
   let seriesSeq = 1;
+  const techMapsById = Object.fromEntries(techMaps.map((t) => [t.id, t]));
+  const productsByWc = new Map(workCenters.map((wc) => [wc.id, []]));
+  for (const product of products) {
+    const wcId = productWorkCenterId(product.id, specifications, techMapsById);
+    if (wcId && productsByWc.has(wcId)) productsByWc.get(wcId).push(product);
+  }
 
   for (let day = 0; day < days; day++) {
     const dayDate = new Date(monthStart);
@@ -243,10 +270,12 @@ function buildOrdersAndSeries(products, workCenters, monthStart, days = 30) {
     if (dayDate.getDay() === 0) continue; // воскресенье — выходной
 
     for (const wc of workCenters) {
+      const pool = productsByWc.get(wc.id) || [];
+      if (!pool.length) continue;
       const seriesPerDay = rnd(1, 2);
       let hour = 8;
       for (let s = 0; s < seriesPerDay; s++) {
-        const product = pick(products);
+        const product = pool[(day + s) % pool.length];
         const durationHours = seriesPerDay === 1 ? 10 : 5;
         const start = new Date(dayDate);
         start.setHours(hour, 0, 0, 0);
@@ -326,8 +355,17 @@ function main() {
     warehouses
   );
   const workCenters = buildWorkCenters();
+  const techMaps = buildTechMaps(workCenters);
+  assignTechMapsToSpecs(specifications, techMaps);
   const plannedSeriesVolumes = buildPlannedVolumes(products, workCenters, specifications);
-  const { series, orders } = buildOrdersAndSeries(products, workCenters, monthStart, 31);
+  const { series, orders } = buildOrdersAndSeries(
+    products,
+    workCenters,
+    monthStart,
+    31,
+    specifications,
+    techMaps
+  );
   linkSpecs(orders, specifications);
 
   // количества заказов из плановых объёмов (если есть срез)
@@ -349,6 +387,7 @@ function main() {
     warehouses,
     stock,
     work_centers: workCenters,
+    tech_maps: techMaps,
     planned_series_volumes: plannedSeriesVolumes,
     production_orders: orders,
     material_movements: [],
@@ -370,6 +409,7 @@ function main() {
     series: series.length,
     production_orders: orders.length,
     work_centers: workCenters.length,
+    tech_maps: techMaps.length,
     planned_series_volumes: plannedSeriesVolumes.length,
   });
 }

@@ -21,7 +21,9 @@ import { CrudPage, FieldDef } from './components/CrudPage';
 import ProductionOrderPage from './components/ProductionOrderPage';
 import ProductionDesktop from './components/ProductionDesktop';
 import PlanningDesktop from './components/PlanningDesktop';
+import SeriesPlanningPage from './components/SeriesPlanningPage';
 import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
+import PlanFactReportPage from './components/PlanFactReportPage';
 import StockReportPage from './components/StockReportPage';
 import QualityStockReportPage from './components/QualityStockReportPage';
 import QualityHistoryReportPage from './components/QualityHistoryReportPage';
@@ -41,6 +43,7 @@ import {
   Series,
   SpecLine,
   Specification,
+  TechMap,
   Warehouse,
   WorkCenter,
 } from './types';
@@ -61,6 +64,7 @@ export default function App() {
   const [lots, setLots] = useState<Lot[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([]);
+  const [techMaps, setTechMaps] = useState<TechMap[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [specs, setSpecs] = useState<Specification[]>([]);
   const [plannedVolumes, setPlannedVolumes] = useState<PlannedSeriesVolume[]>([]);
@@ -99,12 +103,13 @@ export default function App() {
 
   const reloadDicts = async () => {
     const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
-    const [m, c, l, s, w, wh, sp, pv, rl, lq] = await Promise.all([
+    const [m, c, l, s, w, tm, wh, sp, pv, rl, lq] = await Promise.all([
       listOrEmpty<Material>('materials'),
       listOrEmpty<Counterparty>('counterparties'),
       listOrEmpty<Lot>('lots'),
       listOrEmpty<Series>('series'),
       listOrEmpty<WorkCenter>('work_centers'),
+      listOrEmpty<TechMap>('tech_maps'),
       listOrEmpty<Warehouse>('warehouses'),
       listOrEmpty<Specification>('specifications'),
       listOrEmpty<PlannedSeriesVolume>('planned_series_volumes'),
@@ -118,6 +123,7 @@ export default function App() {
     setLots(l);
     setSeries(s);
     setWorkCenters(w);
+    setTechMaps(tm);
     setWarehouses(wh);
     setSpecs(sp);
     setPlannedVolumes(pv);
@@ -135,6 +141,7 @@ export default function App() {
   const lotNum = (id: string) => lotById(id)?.number || id;
   const serNum = (id: string) => series.find((s) => s.id === id)?.number || id;
   const wcName = (id: string) => workCenters.find((w) => w.id === id)?.name || id;
+  const tmName = (id: string) => techMaps.find((t) => t.id === id)?.name || id;
   const whName = (id: string) => warehouses.find((w) => w.id === id)?.name || id;
   const cpName = (id: string) => counterparties.find((c) => c.id === id)?.name || '—';
   const lotCpName = (lotId: string) => {
@@ -221,11 +228,23 @@ export default function App() {
                   { value: 'Испытания', label: 'Испытания' },
                 ],
               },
+              {
+                key: 'techMapId',
+                label: 'Техкарта',
+                type: 'select',
+                required: true,
+                options: opt(techMaps),
+              },
             ]}
             columns={[
               { key: 'name', label: 'Название' },
               { key: 'productMaterialId', label: 'Продукт', render: (r) => matName(String(r.productMaterialId)) },
               { key: 'type', label: 'Тип', render: (r) => String(r.type || 'Основная') },
+              {
+                key: 'techMapId',
+                label: 'Техкарта',
+                render: (r) => (r.techMapId ? tmName(String(r.techMapId)) : '—'),
+              },
               {
                 key: 'lines',
                 label: 'Компонентов',
@@ -240,6 +259,7 @@ export default function App() {
             transformOut={(row) => ({
               ...row,
               type: row.type || 'Основная',
+              techMapId: row.techMapId || null,
               qtyBasis: 'per1000',
               lines: ((row.lines as SpecLine[]) || [])
                 .filter((l) => l.materialId)
@@ -266,6 +286,7 @@ export default function App() {
                 productMaterials={materials.filter((m) => m.type === 'продукт').map((m) => ({ id: m.id, name: m.name }))}
                 materials={materials.filter((m) => m.type !== 'продукт')}
                 counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
+                techMaps={techMaps.map((t) => ({ id: t.id, name: t.name }))}
               />
             )}
           />
@@ -337,6 +358,27 @@ export default function App() {
             collection="work_centers"
             fields={[{ key: 'name', label: 'Название', required: true }]}
             columns={[{ key: 'name', label: 'Название' }]}
+          />
+        );
+      case 'tech_maps':
+        return (
+          <CrudPage
+            title="Технологические карты"
+            collection="tech_maps"
+            fields={[
+              { key: 'name', label: 'Название', required: true },
+              {
+                key: 'workCenterId',
+                label: 'Рабочий центр',
+                type: 'select',
+                required: true,
+                options: opt(workCenters),
+              },
+            ]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              { key: 'workCenterId', label: 'РЦ', render: (r) => wcName(String(r.workCenterId)) },
+            ]}
           />
         );
       case 'warehouses':
@@ -732,13 +774,28 @@ export default function App() {
             series={series}
             workCenters={workCenters}
             specs={specs}
+            techMaps={techMaps}
             plannedVolumes={plannedVolumes}
             lots={lots}
             warehouses={warehouses}
           />
         );
+      case 'series_planning':
+        return (
+          <SeriesPlanningPage
+            materials={materials}
+            series={series}
+            specs={specs}
+            techMaps={techMaps}
+            workCenters={workCenters}
+            plannedVolumes={plannedVolumes}
+            onDone={() => reloadDicts().catch(console.error)}
+          />
+        );
       case 'report_released_series':
         return <ReleasedSeriesReportPage />;
+      case 'report_plan_fact':
+        return <PlanFactReportPage />;
       case 'report_stock':
         return <StockReportPage />;
       case 'report_quality_stock':

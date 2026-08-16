@@ -15,12 +15,22 @@ const canReadPlan = requireAnyPermission([
 const canPlan = requireAnyPermission([
   ['planning_desktop', 'modify'],
   ['production_orders', 'modify'],
+  ['series_planning', 'modify'],
+  ['series_planning', 'create'],
 ]);
 
 const canProduce = requireAnyPermission([
   ['production_desktop', 'modify'],
   ['production_orders', 'modify'],
 ]);
+
+router.post('/plan-series', canPlan, (req, res) => {
+  try {
+    res.json(planning.planSeries(req.body || {}));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
 
 router.post('/select-orders', canPlan, (req, res) => {
   try {

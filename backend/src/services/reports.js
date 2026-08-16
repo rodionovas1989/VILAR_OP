@@ -89,6 +89,97 @@ export function filterReleasedSeries(rows, ids) {
   return rows.filter((r) => set.has(String(r.id)));
 }
 
+const STATUS_LABEL = {
+  новый: 'Новый',
+  спланирован: 'Спланирован',
+  завершен: 'Завершен',
+  отменен: 'Отменен',
+};
+
+/**
+ * План/Факт производства по заказам.
+ * Фильтр периода — по горизонту плана (пересечение startAt..endAt с [from, to]).
+ * includeCancelled — показывать отменённые (по умолчанию нет).
+ */
+export function planFactReport({ from, to, includeCancelled = false } = {}) {
+  const materials = indexById(store.readAll('materials'));
+  const seriesMap = indexById(store.readAll('series'));
+  const wcs = indexById(store.readAll('work_centers'));
+  const lotsList = store.readAll('lots');
+  const lots = indexById(lotsList);
+
+  const fromDay = from ? String(from).slice(0, 10) : null;
+  const toDay = to ? String(to).slice(0, 10) : null;
+
+  const rows = [];
+  for (const order of store.readAll('production_orders')) {
+    if (!includeCancelled && order.status === 'отменен') continue;
+
+    const planStart = String(order.startAt || '').slice(0, 10);
+    const planEnd = String(order.endAt || '').slice(0, 10);
+    if (fromDay && planEnd && planEnd < fromDay) continue;
+    if (toDay && planStart && planStart > toDay) continue;
+
+    const series = seriesMap[order.seriesId];
+    const prrDocs = documents
+      .listDocuments('production_receipt', { productionOrderId: order.id })
+      .filter((d) => d.status === 'posted');
+    const prr = prrDocs[0] || null;
+    const gpLine = prr?.lines?.[0] || null;
+    const gpLot =
+      (gpLine?.lotId && lots[gpLine.lotId]) ||
+      lotsList.find((l) => l.number === `ГП-${series?.number || ''}`) ||
+      null;
+
+    const planQty = Number(order.quantity) || 0;
+    let factQty = null;
+    if (order.actualQuantity != null && Number(order.actualQuantity) > 0) {
+      factQty = Number(order.actualQuantity);
+    } else if (order.status === DONE_STATUS) {
+      factQty = gpLine ? Number(gpLine.quantity) : planQty;
+    }
+
+    const factDate =
+      order.status === DONE_STATUS
+        ? gpLot?.productionDate || prr?.date || planEnd || '—'
+        : null;
+
+    const qtyVariance = factQty != null ? roundQty(factQty - planQty) : null;
+
+    rows.push({
+      id: order.id,
+      orderId: order.id,
+      productId: order.materialId,
+      productName: materials[order.materialId]?.name || order.materialId,
+      seriesId: order.seriesId || '',
+      seriesNumber: series?.number || order.seriesId || '—',
+      workCenterId: order.workCenterId || '',
+      workCenterName: wcs[order.workCenterId]?.name || '—',
+      status: order.status,
+      statusLabel: STATUS_LABEL[order.status] || order.status,
+      planStart,
+      planEnd,
+      planQuantity: planQty,
+      factDate: factDate || '—',
+      factQuantity: factQty,
+      quantityVariance: qtyVariance,
+    });
+  }
+
+  rows.sort(
+    (a, b) =>
+      String(a.planStart).localeCompare(String(b.planStart)) ||
+      String(a.seriesNumber).localeCompare(String(b.seriesNumber), 'ru', { numeric: true })
+  );
+  return rows;
+}
+
+export function filterPlanFactReport(rows, ids) {
+  if (!Array.isArray(ids) || !ids.length) return rows;
+  const set = new Set(ids.map(String));
+  return rows.filter((r) => set.has(String(r.id)));
+}
+
 function roundQty(n) {
   return Number(Number(n || 0).toFixed(6));
 }

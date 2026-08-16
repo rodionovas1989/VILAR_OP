@@ -26,6 +26,7 @@ const COLLECTIONS = [
   'warehouses',
   'stock',
   'work_centers',
+  'tech_maps',
   'planned_series_volumes',
   'production_orders',
   'material_movements',
@@ -170,6 +171,7 @@ export function ensureCollections() {
   getDb();
   importJsonIfEmpty();
   migrateSpecifications();
+  migrateTechMapsAndSpecLinks();
   migrateWarehousesAndStock();
   migrateOrderPlanFact();
   migrateDefaultUsers();
@@ -369,6 +371,62 @@ function migrateSpecifications() {
     }
   }
   if (changed) writeAll('specifications', rows);
+}
+
+/** Техкарты «Линия 1/2» + проставление techMapId в спецификациях (~поровну). */
+function migrateTechMapsAndSpecLinks() {
+  const workCenters = readAll('work_centers');
+  if (!workCenters.length) return;
+
+  let maps = readAll('tech_maps');
+  let mapsChanged = false;
+
+  const wc1 =
+    workCenters.find((w) => /№\s*1|линия\s*1/i.test(String(w.name || ''))) || workCenters[0];
+  const wc2 =
+    workCenters.find((w) => w.id !== wc1.id && /№\s*2|линия\s*2/i.test(String(w.name || ''))) ||
+    workCenters.find((w) => w.id !== wc1.id) ||
+    wc1;
+
+  let map1 = maps.find((m) => m.id === 'tech-map-line-1') || maps.find((m) => m.workCenterId === wc1.id);
+  let map2 =
+    maps.find((m) => m.id === 'tech-map-line-2') ||
+    maps.find((m) => m.workCenterId === wc2.id && m.id !== map1?.id);
+
+  if (!map1) {
+    map1 = { id: 'tech-map-line-1', name: 'Техкарта: Линия 1', workCenterId: wc1.id };
+    maps.push(map1);
+    mapsChanged = true;
+  } else if (!map1.workCenterId) {
+    map1.workCenterId = wc1.id;
+    mapsChanged = true;
+  }
+  if (!map2) {
+    map2 = { id: 'tech-map-line-2', name: 'Техкарта: Линия 2', workCenterId: wc2.id };
+    maps.push(map2);
+    mapsChanged = true;
+  } else if (!map2.workCenterId) {
+    map2.workCenterId = wc2.id;
+    mapsChanged = true;
+  }
+  if (mapsChanged) {
+    writeAll('tech_maps', maps);
+    maps = readAll('tech_maps');
+  }
+
+  const mapIds = new Set(maps.map((m) => m.id));
+  const specs = readAll('specifications');
+  if (!specs.length) return;
+
+  let assignIdx = 0;
+  let specsChanged = false;
+  for (const s of specs) {
+    if (s.techMapId && mapIds.has(s.techMapId)) continue;
+    s.techMapId = assignIdx % 2 === 0 ? map1.id : map2.id;
+    assignIdx += 1;
+    specsChanged = true;
+  }
+  if (specsChanged) writeAll('specifications', specs);
 }
 
 /**

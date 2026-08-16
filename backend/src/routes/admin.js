@@ -18,6 +18,7 @@ export const DICTIONARY_COLLECTIONS = [
   { id: 'lots', label: 'Партии', sheet: 'Партии' },
   { id: 'series', label: 'Серии', sheet: 'Серии' },
   { id: 'work_centers', label: 'Рабочие центры', sheet: 'Рабочие_центры' },
+  { id: 'tech_maps', label: 'Технологические карты', sheet: 'Техкарты' },
   { id: 'warehouses', label: 'Склады', sheet: 'Склады' },
   { id: 'planned_series_volumes', label: 'Плановые объёмы серий', sheet: 'Плановые_объёмы' },
 ];

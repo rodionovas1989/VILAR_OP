@@ -7,6 +7,7 @@ export const REFERENCE_OBJECTS = [
   { id: 'lots', label: 'Партии' },
   { id: 'series', label: 'Серии' },
   { id: 'work_centers', label: 'Рабочие центры' },
+  { id: 'tech_maps', label: 'Технологические карты' },
   { id: 'warehouses', label: 'Склады' },
   { id: 'planned_series_volumes', label: 'Плановые объёмы серий' },
 ];
@@ -25,6 +26,7 @@ export const DOCUMENT_OBJECTS = [
 
 export const PLANNING_OBJECTS = [
   { id: 'production_orders', label: 'Заказы на производство' },
+  { id: 'series_planning', label: 'Планирование серий' },
   { id: 'planning_desktop', label: 'Рабочий стол планирования' },
   { id: 'production_desktop', label: 'Управление заказами' },
 ];
@@ -46,6 +48,7 @@ export const QUALITY_OBJECTS = [
 
 export const REPORT_OBJECTS = [
   { id: 'report_released_series', label: 'Выпущенные серии продукции' },
+  { id: 'report_plan_fact', label: 'План/Факт производства' },
   { id: 'report_stock', label: 'Запасы' },
   { id: 'report_quality_stock', label: 'Качество запасов' },
   { id: 'report_quality_history', label: 'История качеств' },
@@ -123,6 +126,7 @@ export function plannerPermissions() {
     out[id] = { read: true, create: false, modify: false };
   }
   out.production_orders = { read: true, create: true, modify: true };
+  out.series_planning = { read: true, create: true, modify: true };
   out.planning_desktop = { read: true, create: true, modify: true };
   out.production_desktop = { read: true, create: false, modify: false };
   for (const id of REPORT_OBJECTS.map((o) => o.id)) {

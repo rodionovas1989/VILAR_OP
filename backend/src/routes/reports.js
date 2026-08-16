@@ -4,6 +4,8 @@ import { requirePermission } from '../middleware/access.js';
 import {
   releasedSeriesReport,
   filterReleasedSeries,
+  planFactReport,
+  filterPlanFactReport,
   stockReport,
   filterStockReport,
   groupStockRows,
@@ -72,6 +74,60 @@ router.post('/released-series.xlsx', requirePermission('report_released_series',
   const stamp = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="released-series-${stamp}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+router.get('/plan-fact', requirePermission('report_plan_fact', 'read'), (req, res) => {
+  res.json(
+    planFactReport({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+      includeCancelled: req.query.includeCancelled === '1' || req.query.includeCancelled === 'true',
+    })
+  );
+});
+
+router.post('/plan-fact.xlsx', requirePermission('report_plan_fact', 'read'), async (req, res) => {
+  const all = planFactReport({
+    from: req.body?.from || undefined,
+    to: req.body?.to || undefined,
+    includeCancelled: Boolean(req.body?.includeCancelled),
+  });
+  const rows = filterPlanFactReport(all, req.body?.ids);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Vilar OP';
+  const sheet = wb.addWorksheet('План-Факт');
+  sheet.columns = [
+    { header: 'Продукт', key: 'productName', width: 36 },
+    { header: 'Серия', key: 'seriesNumber', width: 16 },
+    { header: 'РЦ', key: 'workCenterName', width: 16 },
+    { header: 'Статус', key: 'statusLabel', width: 14 },
+    { header: 'План начало', key: 'planStart', width: 14 },
+    { header: 'План окончание', key: 'planEnd', width: 14 },
+    { header: 'План кол-во', key: 'planQuantity', width: 12 },
+    { header: 'Факт дата', key: 'factDate', width: 14 },
+    { header: 'Факт кол-во', key: 'factQuantity', width: 12 },
+    { header: 'Отклонение', key: 'quantityVariance', width: 12 },
+  ];
+  for (const row of rows) {
+    sheet.addRow({
+      productName: row.productName,
+      seriesNumber: row.seriesNumber,
+      workCenterName: row.workCenterName,
+      statusLabel: row.statusLabel,
+      planStart: row.planStart,
+      planEnd: row.planEnd,
+      planQuantity: row.planQuantity,
+      factDate: row.factDate,
+      factQuantity: row.factQuantity ?? '',
+      quantityVariance: row.quantityVariance ?? '',
+    });
+  }
+  sheet.getRow(1).font = { bold: true };
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="plan-fact-${stamp}.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
 });

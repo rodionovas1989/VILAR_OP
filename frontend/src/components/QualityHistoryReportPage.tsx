@@ -79,7 +79,7 @@ export default function QualityHistoryReportPage() {
       { key: 'permissionLabel', label: 'Разрешение', getValue: (r) => r.permissionLabel },
       { key: 'documentNumber', label: 'Документ', getValue: (r) => r.documentNumber },
       { key: 'userName', label: 'Пользователь', getValue: (r) => r.userName },
-      { key: 'at', label: 'Дата', getValue: (r) => formatAt(r.at) },
+      { key: 'at', label: 'Дата', getValue: (r) => formatAt(r.at), getSortValue: (r) => r.at || '' },
     ];
   }, []);
 

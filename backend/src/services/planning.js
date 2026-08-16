@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import * as store from '../store.js';
 import * as documents from './documents.js';
 import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
@@ -571,4 +572,116 @@ export function materialBalanceMatrix({ from, to } = {}) {
     .sort((a, b) => a.materialName.localeCompare(b.materialName, 'ru'));
 
   return { dates, rows, from: rangeFrom, to: rangeTo };
+}
+
+const ACTIVE_ORDER_STATUSES = [ORDER_STATUS.new, ORDER_STATUS.planned];
+
+function parsePeriodBound(dateStr, endOfDay) {
+  const raw = String(dateStr || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    throw new Error('Период: укажите даты в формате ГГГГ-ММ-ДД');
+  }
+  const d = new Date(`${raw}T${endOfDay ? '23:59:59' : '00:00:00'}`);
+  if (Number.isNaN(d.getTime())) throw new Error('Некорректная дата периода');
+  return d.toISOString();
+}
+
+/** Основная спецификация продукта (при нескольких — первая по имени). */
+export function findMainSpecification(materialId) {
+  const specs = store
+    .readAll('specifications')
+    .filter((s) => s.productMaterialId === materialId && (s.type || 'Основная') === 'Основная')
+    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ru'));
+  return specs[0] || null;
+}
+
+/**
+ * Массовое создание заказов «новый» по уже существующим сериям.
+ * body: { startDate, endDate, lines: [{ seriesId, quantity, specificationId?, workCenterId? }] }
+ */
+export function planSeries(payload = {}) {
+  const { startDate, endDate, lines = [] } = payload;
+  if (!Array.isArray(lines) || !lines.length) {
+    throw new Error('Добавьте хотя бы одну серию');
+  }
+
+  const startAt = parsePeriodBound(startDate, false);
+  const endAt = parsePeriodBound(endDate, true);
+  if (new Date(endAt) < new Date(startAt)) {
+    throw new Error('Дата окончания периода раньше даты начала');
+  }
+
+  const seenSeries = new Set();
+  const prepared = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const row = lines[i] || {};
+    const seriesId = String(row.seriesId || '').trim();
+    const quantity = Number(row.quantity);
+    const label = `Строка ${i + 1}`;
+
+    if (!seriesId) throw new Error(`${label}: укажите серию`);
+    if (seenSeries.has(seriesId)) throw new Error(`${label}: серия повторяется в плане`);
+    seenSeries.add(seriesId);
+    if (!(quantity > 0)) throw new Error(`${label}: количество должно быть больше 0`);
+
+    const series = store.getById('series', seriesId);
+    if (!series) throw new Error(`${label}: серия не найдена`);
+
+    const open = store
+      .readAll('production_orders')
+      .find((o) => o.seriesId === seriesId && ACTIVE_ORDER_STATUSES.includes(o.status));
+    if (open) {
+      throw new Error(
+        `${label}: у серии «${series.number}» уже есть незакрытый заказ (статус «${open.status}»). Выберите серию без активного заказа.`
+      );
+    }
+
+    let spec = null;
+    const requestedSpecId = String(row.specificationId || '').trim();
+    if (requestedSpecId) {
+      spec = store.getById('specifications', requestedSpecId);
+      if (!spec || spec.productMaterialId !== series.materialId) {
+        throw new Error(`${label}: спецификация не относится к продукту серии «${series.number}»`);
+      }
+    } else {
+      spec = findMainSpecification(series.materialId);
+    }
+    if (!spec) {
+      throw new Error(`${label}: нет спецификации для продукта серии «${series.number}»`);
+    }
+
+    let workCenterId = String(row.workCenterId || '').trim();
+    if (!workCenterId) {
+      if (!spec.techMapId) {
+        throw new Error(`${label}: у спецификации «${spec.name}» не указана техкарта`);
+      }
+      const techMap = store.getById('tech_maps', spec.techMapId);
+      if (!techMap?.workCenterId) {
+        throw new Error(`${label}: техкарта спецификации «${spec.name}» не найдена или без РЦ`);
+      }
+      workCenterId = techMap.workCenterId;
+    }
+    if (!store.getById('work_centers', workCenterId)) {
+      throw new Error(`${label}: рабочий центр не найден`);
+    }
+
+    prepared.push({
+      id: randomUUID(),
+      materialId: series.materialId,
+      seriesId,
+      workCenterId,
+      startAt,
+      endAt,
+      quantity,
+      status: ORDER_STATUS.new,
+      lines: [],
+      actualQuantity: null,
+      actualLines: [],
+      specificationId: spec.id,
+    });
+  }
+
+  const created = prepared.map((order) => store.create('production_orders', order));
+  return { orders: created, count: created.length };
 }

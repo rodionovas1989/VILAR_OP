@@ -152,6 +152,7 @@ export function ListViewSettingsPanel<T>({
                       onChange={(next) => setDraftFilter(col.key, next)}
                       open={openFilterKey === col.key}
                       onOpenChange={(isOpen) => setOpenFilterKey(isOpen ? col.key : null)}
+                      variant="inline"
                     />
                   </div>
                   <div className="list-view-filter-chips">

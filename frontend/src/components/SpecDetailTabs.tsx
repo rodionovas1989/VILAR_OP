@@ -11,6 +11,7 @@ type Props = {
   productMaterials: Opt[];
   materials: Opt[];
   counterparties: Opt[];
+  techMaps: Opt[];
 };
 
 type TabId = 'general' | 'recipe' | 'suppliers';
@@ -27,6 +28,7 @@ export default function SpecDetailTabs({
   productMaterials,
   materials,
   counterparties,
+  techMaps,
 }: Props) {
   const [tab, setTab] = useState<TabId>('general');
 
@@ -92,6 +94,21 @@ export default function SpecDetailTabs({
               {SPEC_TYPES.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Технологическая карта</span>
+            <select
+              required
+              value={String(editing.techMapId ?? '')}
+              onChange={(e) => setField('techMapId', e.target.value)}
+            >
+              <option value="">—</option>
+              {techMaps.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
                 </option>
               ))}
             </select>

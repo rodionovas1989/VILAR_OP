@@ -60,12 +60,14 @@ frontend/
   src/App.tsx                — меню: одна открытая подсистема (аккордеон) + страницы
   src/components/CrudPage.tsx
   src/components/PlanningDesktop.tsx  — вкладки 1–5
+  src/components/SeriesPlanningPage.tsx — планирование серий (объём на период)
   src/components/GanttChart.tsx       — Apache ECharts, дорожки = РЦ
   src/components/SpecLinesEditor.tsx      — ТЧ рецептуры
   src/components/SpecSuppliersEditor.tsx  — регистрация поставщиков
   src/components/SpecDetailTabs.tsx       — вкладки Рецептура / Поставщики
   src/components/CounterpartyBadge.tsx    — зелёный/жёлтый бейдж
   src/components/ProductionDesktop.tsx       — управление заказами (план/факт)
+  src/components/PlanFactReportPage.tsx      — отчёт План/Факт
   src/components/AdminExportDictionaries.tsx — экспорт справочников
   src/components/AdminDataMaintenance.tsx — очистка / демо / резервные копии (+ скачать на ПК)
   src/components/AdminLoginAuditPage.tsx — журнал входов
@@ -117,10 +119,11 @@ frontend/
 Документы API: `/api/documents/:type` (`receipt`, `reservation`, `production_issue`, …)  
 Связи: `GET /api/documents/:type/:id/related`, `GET /api/planning/order-trace/:id`
 
-Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`qtyPerUnit` = кг на 1000 уп), `approvedSuppliers`
+Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`qtyPerUnit` = кг на 1000 уп), `approvedSuppliers`, `techMapId`
+Техкарта (`tech_maps`): `name`, `workCenterId`
 Расход компонента (план): `need = qtyPerUnit * order.quantity / 1000`
 
-Планирование: `/api/planning/...`  
+Планирование: `/api/planning/...` (+ `POST /plan-series` — массовые заказы «новый»)  
 Производство: `POST /api/planning/production-fact/:id`, `POST /api/planning/complete/:id` (по факту)  
 Администрирование: `GET /api/admin/dictionaries`, `POST /api/admin/export-dictionaries.xlsx`,
 `GET/POST /api/admin/backups`, `POST .../restore`, `DELETE ...`, `POST /api/admin/data/clear|demo`

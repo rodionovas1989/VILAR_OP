@@ -8,6 +8,8 @@ type Props = {
   onChange: (next: Set<string> | null) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** inline — список под кнопкой (для панелей со скроллом); overlay — абсолютный слой */
+  variant?: 'overlay' | 'inline';
 };
 
 /** Дропдаун-фильтр с чекбоксами */
@@ -18,6 +20,7 @@ export default function ColumnFilterDropdown({
   onChange,
   open,
   onOpenChange,
+  variant = 'overlay',
 }: Props) {
   const active =
     selected !== null && selected.size > 0 && (options.length === 0 || selected.size < options.length);
@@ -32,7 +35,9 @@ export default function ColumnFilterDropdown({
           : `Выбрано: ${selected.size}`;
 
   return (
-    <div className={`col-filter${open ? ' open' : ''}${active ? ' active' : ''}`}>
+    <div
+      className={`col-filter col-filter-${variant}${open ? ' open' : ''}${active ? ' active' : ''}`}
+    >
       <button
         type="button"
         className="col-filter-trigger"
@@ -45,7 +50,11 @@ export default function ColumnFilterDropdown({
         </span>
       </button>
       {open && (
-        <div className="col-filter-panel" role="listbox" aria-multiselectable>
+        <div
+          className={variant === 'inline' ? 'col-filter-panel-inline' : 'col-filter-panel'}
+          role="listbox"
+          aria-multiselectable
+        >
           <ColumnFilterList options={options} selected={selected} onChange={onChange} />
         </div>
       )}

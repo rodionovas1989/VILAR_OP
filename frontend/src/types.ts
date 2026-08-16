@@ -35,6 +35,8 @@ export interface Specification {
   batchSizeUnits?: number;
   /** Основная | Альтернативная | Испытания */
   type?: string;
+  /** Технологическая карта (обязательна) */
+  techMapId?: string | null;
   lines: SpecLine[];
   approvedSuppliers?: ApprovedSupplier[];
 }
@@ -89,6 +91,13 @@ export interface Reservation {
 export interface WorkCenter {
   id: string;
   name: string;
+}
+
+/** Технологическая карта: пока имя + рабочий центр (позже этапы / нормы времени) */
+export interface TechMap {
+  id: string;
+  name: string;
+  workCenterId: string;
 }
 
 /** Плановый объём серии: материал × рабочий центр → количество */
@@ -249,6 +258,25 @@ export interface QualityHistoryReportRow {
   permissionLabel: string;
   userId: string;
   userName: string;
+}
+
+export interface PlanFactReportRow {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  seriesId: string;
+  seriesNumber: string;
+  workCenterId: string;
+  workCenterName: string;
+  status: string;
+  statusLabel: string;
+  planStart: string;
+  planEnd: string;
+  planQuantity: number;
+  factDate: string;
+  factQuantity: number | null;
+  quantityVariance: number | null;
 }
 
 export type FeedbackCategory = 'понравилось' | 'улучшить' | 'ошибка' | 'вопрос';

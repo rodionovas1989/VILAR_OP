@@ -37,6 +37,7 @@ export const NAV: NavGroup[] = [
       { id: 'lots', label: 'Партии', kind: 'dictionary' },
       { id: 'series', label: 'Серии', kind: 'dictionary' },
       { id: 'work_centers', label: 'Рабочие центры', kind: 'dictionary' },
+      { id: 'tech_maps', label: 'Технологические карты', kind: 'dictionary' },
       { id: 'warehouses', label: 'Склады', kind: 'dictionary' },
       { id: 'planned_series_volumes', label: 'Плановые объёмы серий', kind: 'dictionary' },
     ],
@@ -61,6 +62,7 @@ export const NAV: NavGroup[] = [
     label: 'Планирование',
     items: [
       { id: 'production_orders', label: 'Заказы на производство', kind: 'planning' },
+      { id: 'series_planning', label: 'Планирование серий', kind: 'planning' },
       { id: 'planning_desktop', label: 'Рабочий стол планирования', kind: 'desktop' },
     ],
   },
@@ -74,6 +76,7 @@ export const NAV: NavGroup[] = [
     label: 'Отчеты',
     items: [
       { id: 'report_released_series', label: 'Выпущенные серии продукции', kind: 'report' },
+      { id: 'report_plan_fact', label: 'План/Факт производства', kind: 'report' },
       { id: 'report_stock', label: 'Запасы', kind: 'report' },
       { id: 'report_quality_stock', label: 'Качество запасов', kind: 'report' },
       { id: 'report_quality_history', label: 'История качеств', kind: 'report' },

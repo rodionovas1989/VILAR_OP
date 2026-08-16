@@ -18,6 +18,7 @@ import {
   ProductionOrder,
   Series,
   Specification,
+  TechMap,
   Warehouse,
   WorkCenter,
 } from '../types';
@@ -40,6 +41,7 @@ type Props = {
   series: Series[];
   workCenters: WorkCenter[];
   specs: Specification[];
+  techMaps?: TechMap[];
   plannedVolumes: PlannedSeriesVolume[];
   lots: Lot[];
   warehouses?: Warehouse[];
@@ -125,6 +127,7 @@ export default function ProductionOrderPage({
   series,
   workCenters,
   specs,
+  techMaps = [],
   plannedVolumes,
   lots,
   warehouses = [],
@@ -168,13 +171,15 @@ export default function ProductionOrderPage({
       {
         key: 'startAt',
         label: 'Начало',
-        getValue: (o) => (o.startAt ? new Date(o.startAt).toLocaleString() : '—'),
+        getValue: (o) => (o.startAt ? new Date(o.startAt).toLocaleString('ru-RU') : '—'),
+        getSortValue: (o) => (o.startAt ? new Date(o.startAt).getTime() : 0),
       },
-      { key: 'quantity', label: 'План', getValue: (o) => String(o.quantity) },
+      { key: 'quantity', label: 'План', getValue: (o) => String(o.quantity), getSortValue: (o) => Number(o.quantity) || 0 },
       {
         key: 'actualQuantity',
         label: 'Факт',
         getValue: (o) => (o.actualQuantity != null ? String(o.actualQuantity) : '—'),
+        getSortValue: (o) => (o.actualQuantity != null ? Number(o.actualQuantity) : -1),
       },
       {
         key: 'status',
@@ -607,7 +612,21 @@ export default function ProductionOrderPage({
                 {canEditFields ? (
                   <select
                     value={editing.specificationId || ''}
-                    onChange={(e) => setEditing({ ...editing, specificationId: e.target.value || null })}
+                    onChange={(e) => {
+                      const specificationId = e.target.value || null;
+                      const spec = specificationId ? specs.find((s) => s.id === specificationId) : null;
+                      const tm = spec?.techMapId
+                        ? techMaps.find((t) => t.id === spec.techMapId)
+                        : null;
+                      const workCenterId = tm?.workCenterId || editing.workCenterId;
+                      const qty = plannedQtyFor(editing.materialId, workCenterId);
+                      setEditing({
+                        ...editing,
+                        specificationId,
+                        ...(tm?.workCenterId ? { workCenterId: tm.workCenterId } : {}),
+                        ...(qty != null ? { quantity: qty } : {}),
+                      });
+                    }}
                     required
                     disabled={!editing.materialId}
                   >
