@@ -1,7 +1,7 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: feature/searchable-selects
+## Ветка: main
 
-Прототип для просмотра: единый `SearchableSelect` вместо native `<select>` — вверху выпадающей панели поле «Поиск…», фильтр по подписи/значению. Подключено в CRUD, документах, планировании, спецификациях, качестве и т.д.
+После merge `feature/searchable-selects`: выпадающие списки с поиском (`SearchableSelect`) — панель через portal, ширина под длинные подписи.
 
-База: `main` (после fix чекбоксов сценариев).
+Пилот: https://vilar-prod.ru
