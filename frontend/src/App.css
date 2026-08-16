@@ -582,7 +582,7 @@ button.linkish {
   flex-shrink: 0;
 }
 
-/* Панель отбора: ограниченная высота + скролл, шапка закреплена */
+/* �?анел�? о�?бо�?а: ог�?ани�?енная в�?со�?а + ск�?олл, �?апка зак�?еплена */
 .page > .list-view-settings {
   flex: 0 1 auto;
   min-height: 0;
@@ -1300,7 +1300,7 @@ button.link {
   overflow: hidden;
 }
 
-/* Подбор сырья — несколько карточек заказов; скролл всей панели (полоска recent уменьшает высоту). */
+/* �?одбо�? с�?�?�?я �?? нескол�?ко ка�?�?о�?ек заказов; ск�?олл всей панели (полоска recent �?мен�?�?ае�? в�?со�?�?). */
 .planning-desktop > .materials-suggest {
   display: flex;
   flex-direction: column;
@@ -2894,12 +2894,12 @@ button.danger-outline:hover {
   background: #e8eef3;
 }
 
-.status-pill.status-спланирован {
+.status-pill.status-сплани�?ован {
   background: #e3f2ed;
   color: #0f513f;
 }
 
-.status-pill.status-завершен {
+.status-pill.status-заве�?�?ен {
   background: #e8eef8;
   color: #1e3a5f;
 }
@@ -3106,7 +3106,7 @@ button.danger-outline:hover {
 }
 
 .user-guide-flow li:not(:last-child)::after {
-  content: '→';
+  content: '�??';
   color: var(--muted);
   font-size: 16px;
 }
@@ -3339,7 +3339,7 @@ button.danger-outline:hover {
   }
 
   .user-guide-flow li::after {
-    content: '→' !important;
+    content: '�??' !important;
   }
 
   .layout {
@@ -3488,7 +3488,7 @@ button.danger-outline:hover {
   min-width: 40px;
 }
 
-/* �� SearchableSelect �� */
+/* ?? SearchableSelect ?? */
 .searchable-select {
   position: relative;
   width: 100%;
@@ -3557,19 +3557,20 @@ button.danger-outline:hover {
 }
 
 .searchable-select-panel {
-  position: absolute;
-  z-index: 80;
-  left: 0;
-  right: 0;
-  top: calc(100% + 2px);
   display: flex;
   flex-direction: column;
-  max-height: min(280px, 50vh);
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(15, 35, 52, 0.12);
   overflow: hidden;
+}
+
+.searchable-select-panel-portal {
+  position: fixed;
+  z-index: 1200;
+  right: auto;
+  bottom: auto;
 }
 
 .searchable-select-search {
