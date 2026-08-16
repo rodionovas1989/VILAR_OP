@@ -27,28 +27,48 @@ type Props = {
 
 type PanelPos = { top: number; left: number; width: number; maxHeight: number; placement: 'below' | 'above' };
 
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+
+function measureContentWidth(labels: string[], font: string): number {
+  if (measureCtx === undefined) {
+    const canvas = document.createElement('canvas');
+    measureCtx = canvas.getContext('2d');
+  }
+  if (!measureCtx) return 0;
+  measureCtx.font = font;
+  let max = 0;
+  for (const label of labels) {
+    const w = measureCtx.measureText(label).width;
+    if (w > max) max = w;
+  }
+  return Math.ceil(max);
+}
+
 function norm(s: string) {
   return s.trim().toLowerCase();
 }
 
-function computePos(trigger: HTMLElement): PanelPos {
+/** Ширина панели ≥ триггера и под длинные подписи (как у системного select), без горизонтального скролла. */
+function computePos(trigger: HTMLElement, contentWidth: number): PanelPos {
   const rect = trigger.getBoundingClientRect();
   const gap = 4;
+  const edge = 8;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const width = Math.max(rect.width, 180);
-  const spaceBelow = vh - rect.bottom - gap - 8;
-  const spaceAbove = rect.top - gap - 8;
-  const preferBelow = spaceBelow >= 160 || spaceBelow >= spaceAbove;
-  const maxHeight = Math.min(280, Math.max(120, preferBelow ? spaceBelow : spaceAbove));
+  const maxPanel = Math.min(vw - edge * 2, 560);
+  const width = Math.min(maxPanel, Math.max(rect.width, contentWidth, 180));
+  const spaceBelow = vh - rect.bottom - gap - edge;
+  const spaceAbove = rect.top - gap - edge;
+  const preferBelow = spaceBelow >= 180 || spaceBelow >= spaceAbove;
+  const maxHeight = Math.min(360, Math.max(140, preferBelow ? spaceBelow : spaceAbove));
   let left = rect.left;
-  if (left + width > vw - 8) left = Math.max(8, vw - 8 - width);
-  if (left < 8) left = 8;
+  if (left + width > vw - edge) left = Math.max(edge, vw - edge - width);
+  if (left < edge) left = edge;
   if (preferBelow) {
     return { top: rect.bottom + gap, left, width, maxHeight, placement: 'below' };
   }
   return {
-    top: Math.max(8, rect.top - gap - maxHeight),
+    top: Math.max(edge, rect.top - gap - maxHeight),
     left,
     width,
     maxHeight,
@@ -95,7 +115,16 @@ export default function SearchableSelect({
   const updatePos = () => {
     const el = triggerRef.current;
     if (!el) return;
-    setPos(computePos(el));
+    const style = window.getComputedStyle(el);
+    const font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const labels = [
+      ...(showEmpty ? [emptyLabel] : []),
+      ...filtered.map((o) => o.label),
+      'Ничего не найдено',
+    ];
+    // padding опций + запас под скроллбар, если появится по высоте
+    const contentWidth = measureContentWidth(labels, font) + 36;
+    setPos(computePos(el, contentWidth));
   };
 
   useLayoutEffect(() => {
@@ -104,7 +133,19 @@ export default function SearchableSelect({
       return;
     }
     updatePos();
-  }, [open]);
+  }, [open, filtered, showEmpty, emptyLabel]);
+
+  // Уточнить ширину по реальному DOM (шрифты/иконки), без горизонтального overflow
+  useLayoutEffect(() => {
+    if (!open || !pos || !panelRef.current || !triggerRef.current) return;
+    const panel = panelRef.current;
+    const needed = Math.ceil(panel.scrollWidth);
+    const maxPanel = Math.min(window.innerWidth - 16, 560);
+    const target = Math.min(needed, maxPanel);
+    if (target > pos.width + 1) {
+      setPos(computePos(triggerRef.current, target));
+    }
+  }, [open, pos?.width, filtered, query]);
 
   useEffect(() => {
     if (!open) return;

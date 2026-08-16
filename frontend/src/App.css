@@ -367,7 +367,7 @@ button.linkish {
 }
 
 .recent-chip-sub::after {
-  content: '·';
+  content: '�';
   margin-left: 6px;
   color: var(--line);
 }
@@ -582,7 +582,7 @@ button.linkish {
   flex-shrink: 0;
 }
 
-/* �?анел�? о�?бо�?а: ог�?ани�?енная в�?со�?а + ск�?олл, �?апка зак�?еплена */
+/* ???????? ????????: ?????????????? ???????? + ???????, ?????? ??????????? */
 .page > .list-view-settings {
   flex: 0 1 auto;
   min-height: 0;
@@ -1300,7 +1300,7 @@ button.link {
   overflow: hidden;
 }
 
-/* �?одбо�? с�?�?�?я �?? нескол�?ко ка�?�?о�?ек заказов; ск�?олл всей панели (полоска recent �?мен�?�?ае�? в�?со�?�?). */
+/* ???????? ???????? ??? ?????????? ??????????? ???????; ??????? ???? ?????? (??????? recent ????????????? ?????????). */
 .planning-desktop > .materials-suggest {
   display: flex;
   flex-direction: column;
@@ -2894,12 +2894,12 @@ button.danger-outline:hover {
   background: #e8eef3;
 }
 
-.status-pill.status-сплани�?ован {
+.status-pill.status-???????????? {
   background: #e3f2ed;
   color: #0f513f;
 }
 
-.status-pill.status-заве�?�?ен {
+.status-pill.status-?????????? {
   background: #e8eef8;
   color: #1e3a5f;
 }
@@ -3106,7 +3106,7 @@ button.danger-outline:hover {
 }
 
 .user-guide-flow li:not(:last-child)::after {
-  content: '�??';
+  content: '???';
   color: var(--muted);
   font-size: 16px;
 }
@@ -3339,7 +3339,7 @@ button.danger-outline:hover {
   }
 
   .user-guide-flow li::after {
-    content: '�??' !important;
+    content: '???' !important;
   }
 
   .layout {
@@ -3571,6 +3571,8 @@ button.danger-outline:hover {
   z-index: 1200;
   right: auto;
   bottom: auto;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 .searchable-select-search {
@@ -3600,13 +3602,15 @@ button.danger-outline:hover {
   list-style: none;
   margin: 0;
   padding: 4px 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   flex: 1 1 auto;
 }
 
 .searchable-select-option {
   display: block;
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   margin: 0;
   padding: 7px 10px;
   border: none;
@@ -3615,6 +3619,7 @@ button.danger-outline:hover {
   font: inherit;
   text-align: left;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .searchable-select-option:hover:not(:disabled),
