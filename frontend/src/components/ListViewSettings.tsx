@@ -8,6 +8,7 @@ import {
   SortRule,
 } from '../hooks/useListTable';
 import ColumnFilterDropdown from './ColumnFilterDropdown';
+import SearchableSelect from './SearchableSelect';
 
 type SettingsProps<T> = {
   open: boolean;
@@ -181,20 +182,21 @@ export function ListViewSettingsPanel<T>({
             {draftSortRules.map((rule, index) => (
               <div key={index} className="list-view-sort-rule">
                 <span className="list-view-sort-index">{index + 1}.</span>
-                <select value={rule.key} onChange={(e) => updateSortRule(index, { key: e.target.value })}>
-                  {sortableColumns.map((col) => (
-                    <option key={col.key} value={col.key}>
-                      {col.label}
-                    </option>
-                  ))}
-                </select>
-                <select
+                <SearchableSelect
+                  value={rule.key}
+                  allowEmpty={false}
+                  onChange={(v) => updateSortRule(index, { key: v })}
+                  options={sortableColumns.map((col) => ({ value: col.key, label: col.label }))}
+                />
+                <SearchableSelect
                   value={rule.dir}
-                  onChange={(e) => updateSortRule(index, { dir: e.target.value as 'asc' | 'desc' })}
-                >
-                  <option value="asc">По возрастанию</option>
-                  <option value="desc">По убыванию</option>
-                </select>
+                  allowEmpty={false}
+                  onChange={(v) => updateSortRule(index, { dir: v as 'asc' | 'desc' })}
+                  options={[
+                    { value: 'asc', label: 'По возрастанию' },
+                    { value: 'desc', label: 'По убыванию' },
+                  ]}
+                />
                 <button type="button" className="ghost list-view-sort-remove" onClick={() => removeSortRule(index)}>
                   ×
                 </button>

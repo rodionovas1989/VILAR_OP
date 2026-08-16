@@ -1,5 +1,6 @@
 import { ApprovedSupplier, SpecLine } from '../types';
 import IconButton from './IconButton';
+import SearchableSelect from './SearchableSelect';
 
 type Opt = { id: string; name: string };
 
@@ -71,32 +72,20 @@ export default function SpecSuppliersEditor({
             {suppliers.map((row, idx) => (
               <tr key={idx}>
                 <td>
-                  <select
+                  <SearchableSelect
                     required
                     value={row.materialId}
-                    onChange={(e) => update(idx, { materialId: e.target.value })}
-                  >
-                    <option value="">—</option>
-                    {componentOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(idx, { materialId: v })}
+                    options={componentOptions.map((m) => ({ value: m.id, label: m.name }))}
+                  />
                 </td>
                 <td>
-                  <select
+                  <SearchableSelect
                     required
                     value={row.counterpartyId}
-                    onChange={(e) => update(idx, { counterpartyId: e.target.value })}
-                  >
-                    <option value="">—</option>
-                    {counterparties.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(idx, { counterpartyId: v })}
+                    options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
+                  />
                 </td>
                 <td>
                   <div className="row-actions">

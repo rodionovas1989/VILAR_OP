@@ -25,6 +25,7 @@ import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import SearchableSelect from './SearchableSelect';
 import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
 import { Lot, Material, Warehouse } from '../types';
 import { metaForDocumentType } from '../constants/documentTypes';
@@ -482,17 +483,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           {ro ? (
             <span className="readonly-field">{editing.warehouseId ? whName(editing.warehouseId) : '—'}</span>
           ) : (
-            <select
+            <SearchableSelect
               value={editing.warehouseId || ''}
-              onChange={(e) => setEditing((d) => (d ? { ...d, warehouseId: e.target.value } : d))}
-            >
-              <option value="">—</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseId: v } : d))}
+              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+            />
           )}
         </label>
       );
@@ -504,17 +499,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           {ro ? (
             <span className="readonly-field">{editing.warehouseToId ? whName(editing.warehouseToId) : '—'}</span>
           ) : (
-            <select
+            <SearchableSelect
               value={editing.warehouseToId || ''}
-              onChange={(e) => setEditing((d) => (d ? { ...d, warehouseToId: e.target.value } : d))}
-            >
-              <option value="">—</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseToId: v } : d))}
+              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+            />
           )}
         </label>
       );
@@ -526,17 +515,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           {ro ? (
             <span className="readonly-field">{editing.warehouseFromId ? whName(editing.warehouseFromId) : '—'}</span>
           ) : (
-            <select
+            <SearchableSelect
               value={editing.warehouseFromId || ''}
-              onChange={(e) => setEditing((d) => (d ? { ...d, warehouseFromId: e.target.value } : d))}
-            >
-              <option value="">—</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseFromId: v } : d))}
+              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+            />
           )}
         </label>
       );
@@ -548,17 +531,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           {ro ? (
             <span className="readonly-field">{editing.warehouseFromId ? whName(editing.warehouseFromId) : '—'}</span>
           ) : (
-            <select
+            <SearchableSelect
               value={editing.warehouseFromId || ''}
-              onChange={(e) => setEditing((d) => (d ? { ...d, warehouseFromId: e.target.value } : d))}
-            >
-              <option value="">—</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseFromId: v } : d))}
+              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+            />
           )}
         </label>
         <label>
@@ -566,17 +543,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           {ro ? (
             <span className="readonly-field">{editing.warehouseToId ? whName(editing.warehouseToId) : '—'}</span>
           ) : (
-            <select
+            <SearchableSelect
               value={editing.warehouseToId || ''}
-              onChange={(e) => setEditing((d) => (d ? { ...d, warehouseToId: e.target.value } : d))}
-            >
-              <option value="">—</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseToId: v } : d))}
+              options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
+            />
           )}
         </label>
       </>
@@ -620,43 +591,34 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
             <tr key={line.id}>
               <td>
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={line.materialId}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       const lines = [...editing.lines];
-                      lines[idx] = { ...line, materialId: e.target.value, lotId: '' };
+                      lines[idx] = { ...line, materialId: v, lotId: '' };
                       setEditing({ ...editing, lines });
                     }}
-                  >
-                    <option value="">—</option>
-                    {materials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                  />
                 ) : (
                   matName(line.materialId)
                 )}
               </td>
               <td>
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={line.lotId}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       const lines = [...editing.lines];
-                      lines[idx] = { ...line, lotId: e.target.value };
+                      lines[idx] = { ...line, lotId: v };
                       setEditing({ ...editing, lines });
                     }}
                     disabled={!line.materialId}
-                  >
-                    <option value="">—</option>
-                    {lotsForMaterial(lots, line.materialId).map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.number}
-                      </option>
-                    ))}
-                  </select>
+                    options={lotsForMaterial(lots, line.materialId).map((l) => ({
+                      value: l.id,
+                      label: l.number,
+                    }))}
+                  />
                 ) : (
                   lotNum(line.lotId)
                 )}

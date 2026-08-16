@@ -3,6 +3,7 @@ import { api } from '../api';
 import { OrderLine, ProductionOrder, Warehouse } from '../types';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
+import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
 
 type Dicts = {
@@ -273,31 +274,29 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           </label>
           <label className="prod-head-field">
             <span className="muted">Склад списания (компоненты)</span>
-            <select
+            <SearchableSelect
               value={warehouseFromId}
               disabled={busy}
-              onChange={(e) => setWarehouseFromId(e.target.value)}
-            >
-              {dictionaries.warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.type})
-                </option>
-              ))}
-            </select>
+              allowEmpty={false}
+              onChange={setWarehouseFromId}
+              options={dictionaries.warehouses.map((w) => ({
+                value: w.id,
+                label: `${w.name} (${w.type})`,
+              }))}
+            />
           </label>
           <label className="prod-head-field">
             <span className="muted">Склад выпуска (ГП)</span>
-            <select
+            <SearchableSelect
               value={warehouseToId}
               disabled={busy}
-              onChange={(e) => setWarehouseToId(e.target.value)}
-            >
-              {dictionaries.warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.type})
-                </option>
-              ))}
-            </select>
+              allowEmpty={false}
+              onChange={setWarehouseToId}
+              options={dictionaries.warehouses.map((w) => ({
+                value: w.id,
+                label: `${w.name} (${w.type})`,
+              }))}
+            />
           </label>
         </div>
 
@@ -372,8 +371,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                     >
                       <td>{nameOf(l.materialId, dictionaries.materials)}</td>
                       <td className="prod-lot-cell">
-                        <select
-                          className={[
+                        <SearchableSelect
+                          triggerClassName={[
                             unfit ? 'select-lot-blocked' : '',
                             conditional ? 'select-lot-conditional' : '',
                           ]
@@ -381,19 +380,29 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                             .join(' ')}
                           value={l.lotId}
                           disabled={busy}
-                          onChange={(e) => changeFactLot(l.materialId, e.target.value)}
-                        >
-                          {!hasCurrent && l.lotId && (
-                            <option value={l.lotId}>{nameOf(l.lotId, dictionaries.lots)} (текущая)</option>
-                          )}
-                          {opts.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.qualityAllowed === false ? '⛔ ' : o.qualityPermission === 'conditional' ? '⚠ ' : ''}
-                              {o.number}
-                              {o.freeQty != null ? ` · своб. ${o.freeQty}` : ''}
-                            </option>
-                          ))}
-                        </select>
+                          allowEmpty={false}
+                          onChange={(v) => changeFactLot(l.materialId, v)}
+                          options={[
+                            ...(!hasCurrent && l.lotId
+                              ? [
+                                  {
+                                    value: l.lotId,
+                                    label: `${nameOf(l.lotId, dictionaries.lots)} (текущая)`,
+                                  },
+                                ]
+                              : []),
+                            ...opts.map((o) => ({
+                              value: o.id,
+                              label: `${
+                                o.qualityAllowed === false
+                                  ? '⛔ '
+                                  : o.qualityPermission === 'conditional'
+                                    ? '⚠ '
+                                    : ''
+                              }${o.number}${o.freeQty != null ? ` · своб. ${o.freeQty}` : ''}`,
+                            })),
+                          ]}
+                        />
                         {selectedOpt?.qualityName && !unfit && !conditional && (
                           <div className="prod-lot-quality muted">{selectedOpt.qualityName}</div>
                         )}

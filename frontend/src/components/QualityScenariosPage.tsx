@@ -10,6 +10,7 @@ import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSetting
 import ListTableHeader from './ListTableHeader';
 import { Modal } from './Modal';
 import IconButton from './IconButton';
+import SearchableSelect from './SearchableSelect';
 
 const PAGE_ID = 'quality_scenarios';
 const TYPE_LOT_REGISTERED = 'lot_registered';
@@ -298,9 +299,13 @@ export default function QualityScenariosPage() {
 
           <label>
             Тип
-            <select value={TYPE_LOT_REGISTERED} disabled>
-              <option value={TYPE_LOT_REGISTERED}>Регистрация новых партий</option>
-            </select>
+            <SearchableSelect
+              value={TYPE_LOT_REGISTERED}
+              onChange={() => {}}
+              allowEmpty={false}
+              disabled
+              options={[{ value: TYPE_LOT_REGISTERED, label: 'Регистрация новых партий' }]}
+            />
           </label>
 
           <label className="checkbox-row">
@@ -314,37 +319,34 @@ export default function QualityScenariosPage() {
 
           <label>
             Качество (подставится в документ)
-            <select
+            <SearchableSelect
               required
               value={form.qualityId}
-              onChange={(e) => setForm({ ...form, qualityId: e.target.value })}
-            >
-              <option value="">— выберите —</option>
-              {qualities.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setForm({ ...form, qualityId: v })}
+              emptyLabel="— выберите —"
+              options={qualities.map((q) => ({ value: q.id, label: q.name || q.id }))}
+            />
           </label>
 
           <fieldset className="scenario-scope full-width">
             <legend>Материалы</legend>
             <label>
               Область
-              <select
+              <SearchableSelect
                 value={form.materialScope}
-                onChange={(e) =>
+                allowEmpty={false}
+                onChange={(v) =>
                   setForm({
                     ...form,
-                    materialScope: e.target.value as Scope,
-                    materialIds: e.target.value === 'all' ? [] : form.materialIds,
+                    materialScope: v as Scope,
+                    materialIds: v === 'all' ? [] : form.materialIds,
                   })
                 }
-              >
-                <option value="all">Все</option>
-                <option value="selected">Выбранные</option>
-              </select>
+                options={[
+                  { value: 'all', label: 'Все' },
+                  { value: 'selected', label: 'Выбранные' },
+                ]}
+              />
             </label>
             {form.materialScope === 'selected' && (
               <div className="scenario-checklist">
@@ -375,19 +377,21 @@ export default function QualityScenariosPage() {
             <legend>Контрагенты</legend>
             <label>
               Область
-              <select
+              <SearchableSelect
                 value={form.counterpartyScope}
-                onChange={(e) =>
+                allowEmpty={false}
+                onChange={(v) =>
                   setForm({
                     ...form,
-                    counterpartyScope: e.target.value as Scope,
-                    counterpartyIds: e.target.value === 'all' ? [] : form.counterpartyIds,
+                    counterpartyScope: v as Scope,
+                    counterpartyIds: v === 'all' ? [] : form.counterpartyIds,
                   })
                 }
-              >
-                <option value="all">Все</option>
-                <option value="selected">Выбранные</option>
-              </select>
+                options={[
+                  { value: 'all', label: 'Все' },
+                  { value: 'selected', label: 'Выбранные' },
+                ]}
+              />
             </label>
             {form.counterpartyScope === 'selected' && (
               <div className="scenario-checklist">

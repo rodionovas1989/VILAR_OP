@@ -1,7 +1,7 @@
 ﻿# PROJECT_CONTEXT
 
-## Ветка: fix/scenario-checkbox-align
+## Ветка: feature/searchable-selects
 
-Фикс: чекбоксы в модалке «Сценарии» расползались по диагонали из‑за конфликта `.form-grid label { display: grid }` и `width: 100%` на input с `.checkbox-row`.
+Прототип для просмотра: единый `SearchableSelect` вместо native `<select>` — вверху выпадающей панели поле «Поиск…», фильтр по подписи/значению. Подключено в CRUD, документах, планировании, спецификациях, качестве и т.д.
 
-База: `main` после tech maps / series planning.
+База: `main` (после fix чекбоксов сценариев).

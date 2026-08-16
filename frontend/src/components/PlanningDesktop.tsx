@@ -4,6 +4,7 @@ import { MaterialPick, ProductionOrder } from '../types';
 import CounterpartyBadge from './CounterpartyBadge';
 import GanttChart from './GanttChart';
 import PageTitle from './PageTitle';
+import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
 
 type SuggestResult = {
@@ -523,10 +524,15 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           <div className="toolbar-actions" style={{ marginBottom: 12, gap: 12 }}>
             <label>
               Алгоритм{' '}
-              <select value={algorithm} onChange={(e) => setAlgorithm(e.target.value as 'FEFO' | 'FIFO')}>
-                <option value="FEFO">FEFO</option>
-                <option value="FIFO">FIFO</option>
-              </select>
+              <SearchableSelect
+                value={algorithm}
+                allowEmpty={false}
+                onChange={(v) => setAlgorithm(v as 'FEFO' | 'FIFO')}
+                options={[
+                  { value: 'FEFO', label: 'FEFO' },
+                  { value: 'FIFO', label: 'FIFO' },
+                ]}
+              />
             </label>
             <button type="button" disabled={busy} onClick={() => runSuggest()}>
               Подобрать сырьё
@@ -1039,8 +1045,8 @@ function PickRow({
       <td>{pick.materialName}</td>
       <td className="col-center num">{pick.quantity}</td>
       <td>
-        <select
-          className={[
+        <SearchableSelect
+          triggerClassName={[
             ok && !qualityUnfit ? '' : 'select-bad',
             qualityUnfit ? 'select-lot-blocked' : '',
             qualityConditional ? 'select-lot-conditional' : '',
@@ -1048,21 +1054,16 @@ function PickRow({
             .filter(Boolean)
             .join(' ')}
           value={pick.lotId || ''}
-          onChange={(e) => onChangeLot(e.target.value)}
-        >
-          <option value="">— не выбрана —</option>
-          {lots.map((l) => (
-            <option
-              key={l.id}
-              value={l.id}
-              className={l.qualityAllowed === false ? 'option-lot-blocked' : undefined}
-            >
-              {l.qualityAllowed === false ? '⛔ ' : l.qualityPermission === 'conditional' ? '⚠ ' : ''}
-              {l.number} (своб. {l.freeQty})
-              {l.qualityName ? ` — ${l.qualityName}` : ''}
-            </option>
-          ))}
-        </select>
+          onChange={onChangeLot}
+          emptyLabel="— не выбрана —"
+          options={lots.map((l) => ({
+            value: l.id,
+            label: `${
+              l.qualityAllowed === false ? '⛔ ' : l.qualityPermission === 'conditional' ? '⚠ ' : ''
+            }${l.number} (своб. ${l.freeQty})${l.qualityName ? ` — ${l.qualityName}` : ''}`,
+            className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
+          }))}
+        />
         {qualityUnfit && (
           <div className="pick-lot-block-reason">
             {qualityMessage || 'Партия не годна по качеству'}

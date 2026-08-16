@@ -31,6 +31,7 @@ import IconButton from './IconButton';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
+import SearchableSelect from './SearchableSelect';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 
@@ -559,10 +560,10 @@ export default function ProductionOrderPage({
               <label>
                 Продукт
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={editing.materialId}
-                    onChange={(e) => {
-                      const materialId = e.target.value;
+                    required
+                    onChange={(materialId) => {
                       const patch: Partial<ProductionOrder> = {
                         materialId,
                         seriesId: '',
@@ -572,15 +573,8 @@ export default function ProductionOrderPage({
                       if (qty != null) patch.quantity = qty;
                       setEditing({ ...editing, ...patch });
                     }}
-                    required
-                  >
-                    <option value="">—</option>
-                    {productOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={productOptions.map((m) => ({ value: m.id, label: m.name }))}
+                  />
                 ) : (
                   <span className="readonly-field">{matName(editing.materialId)}</span>
                 )}
@@ -589,19 +583,16 @@ export default function ProductionOrderPage({
               <label>
                 Серия
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={editing.seriesId}
-                    onChange={(e) => setEditing({ ...editing, seriesId: e.target.value })}
                     required
                     disabled={!editing.materialId}
-                  >
-                    <option value="">—</option>
-                    {seriesOptions(editing.materialId).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.number}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(seriesId) => setEditing({ ...editing, seriesId })}
+                    options={seriesOptions(editing.materialId).map((s) => ({
+                      value: s.id,
+                      label: s.number,
+                    }))}
+                  />
                 ) : (
                   <span className="readonly-field">{serNum(editing.seriesId)}</span>
                 )}
@@ -610,10 +601,12 @@ export default function ProductionOrderPage({
               <label>
                 Спецификация
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={editing.specificationId || ''}
-                    onChange={(e) => {
-                      const specificationId = e.target.value || null;
+                    required
+                    disabled={!editing.materialId}
+                    onChange={(v) => {
+                      const specificationId = v || null;
                       const spec = specificationId ? specs.find((s) => s.id === specificationId) : null;
                       const tm = spec?.techMapId
                         ? techMaps.find((t) => t.id === spec.techMapId)
@@ -627,16 +620,11 @@ export default function ProductionOrderPage({
                         ...(qty != null ? { quantity: qty } : {}),
                       });
                     }}
-                    required
-                    disabled={!editing.materialId}
-                  >
-                    <option value="">—</option>
-                    {specOptions(editing.materialId).map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name || s.id}
-                      </option>
-                    ))}
-                  </select>
+                    options={specOptions(editing.materialId).map((s) => ({
+                      value: s.id,
+                      label: s.name || s.id,
+                    }))}
+                  />
                 ) : (
                   <span className="readonly-field">
                     {specs.find((s) => s.id === editing.specificationId)?.name || editing.specificationId || '—'}
@@ -647,10 +635,10 @@ export default function ProductionOrderPage({
               <label>
                 Рабочий центр
                 {canEditFields ? (
-                  <select
+                  <SearchableSelect
                     value={editing.workCenterId}
-                    onChange={(e) => {
-                      const workCenterId = e.target.value;
+                    required
+                    onChange={(workCenterId) => {
                       const qty = plannedQtyFor(editing.materialId, workCenterId);
                       setEditing({
                         ...editing,
@@ -658,15 +646,8 @@ export default function ProductionOrderPage({
                         ...(qty != null ? { quantity: qty } : {}),
                       });
                     }}
-                    required
-                  >
-                    <option value="">—</option>
-                    {workCenters.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={workCenters.map((w) => ({ value: w.id, label: w.name }))}
+                  />
                 ) : (
                   <span className="readonly-field">{wcName(editing.workCenterId)}</span>
                 )}

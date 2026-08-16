@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { Material, PlannedSeriesVolume, ProductionOrder, Series, Specification, TechMap, WorkCenter } from '../types';
 import AccessDenied from './AccessDenied';
 import PageTitle from './PageTitle';
+import SearchableSelect from './SearchableSelect';
 
 const PAGE_ID = 'series_planning';
 const ACTIVE = new Set(['новый', 'спланирован']);
@@ -309,56 +310,51 @@ export default function SeriesPlanningPage({
               return (
                 <tr key={line.key} className={isDup ? 'series-plan-row-dup' : undefined}>
                   <td>
-                    <select
+                    <SearchableSelect
                       value={line.seriesId}
                       disabled={!canRun || busy}
-                      onChange={(e) => onSeriesChange(line.key, e.target.value)}
-                    >
-                      <option value="">—</option>
-                      {options.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.number} — {matName(s.materialId)}
-                        </option>
-                      ))}
-                      {line.seriesId &&
-                        !options.some((s) => s.id === line.seriesId) &&
-                        ser && (
-                          <option value={ser.id}>
-                            {ser.number} — {matName(ser.materialId)}
-                            {occupiedSeriesIds.has(ser.id) ? ' (занята заказом)' : ' (уже в другой строке)'}
-                          </option>
-                        )}
-                    </select>
+                      onChange={(v) => onSeriesChange(line.key, v)}
+                      options={[
+                        ...options.map((s) => ({
+                          value: s.id,
+                          label: `${s.number} — ${matName(s.materialId)}`,
+                        })),
+                        ...(line.seriesId && !options.some((s) => s.id === line.seriesId) && ser
+                          ? [
+                              {
+                                value: ser.id,
+                                label: `${ser.number} — ${matName(ser.materialId)}${
+                                  occupiedSeriesIds.has(ser.id)
+                                    ? ' (занята заказом)'
+                                    : ' (уже в другой строке)'
+                                }`,
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                     {isDup && <div className="error">Дубль серии в таблице</div>}
                   </td>
                   <td>
-                    <select
+                    <SearchableSelect
                       value={line.specificationId}
                       disabled={!canRun || busy || !line.seriesId}
-                      onChange={(e) => onSpecChange(line.key, e.target.value)}
-                    >
-                      <option value="">—</option>
-                      {lineSpecs.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name || s.id}
-                          {(s.type || 'Основная') !== 'Основная' ? ` (${s.type})` : ''}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => onSpecChange(line.key, v)}
+                      options={lineSpecs.map((s) => ({
+                        value: s.id,
+                        label:
+                          (s.name || s.id) +
+                          ((s.type || 'Основная') !== 'Основная' ? ` (${s.type})` : ''),
+                      }))}
+                    />
                   </td>
                   <td>
-                    <select
+                    <SearchableSelect
                       value={line.workCenterId}
                       disabled={!canRun || busy || !line.seriesId}
-                      onChange={(e) => onWorkCenterChange(line.key, e.target.value)}
-                    >
-                      <option value="">—</option>
-                      {workCenters.map((w) => (
-                        <option key={w.id} value={w.id}>
-                          {w.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(v) => onWorkCenterChange(line.key, v)}
+                      options={workCenters.map((w) => ({ value: w.id, label: w.name }))}
+                    />
                   </td>
                   <td>
                     <input

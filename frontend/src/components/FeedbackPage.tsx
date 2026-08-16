@@ -18,6 +18,7 @@ import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import SearchableSelect from './SearchableSelect';
 
 const OBJECT_ID = 'admin_feedback';
 const PAGE_ID = 'admin_feedback';
@@ -387,19 +388,18 @@ export default function FeedbackPage() {
                 {fieldsLocked ? (
                   <span className="readonly-field">{CATEGORY_LABEL[editing.category] || editing.category}</span>
                 ) : (
-                  <select
+                  <SearchableSelect
                     value={editing.category}
-                    onChange={(e) =>
-                      setEditing({ ...editing, category: e.target.value as FeedbackCategory })
+                    onChange={(v) =>
+                      setEditing({ ...editing, category: v as FeedbackCategory })
                     }
                     required
-                  >
-                    {(Object.keys(CATEGORY_LABEL) as FeedbackCategory[]).map((key) => (
-                      <option key={key} value={key}>
-                        {CATEGORY_LABEL[key]}
-                      </option>
-                    ))}
-                  </select>
+                    allowEmpty={false}
+                    options={(Object.keys(CATEGORY_LABEL) as FeedbackCategory[]).map((key) => ({
+                      value: key,
+                      label: CATEGORY_LABEL[key],
+                    }))}
+                  />
                 )}
               </label>
               <label>
@@ -407,17 +407,15 @@ export default function FeedbackPage() {
                 {fieldsLocked ? (
                   <span className="readonly-field">{editing.pageLabel || '—'}</span>
                 ) : (
-                  <select
+                  <SearchableSelect
                     value={editing.pageId || ''}
-                    onChange={(e) => setEditing({ ...editing, pageId: e.target.value })}
-                  >
-                    <option value="">Не указан</option>
-                    {pages.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.groupLabel} / {p.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setEditing({ ...editing, pageId: v })}
+                    emptyLabel="Не указан"
+                    options={pages.map((p) => ({
+                      value: p.id,
+                      label: `${p.groupLabel} / ${p.label}`,
+                    }))}
+                  />
                 )}
               </label>
               {editing.createdByName && (

@@ -19,6 +19,7 @@ import IconButton from './IconButton';
 import { Modal } from './Modal';
 import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
+import SearchableSelect from './SearchableSelect';
 import { DocumentTrace, QualityDocument, QualityDocumentLine } from '../types.documents';
 import { Lot, Material } from '../types';
 import { newId } from '../utils/id';
@@ -461,46 +462,31 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
                     return (
                       <tr key={line.id || idx}>
                         <td>
-                          <select
+                          <SearchableSelect
                             value={line.materialId || ''}
                             disabled={!canEditFields}
-                            onChange={(e) => updateLine(idx, { materialId: e.target.value })}
-                          >
-                            <option value="">—</option>
-                            {materials.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateLine(idx, { materialId: v })}
+                            options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                          />
                         </td>
                         <td>
-                          <select
+                          <SearchableSelect
                             value={line.lotId || ''}
                             disabled={!canEditFields || !line.materialId}
-                            onChange={(e) => updateLine(idx, { lotId: e.target.value })}
-                          >
-                            <option value="">—</option>
-                            {lotsForMaterial(lots, line.materialId || '').map((l) => (
-                              <option key={l.id} value={l.id}>
-                                {l.number}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateLine(idx, { lotId: v })}
+                            options={lotsForMaterial(lots, line.materialId || '').map((l) => ({
+                              value: l.id,
+                              label: l.number,
+                            }))}
+                          />
                         </td>
                         <td>
-                          <select
+                          <SearchableSelect
                             value={line.qualityId || ''}
                             disabled={!canEditFields}
-                            onChange={(e) => updateLine(idx, { qualityId: e.target.value })}
-                          >
-                            <option value="">—</option>
-                            {activeQualities.map((qq) => (
-                              <option key={qq.id} value={qq.id}>
-                                {qq.name}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(v) => updateLine(idx, { qualityId: v })}
+                            options={activeQualities.map((qq) => ({ value: qq.id, label: qq.name }))}
+                          />
                         </td>
                         <td>{q ? PERMISSION_LABEL[q.permission] || q.permission : '—'}</td>
                         {canEditFields && (

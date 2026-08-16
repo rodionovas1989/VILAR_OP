@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ApprovedSupplier, SpecLine } from '../types';
 import SpecLinesEditor from './SpecLinesEditor';
 import SpecSuppliersEditor from './SpecSuppliersEditor';
+import SearchableSelect from './SearchableSelect';
 
 type Opt = { id: string; name: string; type?: string };
 
@@ -71,47 +72,31 @@ export default function SpecDetailTabs({
           </label>
           <label>
             <span>Продукт</span>
-            <select
+            <SearchableSelect
               required
               value={String(editing.productMaterialId ?? '')}
-              onChange={(e) => setField('productMaterialId', e.target.value)}
-            >
-              <option value="">—</option>
-              {productMaterials.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setField('productMaterialId', v)}
+              options={productMaterials.map((m) => ({ value: m.id, label: m.name }))}
+            />
           </label>
           <label>
             <span>Тип</span>
-            <select
+            <SearchableSelect
               required
+              allowEmpty={false}
               value={String(editing.type ?? 'Основная')}
-              onChange={(e) => setField('type', e.target.value)}
-            >
-              {SPEC_TYPES.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setField('type', v)}
+              options={SPEC_TYPES}
+            />
           </label>
           <label>
             <span>Технологическая карта</span>
-            <select
+            <SearchableSelect
               required
               value={String(editing.techMapId ?? '')}
-              onChange={(e) => setField('techMapId', e.target.value)}
-            >
-              <option value="">—</option>
-              {techMaps.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => setField('techMapId', v)}
+              options={techMaps.map((t) => ({ value: t.id, label: t.name }))}
+            />
           </label>
         </div>
       )}

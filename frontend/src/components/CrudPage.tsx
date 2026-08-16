@@ -16,6 +16,7 @@ import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { Modal } from './Modal';
+import SearchableSelect from './SearchableSelect';
 
 export type FieldDef = {
   key: string;
@@ -457,19 +458,13 @@ export function CrudPage({
               <label key={f.key}>
                 <span>{f.label}</span>
                 {f.type === 'select' ? (
-                  <select
+                  <SearchableSelect
                     required={f.required}
                     value={String(editing?.[f.key] ?? '')}
-                    onChange={(e) => setField(e.target.value)}
+                    onChange={(v) => setField(v)}
                     disabled={!!f.optionsFor && !selectOptions.length && !editing?.[f.key]}
-                  >
-                    <option value="">—</option>
-                    {selectOptions.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={selectOptions.map((o) => ({ value: o.value, label: o.label }))}
+                  />
                 ) : f.type === 'textarea' ? (
                   <textarea
                     value={String(editing?.[f.key] ?? '')}
@@ -526,13 +521,13 @@ export function CrudPage({
           </p>
           <label>
             <span>Статус</span>
-            <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={statusBusy}>
-              {(bulkStatusOptions || []).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <SearchableSelect
+              value={bulkStatus}
+              onChange={setBulkStatus}
+              disabled={statusBusy}
+              allowEmpty={false}
+              options={(bulkStatusOptions || []).map((o) => ({ value: o.value, label: o.label }))}
+            />
           </label>
         </div>
       </Modal>

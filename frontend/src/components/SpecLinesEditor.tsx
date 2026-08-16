@@ -1,5 +1,6 @@
 import { SpecLine } from '../types';
 import IconButton from './IconButton';
+import SearchableSelect from './SearchableSelect';
 
 type MaterialOpt = { id: string; name: string; type?: string };
 
@@ -58,28 +59,22 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
             {lines.map((line, idx) => (
               <tr key={idx}>
                 <td>
-                  <select
+                  <SearchableSelect
                     required
                     value={line.materialId}
-                    onChange={(e) => update(idx, { materialId: e.target.value })}
-                  >
-                    <option value="">—</option>
-                    {materials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => update(idx, { materialId: v })}
+                    options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                  />
                 </td>
                 <td>
-                  <select
+                  <SearchableSelect
                     value={line.componentType || ''}
-                    onChange={(e) => update(idx, { componentType: e.target.value })}
-                  >
-                    <option value="Активный">Активный</option>
-                    <option value="Вспомогательный">Вспомогательный</option>
-                    <option value="">—</option>
-                  </select>
+                    onChange={(v) => update(idx, { componentType: v })}
+                    options={[
+                      { value: 'Активный', label: 'Активный' },
+                      { value: 'Вспомогательный', label: 'Вспомогательный' },
+                    ]}
+                  />
                 </td>
                 <td>
                   <input
