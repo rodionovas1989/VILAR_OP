@@ -2053,23 +2053,41 @@ button.danger-outline:hover {
   max-height: 200px;
   overflow: auto;
   margin-top: 8px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 4px;
 }
 
-.scenario-form .checkbox-row {
+.scenario-form .checkbox-row,
+.scenario-checklist .checkbox-row {
   display: flex;
+  flex-direction: row;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
+  width: 100%;
+  margin: 0;
 }
 
-.form-grid label {
+.scenario-form .checkbox-row input[type='checkbox'],
+.scenario-checklist .checkbox-row input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+
+.form-grid label:not(.checkbox-row) {
   display: grid;
   gap: 6px;
   font-size: 13px;
 }
 
-.form-grid input,
+.form-grid input:not([type='checkbox']),
 .form-grid select,
 .form-grid textarea {
   border: none;
@@ -2082,7 +2100,7 @@ button.danger-outline:hover {
   min-width: 0;
 }
 
-.form-grid input:focus,
+.form-grid input:not([type='checkbox']):focus,
 .form-grid select:focus,
 .form-grid textarea:focus {
   outline: none;
