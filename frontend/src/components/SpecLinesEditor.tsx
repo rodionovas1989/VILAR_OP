@@ -133,7 +133,6 @@ export default function SpecLinesEditor({
                       метод не действует. Назначьте применение или выберите «Нет».
                     </div>
                   ) : null}
-                  {line.recalcComment ? <div className="muted">{line.recalcComment}</div> : null}
                 </td>
                 <td className="spec-xlabel-cell">
                   <input
