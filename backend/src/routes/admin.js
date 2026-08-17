@@ -21,6 +21,8 @@ export const DICTIONARY_COLLECTIONS = [
   { id: 'tech_maps', label: 'Технологические карты', sheet: 'Техкарты' },
   { id: 'warehouses', label: 'Склады', sheet: 'Склады' },
   { id: 'planned_series_volumes', label: 'Плановые объёмы серий', sheet: 'Плановые_объёмы' },
+  { id: 'substitutions', label: 'Аналоги', sheet: 'Аналоги' },
+  { id: 'lot_characteristics', label: 'Характеристики партий', sheet: 'Характеристики_партий' },
 ];
 
 const ALLOWED = new Set(DICTIONARY_COLLECTIONS.map((d) => d.id));
@@ -143,6 +145,15 @@ router.post('/data/demo', requirePermission('admin_data_maintenance', 'modify'),
   try {
     assertConfirm(req.body, 'DEMO');
     res.json(dataMaintenance.loadDemoData());
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
+
+router.post('/data/customer-recipes', requirePermission('admin_data_maintenance', 'modify'), (req, res) => {
+  try {
+    assertConfirm(req.body, 'RECIPES');
+    res.json(dataMaintenance.loadCustomerRecipes());
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
   }

@@ -11,6 +11,12 @@ import {
 import { defaultRoles, normalizePermissions } from './services/permissions.js';
 import { LEGACY_ROLE_MAP, ALL_SYSTEM_OBJECT_IDS, DEFAULT_ROLE_PERMISSIONS } from './constants/systemObjects.js';
 import { ALL_DOCUMENT_COLLECTIONS, collectionForType } from './constants/documentTypes.js';
+import {
+  SYSTEM_LOT_CHARACTERISTICS,
+  PARAM_DRY,
+  LEGACY_PARAM_DRY,
+  CHAR_KIND,
+} from './constants/lotCharacteristics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -28,6 +34,7 @@ const COLLECTIONS = [
   'work_centers',
   'tech_maps',
   'planned_series_volumes',
+  'substitutions',
   'production_orders',
   'material_movements',
   'users',
@@ -38,9 +45,14 @@ const COLLECTIONS = [
   'reservation_history',
   'document_sequences',
   'lot_qualities',
+  'lot_parameter_defs',
+  'lot_characteristics',
   'quality_documents',
   'quality_register',
   'quality_history',
+  'characteristic_documents',
+  'characteristic_register',
+  'characteristic_history',
   'quality_scenarios',
   'user_favorites',
   'feedback',
@@ -180,6 +192,7 @@ export function ensureCollections() {
   migrateStockDocumentsToTyped();
   migrateLegacyReservationsToDocuments();
   migrateLotQualitiesDefaults();
+  migrateLotCharacteristics();
 }
 
 /** Пользователь Admin при пустой/миграции БД. Пароль: VILAR_ADMIN_PASSWORD (не светить в UI). */
@@ -357,16 +370,26 @@ function migrateSpecifications() {
         if (line.qtyPerUnit != null) {
           line.qtyPerUnit = Number((Number(line.qtyPerUnit) * 1000).toFixed(8));
         }
-        if ('note' in line) delete line.note;
       }
       s.qtyBasis = 'per1000';
       changed = true;
-    } else {
-      for (const line of s.lines || []) {
-        if ('note' in line) {
-          delete line.note;
-          changed = true;
-        }
+    }
+    for (const line of s.lines || []) {
+      if (!line.id) {
+        line.id = randomUUID();
+        changed = true;
+      }
+      if (line.note && !line.recalcComment) {
+        line.recalcComment = line.note;
+        changed = true;
+      }
+      if ('note' in line) {
+        delete line.note;
+        changed = true;
+      }
+      if (!line.recalcMethod) {
+        line.recalcMethod = 'none';
+        changed = true;
       }
     }
   }
@@ -401,11 +424,11 @@ function migrateTechMapsAndSpecLinks() {
     map1.workCenterId = wc1.id;
     mapsChanged = true;
   }
-  if (!map2) {
+  if (wc2.id !== wc1.id && !map2) {
     map2 = { id: 'tech-map-line-2', name: 'Техкарта: Линия 2', workCenterId: wc2.id };
     maps.push(map2);
     mapsChanged = true;
-  } else if (!map2.workCenterId) {
+  } else if (map2 && !map2.workCenterId) {
     map2.workCenterId = wc2.id;
     mapsChanged = true;
   }
@@ -422,7 +445,7 @@ function migrateTechMapsAndSpecLinks() {
   let specsChanged = false;
   for (const s of specs) {
     if (s.techMapId && mapIds.has(s.techMapId)) continue;
-    s.techMapId = assignIdx % 2 === 0 ? map1.id : map2.id;
+    s.techMapId = assignIdx % 2 === 0 || !map2 ? map1.id : map2.id;
     assignIdx += 1;
     specsChanged = true;
   }
@@ -541,6 +564,96 @@ function migrateLotQualitiesDefaults() {
     },
   ];
   writeAll('lot_qualities', seed);
+}
+
+function invertLegacyDryValue(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return value;
+  return Number((100 - n).toFixed(6));
+}
+
+function rewriteLegacyDryEntry(entry) {
+  if (!entry || entry.code !== LEGACY_PARAM_DRY) return false;
+  entry.code = PARAM_DRY;
+  if (entry.value != null && entry.value !== '') entry.value = invertLegacyDryValue(entry.value);
+  if (entry.name) entry.name = 'Потеря массы при высушивании';
+  return true;
+}
+
+function migrateLegacyDrySubstanceValues() {
+  const register = readAll('characteristic_register');
+  let regChanged = false;
+  for (const row of register) {
+    if (rewriteLegacyDryEntry(row)) regChanged = true;
+  }
+  if (regChanged) writeAll('characteristic_register', register);
+
+  const history = readAll('characteristic_history');
+  let histChanged = false;
+  for (const row of history) {
+    if (rewriteLegacyDryEntry(row)) histChanged = true;
+  }
+  if (histChanged) writeAll('characteristic_history', history);
+
+  const docs = readAll('characteristic_documents');
+  let docChanged = false;
+  for (const doc of docs) {
+    for (const line of doc.lines || []) {
+      for (const entry of line.values || []) {
+        if (rewriteLegacyDryEntry(entry)) docChanged = true;
+      }
+    }
+  }
+  if (docChanged) writeAll('characteristic_documents', docs);
+}
+
+function migrateLotCharacteristics() {
+  const existing = readAll('lot_characteristics');
+  const hasNew = existing.some((r) => r.code === PARAM_DRY);
+  const next = [];
+  let changed = false;
+  for (const row of existing) {
+    if (row.code !== LEGACY_PARAM_DRY) {
+      next.push(row);
+      continue;
+    }
+    changed = true;
+    if (hasNew) continue;
+    const seed = SYSTEM_LOT_CHARACTERISTICS.find((s) => s.code === PARAM_DRY);
+    row.code = PARAM_DRY;
+    row.kind = CHAR_KIND.system;
+    if (seed) {
+      row.name = seed.name;
+      row.unit = seed.unit;
+      row.min = seed.min;
+      row.max = seed.max;
+      row.comment = seed.comment;
+    }
+    next.push(row);
+  }
+  if (changed) writeAll('lot_characteristics', next);
+  migrateLegacyDrySubstanceValues();
+
+  const afterRename = readAll('lot_characteristics');
+  const byCode = new Set(afterRename.map((r) => r.code));
+  const seeded = [...afterRename];
+  let seededChanged = false;
+  for (const seed of SYSTEM_LOT_CHARACTERISTICS) {
+    if (byCode.has(seed.code)) continue;
+    seeded.push({ ...seed });
+    byCode.add(seed.code);
+    seededChanged = true;
+  }
+  for (const row of seeded) {
+    const seed = SYSTEM_LOT_CHARACTERISTICS.find((s) => s.code === row.code);
+    if (!seed || row.kind !== CHAR_KIND.system) continue;
+    if (row.name !== seed.name || row.unit !== seed.unit) {
+      row.name = seed.name;
+      row.unit = seed.unit;
+      seededChanged = true;
+    }
+  }
+  if (seededChanged) writeAll('lot_characteristics', seeded);
 }
 
 function nextLocalNumber(code, dateStr) {

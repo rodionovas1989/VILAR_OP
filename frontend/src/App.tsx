@@ -34,15 +34,20 @@ import { ADMIN_USERS_PDN_HINT, SYSTEM_DISCLAIMER } from './content/legal';
 import RolesPage from './components/RolesPage';
 import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
+import SubstitutionForm from './components/SubstitutionForm';
+import CharacteristicForm from './components/CharacteristicForm';
+import CharacteristicManagementPage from './components/CharacteristicManagementPage';
 import {
   ApprovedSupplier,
   Counterparty,
   Lot,
+  LotCharacteristic,
   Material,
   PlannedSeriesVolume,
   Series,
   SpecLine,
   Specification,
+  Substitution,
   TechMap,
   Warehouse,
   WorkCenter,
@@ -68,6 +73,8 @@ export default function App() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [specs, setSpecs] = useState<Specification[]>([]);
   const [plannedVolumes, setPlannedVolumes] = useState<PlannedSeriesVolume[]>([]);
+  const [substitutions, setSubstitutions] = useState<Substitution[]>([]);
+  const [lotCharacteristics, setLotCharacteristics] = useState<LotCharacteristic[]>([]);
   const [lotQualities, setLotQualities] = useState<
     { id: string; name: string; permission: string; active?: boolean; comment?: string }[]
   >([]);
@@ -103,7 +110,7 @@ export default function App() {
 
   const reloadDicts = async () => {
     const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
-    const [m, c, l, s, w, tm, wh, sp, pv, rl, lq] = await Promise.all([
+    const [m, c, l, s, w, tm, wh, sp, pv, rl, lq, sub, lp] = await Promise.all([
       listOrEmpty<Material>('materials'),
       listOrEmpty<Counterparty>('counterparties'),
       listOrEmpty<Lot>('lots'),
@@ -117,6 +124,8 @@ export default function App() {
       listOrEmpty<{ id: string; name: string; permission: string; active?: boolean; comment?: string }>(
         'lot_qualities'
       ),
+      listOrEmpty<Substitution>('substitutions'),
+      listOrEmpty<LotCharacteristic>('lot_characteristics'),
     ]);
     setMaterials(m);
     setCounterparties(c);
@@ -127,6 +136,8 @@ export default function App() {
     setWarehouses(wh);
     setSpecs(sp);
     setPlannedVolumes(pv);
+    setSubstitutions(sub);
+    setLotCharacteristics(lp);
     setRoles(rl);
     setLotQualities(lq);
   };
@@ -264,6 +275,7 @@ export default function App() {
               lines: ((row.lines as SpecLine[]) || [])
                 .filter((l) => l.materialId)
                 .map((l) => ({
+                  id: l.id,
                   materialId: l.materialId,
                   qtyPerUnit: Number(l.qtyPerUnit) || 0,
                   qtyMgPerTablet:
@@ -271,6 +283,15 @@ export default function App() {
                       ? undefined
                       : Number(l.qtyMgPerTablet),
                   componentType: l.componentType || '',
+                  recalcMethod: l.recalcMethod === 'assay_and_dry' ? 'assay_and_dry' : 'none',
+                  recalcXLabel:
+                    l.recalcMethod === 'assay_and_dry'
+                      ? l.recalcXLabel == null || String(l.recalcXLabel) === ''
+                        ? 100
+                        : Number(l.recalcXLabel)
+                      : null,
+                  recalcComment: l.recalcComment || '',
+                  recalcFormula: l.recalcFormula || '',
                 })),
               approvedSuppliers: ((row.approvedSuppliers as ApprovedSupplier[]) || [])
                 .filter((s) => s.materialId && s.counterpartyId)
@@ -287,6 +308,7 @@ export default function App() {
                 materials={materials.filter((m) => m.type !== 'продукт')}
                 counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
                 techMaps={techMaps.map((t) => ({ id: t.id, name: t.name }))}
+                characteristics={lotCharacteristics}
               />
             )}
           />
@@ -447,6 +469,135 @@ export default function App() {
               if (!(Number(row.quantity) > 0)) return 'Количество должно быть больше 0';
               return null;
             }}
+          />
+        );
+      case 'substitutions':
+        return (
+          <CrudPage
+            title="Аналоги"
+            collection="substitutions"
+            wideModal
+            hideFormFields
+            fields={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'baseMaterialId',
+                label: 'Базовый материал',
+                type: 'select',
+                required: true,
+                options: opt(materials.filter((m) => m.type !== 'продукт')),
+              },
+            ]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'baseMaterialId',
+                label: 'Базовый материал',
+                render: (r) => matName(String(r.baseMaterialId)),
+              },
+              {
+                key: 'lines',
+                label: 'Аналогов',
+                render: (r) => String(((r.lines as unknown[]) || []).length),
+              },
+              {
+                key: 'specificationId',
+                label: 'Спецификация',
+                render: (r) => (r.specificationId ? String(specs.find((s) => s.id === r.specificationId)?.name || r.specificationId) : 'Все'),
+              },
+              {
+                key: 'bidirectional',
+                label: 'Двусторонняя',
+                render: (r) => (r.bidirectional === false ? 'нет' : 'да'),
+              },
+              {
+                key: 'active',
+                label: 'Действует',
+                render: (r) => (r.active === false ? 'нет' : 'да'),
+              },
+            ]}
+            transformOut={(row) => ({
+              ...row,
+              name: String(row.name || '').trim(),
+              baseMaterialId: row.baseMaterialId || null,
+              specificationId: row.specificationId || null,
+              bidirectional: row.bidirectional !== false,
+              active: row.active !== false,
+              lines: (((row.lines as Substitution['lines']) || []) as Substitution['lines'])
+                .filter((l) => l.materialId)
+                .map((l, idx) => ({
+                  materialId: l.materialId,
+                  factor: Number(l.factor) > 0 ? Number(l.factor) : 1,
+                  priority: Number(l.priority) || idx + 1,
+                })),
+            })}
+            formExtra={({ editing, setEditing }) => (
+              <SubstitutionForm
+                editing={editing}
+                setEditing={setEditing}
+                materials={materials.filter((m) => m.type !== 'продукт').map((m) => ({ id: m.id, name: m.name }))}
+                specifications={specs.map((s) => ({ id: s.id, name: s.name }))}
+              />
+            )}
+          />
+        );
+      case 'lot_characteristics':
+        return (
+          <CrudPage
+            title="Характеристики партий"
+            collection="lot_characteristics"
+            wideModal
+            hideFormFields
+            fields={[
+              { key: 'code', label: 'Код', required: true },
+              { key: 'name', label: 'Название', required: true },
+            ]}
+            columns={[
+              { key: 'code', label: 'Код' },
+              { key: 'name', label: 'Название' },
+              {
+                key: 'kind',
+                label: 'Вид',
+                render: (r) => (r.kind === 'system' ? 'системная' : 'пользовательская'),
+              },
+              { key: 'unit', label: 'Ед.' },
+              {
+                key: 'required',
+                label: 'Обяз.',
+                render: (r) => (r.required ? 'да' : 'нет'),
+              },
+              {
+                key: 'application',
+                label: 'Применение',
+                render: (r) => {
+                  const ids = (r.materialIds as string[] | undefined) || [];
+                  const types = (r.materialTypes as string[] | undefined) || [];
+                  if (!ids.length && !types.length) return 'не назначено';
+                  const bits: string[] = [];
+                  if (types.length) bits.push(types.join(', '));
+                  if (ids.length) bits.push(`${ids.length} мат.`);
+                  return bits.join('; ');
+                },
+              },
+            ]}
+            transformOut={(row) => ({
+              ...row,
+              kind: row.kind === 'system' ? 'system' : 'user',
+              code: String(row.code || '').trim(),
+              name: String(row.name || '').trim(),
+              unit: String(row.unit || '%').trim() || '%',
+              required: row.required === true,
+              active: row.active !== false,
+              materialIds: Array.isArray(row.materialIds) ? row.materialIds : [],
+              materialTypes: Array.isArray(row.materialTypes) ? row.materialTypes : [],
+            })}
+            formExtra={({ editing, setEditing }) => (
+              <CharacteristicForm
+                editing={editing}
+                setEditing={setEditing}
+                materials={materials.map((m) => ({ id: m.id, name: m.name, type: m.type }))}
+              />
+            )}
           />
         );
       case 'stock':
@@ -681,6 +832,52 @@ export default function App() {
         );
       case 'quality_scenarios':
         return <QualityScenariosPage />;
+      case 'characteristic_documents':
+        return <CharacteristicManagementPage materials={materials} lots={lots} />;
+      case 'characteristic_register':
+        return (
+          <CrudPage
+            title="Характеристики партий (состояние)"
+            collection="characteristic_register"
+            readOnly
+            fields={[
+              { key: 'lotId', label: 'Партия', type: 'select', options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
+              { key: 'materialId', label: 'Материал', type: 'select', options: opt(materials) },
+              { key: 'name', label: 'Характеристика' },
+              { key: 'value', label: 'Значение' },
+              { key: 'documentNumber', label: 'Документ' },
+            ]}
+            columns={[
+              { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
+              { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
+              { key: 'name', label: 'Характеристика', render: (r) => String(r.name || r.code || '') },
+              { key: 'value', label: 'Значение' },
+              { key: 'unit', label: 'Ед.' },
+              { key: 'documentNumber', label: 'Документ' },
+            ]}
+          />
+        );
+      case 'characteristic_history':
+        return (
+          <CrudPage
+            title="Характеристики партий (история)"
+            collection="characteristic_history"
+            readOnly
+            fields={[
+              { key: 'at', label: 'Когда' },
+              { key: 'action', label: 'Действие' },
+              { key: 'documentNumber', label: 'Документ' },
+            ]}
+            columns={[
+              { key: 'at', label: 'Когда' },
+              { key: 'action', label: 'Действие' },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'lotId', label: 'Партия', render: (r) => (r.lotId ? lotNum(String(r.lotId)) : '—') },
+              { key: 'name', label: 'Характеристика', render: (r) => String(r.name || r.code || '') },
+              { key: 'value', label: 'Значение' },
+            ]}
+          />
+        );
       case 'roles':
         return <RolesPage />;
       case 'admin_feedback':
@@ -814,7 +1011,7 @@ export default function App() {
         return (
           <ProductionDesktop
             dictionaries={{
-              materials: materials.map((m) => ({ id: m.id, name: m.name })),
+              materials: materials.map((m) => ({ id: m.id, name: m.name, type: m.type })),
               series: series.map((s) => ({ id: s.id, number: s.number })),
               workCenters,
               lots: lots.map((l) => ({
@@ -825,6 +1022,23 @@ export default function App() {
               })),
               counterparties: counterparties.map((c) => ({ id: c.id, name: c.name })),
               warehouses,
+              substitutions: substitutions.map((s) => ({
+                id: s.id,
+                baseMaterialId: s.baseMaterialId,
+                bidirectional: s.bidirectional,
+                active: s.active,
+                specificationId: s.specificationId,
+                lines: s.lines,
+              })),
+              specifications: specs.map((s) => ({
+                id: s.id,
+                lines: (s.lines || []).map((l) => ({
+                  id: l.id,
+                  materialId: l.materialId,
+                  recalcMethod: l.recalcMethod,
+                })),
+              })),
+              characteristics: lotCharacteristics,
             }}
           />
         );

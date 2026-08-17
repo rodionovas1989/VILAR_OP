@@ -10,6 +10,7 @@ export const REFERENCE_OBJECTS = [
   { id: 'tech_maps', label: 'Технологические карты' },
   { id: 'warehouses', label: 'Склады' },
   { id: 'planned_series_volumes', label: 'Плановые объёмы серий' },
+  { id: 'substitutions', label: 'Аналоги' },
 ];
 
 export const DOCUMENT_OBJECTS = [
@@ -44,6 +45,10 @@ export const QUALITY_OBJECTS = [
   { id: 'quality_register', label: 'Качества партий (состояние)' },
   { id: 'quality_history', label: 'Качества партий (история)' },
   { id: 'quality_scenarios', label: 'Сценарии' },
+  { id: 'lot_characteristics', label: 'Характеристики партий' },
+  { id: 'characteristic_documents', label: 'Управление характеристиками' },
+  { id: 'characteristic_register', label: 'Характеристики партий (состояние)' },
+  { id: 'characteristic_history', label: 'Характеристики партий (история)' },
 ];
 
 export const REPORT_OBJECTS = [

@@ -40,6 +40,7 @@ export const NAV: NavGroup[] = [
       { id: 'tech_maps', label: 'Технологические карты', kind: 'dictionary' },
       { id: 'warehouses', label: 'Склады', kind: 'dictionary' },
       { id: 'planned_series_volumes', label: 'Плановые объёмы серий', kind: 'dictionary' },
+      { id: 'substitutions', label: 'Аналоги', kind: 'dictionary' },
     ],
   },
   {
@@ -91,6 +92,10 @@ export const NAV: NavGroup[] = [
       { id: 'quality_register', label: 'Качества партий (состояние)', kind: 'quality' },
       { id: 'quality_history', label: 'Качества партий (история)', kind: 'quality' },
       { id: 'quality_scenarios', label: 'Сценарии', kind: 'quality' },
+      { id: 'lot_characteristics', label: 'Характеристики партий', kind: 'quality' },
+      { id: 'characteristic_documents', label: 'Управление характеристиками', kind: 'quality' },
+      { id: 'characteristic_register', label: 'Характеристики партий (состояние)', kind: 'quality' },
+      { id: 'characteristic_history', label: 'Характеристики партий (история)', kind: 'quality' },
     ],
   },
   {

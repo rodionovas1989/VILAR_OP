@@ -126,7 +126,17 @@ export const api = {
     request(`/planning/cancel/${id}`, { method: 'POST', body: JSON.stringify({ userId }) }),
   saveProductionFact: (
     id: string,
-    body: { actualQuantity: number; actualLines: { materialId: string; lotId: string; quantity: number }[] }
+    body: {
+      actualQuantity: number;
+      actualLines: {
+        specLineId?: string | null;
+        specMaterialId?: string | null;
+        materialId: string;
+        lotId: string;
+        quantity: number;
+        substitutionRuleId?: string | null;
+      }[];
+    }
   ) =>
     request(`/planning/production-fact/${id}`, {
       method: 'POST',
@@ -170,6 +180,8 @@ export const api = {
     request('/admin/data/clear', { method: 'POST', body: JSON.stringify({ confirm }) }),
   loadDemoData: (confirm: string) =>
     request('/admin/data/demo', { method: 'POST', body: JSON.stringify({ confirm }) }),
+  loadCustomerRecipes: (confirm: string) =>
+    request('/admin/data/customer-recipes', { method: 'POST', body: JSON.stringify({ confirm }) }),
   exportDictionariesXlsx: async (collections: string[]) => {
     const res = await fetch(`${API_BASE}/admin/export-dictionaries.xlsx`, {
       method: 'POST',
@@ -353,6 +365,35 @@ export const api = {
     }),
   getQualityDocumentRelated: (id: string) =>
     request<import('./types.documents').DocumentTrace>(`/quality/documents/${id}/related`),
+
+  listCharacteristicDocuments: () =>
+    request<import('./types.documents').CharacteristicDocument[]>('/characteristics/documents'),
+  getCharacteristicDocument: (id: string) =>
+    request<import('./types.documents').CharacteristicDocument>(`/characteristics/documents/${id}`),
+  createCharacteristicDocument: (body: unknown) =>
+    request<import('./types.documents').CharacteristicDocument>('/characteristics/documents', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateCharacteristicDocument: (id: string, body: unknown) =>
+    request<import('./types.documents').CharacteristicDocument>(`/characteristics/documents/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  postCharacteristicDocument: (id: string) =>
+    request<import('./types.documents').CharacteristicDocument>(`/characteristics/documents/${id}/post`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  cancelCharacteristicDocument: (id: string) =>
+    request<import('./types.documents').CharacteristicDocument>(`/characteristics/documents/${id}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  getCharacteristicDocumentRelated: (id: string) =>
+    request<import('./types.documents').DocumentTrace>(`/characteristics/documents/${id}/related`),
+  applicableCharacteristics: (materialId: string) =>
+    request<import('./types').LotCharacteristic[]>(`/characteristics/applicable/${materialId}`),
 
   getChangelog: () => request<{ markdown: string }>('/admin/changelog'),
   listChatMessages: () =>

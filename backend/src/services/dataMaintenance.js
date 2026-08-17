@@ -14,6 +14,7 @@ import {
 } from '../store.js';
 import { hashPassword } from '../utils/password.js';
 import { defaultRoles } from './permissions.js';
+import { applyCustomerRecipes } from './customerRecipes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.join(__dirname, '..', '..');
@@ -47,13 +48,23 @@ function countSnapshot() {
   try {
     return {
       materials: readAll('materials').length,
+      specifications: readAll('specifications').length,
+      substitutions: readAll('substitutions').length,
       lots: readAll('lots').length,
       production_orders: readAll('production_orders').length,
       users: readAll('users').length,
       warehouses: readAll('warehouses').length,
     };
   } catch {
-    return { materials: 0, lots: 0, production_orders: 0, users: 0, warehouses: 0 };
+    return {
+      materials: 0,
+      specifications: 0,
+      substitutions: 0,
+      lots: 0,
+      production_orders: 0,
+      users: 0,
+      warehouses: 0,
+    };
   }
 }
 
@@ -206,18 +217,7 @@ export function deleteBackup(id) {
   return { ok: true, deletedId: safe };
 }
 
-/**
- * Чистый лист: пустые справочники/документы/запасы.
- * Без unlink файла БД (на Windows иначе EBUSY при открытом соединении).
- * Остаются Admin (тот же пароль), роли и два пустых склада.
- */
-export function clearAllData() {
-  ensureCollections();
-  const adminBefore = readAll('users').find((u) => u.login === 'Admin');
-  const savedHash = adminBefore?.passwordHash;
-
-  createBackup({ label: 'before-clear', reason: 'before-clear' });
-
+function clearAllDataUnchecked(savedHash) {
   withSkipJsonImport(() => {
     for (const name of COLLECTIONS) {
       if (name === 'users' || name === 'roles') continue;
@@ -247,8 +247,37 @@ export function clearAllData() {
       writeAll('roles', defaultRoles());
     }
   });
+  ensureCollections();
+}
 
+/**
+ * Чистый лист: пустые справочники/документы/запасы.
+ * Без unlink файла БД (на Windows иначе EBUSY при открытом соединении).
+ * Остаются Admin (тот же пароль), роли и два пустых склада.
+ */
+export function clearAllData() {
+  ensureCollections();
+  const adminBefore = readAll('users').find((u) => u.login === 'Admin');
+  const savedHash = adminBefore?.passwordHash;
+
+  createBackup({ label: 'before-clear', reason: 'before-clear' });
+  clearAllDataUnchecked(savedHash);
   return { ok: true, mode: 'clear', counts: countSnapshot() };
+}
+
+/**
+ * Рецептуры заказчика: слепок → очистка → материалы, спецификации, аналоги, объёмы, Линия №1.
+ */
+export function loadCustomerRecipes() {
+  ensureCollections();
+  const adminBefore = readAll('users').find((u) => u.login === 'Admin');
+  const savedHash = adminBefore?.passwordHash;
+
+  createBackup({ label: 'before-customer-recipes', reason: 'before-customer-recipes' });
+  clearAllDataUnchecked(savedHash);
+  const imported = applyCustomerRecipes();
+  ensureCollections();
+  return { ok: true, mode: 'customer-recipes', counts: countSnapshot(), imported };
 }
 
 function ensureFactoryDemoFromSeed(preservePasswordHash) {

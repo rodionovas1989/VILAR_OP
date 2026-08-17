@@ -38,6 +38,34 @@ export interface StockDocumentLine {
   actualQuantity?: number;
 }
 
+export interface CharacteristicValueEntry {
+  characteristicId: string;
+  code?: string;
+  name?: string;
+  unit?: string;
+  value?: number | null;
+}
+
+export interface CharacteristicDocumentLine {
+  id: string;
+  materialId: string;
+  lotId: string;
+  values: CharacteristicValueEntry[];
+}
+
+export interface CharacteristicDocument {
+  id: string;
+  type: string;
+  number: string;
+  date: string;
+  time?: string | null;
+  status: DocumentStatus;
+  createdByUserId: string;
+  createdAt: string;
+  comment?: string;
+  lines?: CharacteristicDocumentLine[];
+}
+
 export interface StockDocument {
   id: string;
   type: StockDocumentType;

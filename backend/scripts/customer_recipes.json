@@ -1,0 +1,943 @@
+{
+  "workCenterName": "Линия №1",
+  "techMapName": "Линия №1",
+  "products": [
+    {
+      "name": "Аллапинин® таблетки 25 мг, № 30",
+      "seriesSize": 25000,
+      "lines": [
+        {
+          "material": "Лаппаконитина гидробромид субстанция-порошок",
+          "qtyPerUnit": 0.788,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,788*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.032,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 0.243,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Сахар белый (сахароза)",
+          "qtyPerUnit": 2.11,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кроскармеллоза натрия",
+          "qtyPerUnit": 0.032,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Аллафорте® таблетки с пролонгированным высвобождением 25 мг, № 30",
+      "seriesSize": 14362,
+      "lines": [
+        {
+          "material": "Лаппаконитина гидробромид субстанция-порошок",
+          "qtyPerUnit": 0.7875,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,7875*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Гипромеллоза",
+          "qtyPerUnit": 2.895,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал прежелатинизированный",
+          "qtyPerUnit": 1.2405,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 80 МЕШ",
+          "qtyPerUnit": 2.175,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил А-380)",
+          "qtyPerUnit": 0.072,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.072,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Аллафорте® таблетки с пролонгированным высвобождением 25 мг, № 20",
+      "seriesSize": 21543,
+      "lines": [
+        {
+          "material": "Лаппаконитина гидробромид субстанция-порошок",
+          "qtyPerUnit": 0.525,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,525*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Гипромеллоза",
+          "qtyPerUnit": 1.93,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал прежелатинизированный",
+          "qtyPerUnit": 0.827,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 80 МЕШ",
+          "qtyPerUnit": 1.45,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил А-380)",
+          "qtyPerUnit": 0.048,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.048,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Аллафорте® таблетки с пролонгированным высвобождением 50 мг, № 10",
+      "seriesSize": 29380,
+      "lines": [
+        {
+          "material": "Лаппаконитина гидробромид субстанция-порошок",
+          "qtyPerUnit": 0.525,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,525*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Гипромеллоза",
+          "qtyPerUnit": 1.47,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал прежелатинизированный",
+          "qtyPerUnit": 0.489,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 80 МЕШ",
+          "qtyPerUnit": 1.117,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил А-380)",
+          "qtyPerUnit": 0.037,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.037,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Алпизарин® таблетки 100 мг, № 20",
+      "seriesSize": 10000,
+      "lines": [
+        {
+          "material": "Алпизарин® субстанция-порошок",
+          "qtyPerUnit": 2.12,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=2,12*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.053,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 1.03,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 200 МЕШ",
+          "qtyPerUnit": 2.11,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 0.30694736842105264,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Аммифурин® таблетки 20 мг, № 50",
+      "seriesSize": 5000,
+      "lines": [
+        {
+          "material": "Аммифурин® субстанция-порошок",
+          "qtyPerUnit": 1.05,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=1,05*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 200 МЕШ",
+          "qtyPerUnit": 3.26,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 1.107,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.052,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Аммифурин® раствор 0,3%",
+      "seriesSize": 1000,
+      "lines": [
+        {
+          "material": "Аммифурин® субстанция-порошок",
+          "qtyPerUnit": 0.16,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,16*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Глицерин дистиллированный, глицерол",
+          "qtyPerUnit": 9.0,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 30.87,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Беллатаминал® таблетки, покрытые оболочкой, № 30",
+      "seriesSize": 12000,
+      "lines": [
+        {
+          "material": "Эрготамина тартрат",
+          "qtyPerUnit": 0.01,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,01*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Красавки сумма алкалоидов субстанция-порошок",
+          "qtyPerUnit": 0.0032,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,0032*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Фенобарбитал",
+          "qtyPerUnit": 0.633,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,633*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Сахар белый (сахароза)",
+          "qtyPerUnit": 3.83,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 0.93,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.032,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Поливинилпирролидон низкомолекулярный (повидон)",
+          "qtyPerUnit": 0.03,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Магния карбонат основной (магния гидроксикарбонат)",
+          "qtyPerUnit": 0.345,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Желатин",
+          "qtyPerUnit": 0.0087,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил  А-380)",
+          "qtyPerUnit": 0.02,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Титана диоксид (двуокись титана)",
+          "qtyPerUnit": 0.02,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Воск пчелиный",
+          "qtyPerUnit": 0.0035,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Гипорамин® таблетки подъязычные 20 мг, № 20",
+      "seriesSize": 5100,
+      "lines": [
+        {
+          "material": "Гипорамин®, субстанция-экстракт сухой",
+          "qtyPerUnit": 0.424,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 60.0,
+          "recalcComment": "норма указана для 60% сухого вещества",
+          "recalcFormula": "Х=0,424*60*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Ванилин",
+          "qtyPerUnit": 0.002,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.126,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Какао-порошок",
+          "qtyPerUnit": 0.424,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кармеллоза натрия (натрий-карбоксиметилцеллюлоза очищенная)",
+          "qtyPerUnit": 0.5,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Сахар белый (сахароза)",
+          "qtyPerUnit": 11.36,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 0.01534736842105263,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Марены красильной экстракт таблетки 250 мг, № 20",
+      "seriesSize": 6100,
+      "lines": [
+        {
+          "material": "Марены красильной, субстанция-экстракт сухой",
+          "qtyPerUnit": 5.35,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 8.6,
+          "recalcComment": "норма указана для 8,6% сухого вещества",
+          "recalcFormula": "Х=5,35*8,6*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.105,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 2.05,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кроскармеллоза натрия",
+          "qtyPerUnit": 0.21,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 200 МЕШ",
+          "qtyPerUnit": 5.04,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил  А-380)",
+          "qtyPerUnit": 0.105,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Сангвиритрин® раствор 0,2%",
+      "seriesSize": 1970,
+      "lines": [
+        {
+          "material": "Сангвиритрин®, субстанция-порошок",
+          "qtyPerUnit": 0.102,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,102*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 12.95,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Сандра® таблетки подъязычные гомеопатические, № 30",
+      "seriesSize": 9200,
+      "lines": [
+        {
+          "material": "Mentha piperita (настойка гомеопатическая матричная мяты перечной)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Echinacea purpurea (настойка гомеопатическая матричная эхинацеи пурпурной)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Verbascum densiflorum (Verbascum) (настойка гомеопатическая матричная коровяка густоцветкового)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Alchemilla vulgaris (Alchemilla) (настойка гомеопатическая матричная манжетки обыкновенной)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Aconitum soongaricum (настойка гомеопатическая матричная аконита джунгарского)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Atropa bella-donna (настойка гомеопатическая матричная белладонны (красавки))",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Bryonia (настойка гомеопатическая матричная брионии)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Daphne mezereum (Mezereum) (настойка гомеопатическая матричная волчеягодника обыкновенного)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Apis millefica (Apis) (настойка гомеопатическая матричная из живых пчел медоносных)",
+          "qtyPerUnit": 0.08,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 0.005115789473684211,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Ртути дихлорид (сулема, ртуть двухлористая, ртуть хлорная)",
+          "qtyPerUnit": 8e-06,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Сахар белый (сахароза)",
+          "qtyPerUnit": 8.03,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.09,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Желатин",
+          "qtyPerUnit": 0.045,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Силимар® таблетки 100 мг, № 30",
+      "seriesSize": 10085,
+      "lines": [
+        {
+          "material": "Силимар® экстракт сухой субстанция-порошок",
+          "qtyPerUnit": 3.15,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 65.0,
+          "recalcComment": "норма указана для 65% сухого вещества",
+          "recalcFormula": "Х=3,15*65*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 200 МЕШ",
+          "qtyPerUnit": 3.4,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Магний стеариновокислый I-водный (магния стеарат)",
+          "qtyPerUnit": 0.065,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Спирт этиловый, субстанция-жидкость 95%",
+          "qtyPerUnit": 0.32400000000000007,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 0.646,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    },
+    {
+      "name": "Танацехол® таблетки 50 мг, № 30",
+      "seriesSize": 10000,
+      "lines": [
+        {
+          "material": "Танацехол® субстанция-экстракт сухой",
+          "qtyPerUnit": 0.78,
+          "componentType": "Активный",
+          "recalcMethod": "assay_and_dry",
+          "recalcXLabel": 100.0,
+          "recalcComment": "норма указана для 100% сухого вещества",
+          "recalcFormula": "Х=0,78*100*100/Xфакт/Wфакт"
+        },
+        {
+          "material": "Сахар белый (сахароза)",
+          "qtyPerUnit": 2.48,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Лактоза моногидрат (сахар молочный, лактоза) 200 МЕШ",
+          "qtyPerUnit": 1.65,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Крахмал картофельный",
+          "qtyPerUnit": 0.646,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Желатин",
+          "qtyPerUnit": 0.011,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кальция стеарат (кальций стеариновокислый, I-водный)",
+          "qtyPerUnit": 0.04,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Повидон низкомолекулярный",
+          "qtyPerUnit": 0.016,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Кремния диоксид коллоидный (Аэросил  А-380)",
+          "qtyPerUnit": 0.065,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Тропеолин О",
+          "qtyPerUnit": 0.0005,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Магния карбонат основной (магния гидроксикарбонат)",
+          "qtyPerUnit": 0.45,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Титана диоксид (двуокись титана)",
+          "qtyPerUnit": 0.03,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        },
+        {
+          "material": "Воск пчелиный",
+          "qtyPerUnit": 0.003,
+          "componentType": "Вспомогательный",
+          "recalcMethod": "none",
+          "recalcXLabel": null,
+          "recalcComment": "",
+          "recalcFormula": ""
+        }
+      ]
+    }
+  ],
+  "substitutions": [
+    {
+      "base": "Лаппаконитина гидробромид субстанция-порошок",
+      "analogs": [
+        "Аллапинин® субстанция-порошок"
+      ],
+      "bidirectional": true
+    },
+    {
+      "base": "Силимар® экстракт сухой субстанция-порошок",
+      "analogs": [
+        "Расторопши пятнистой плодов экстракт сухой субстанция-экстракт сухой"
+      ],
+      "bidirectional": true
+    }
+  ]
+}

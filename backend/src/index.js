@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 import ExcelJS from 'exceljs';
 import { ensureCollections, COLLECTIONS, readAll, getById } from './store.js';
 import { crudRouter } from './routes/crud.js';
@@ -27,9 +28,18 @@ import {
   sanitizeUser,
 } from './services/users.js';
 import { assertLotQualityPermission } from './constants/lotQuality.js';
+import { materialHasAssayDryApplication, RECALC_METHOD_LABEL } from './constants/lotCharacteristics.js';
 import { normalizeScenario, onLotCreated } from './services/scenarios.js';
+import { normalizeSubstitution } from './services/substitutions.js';
+import {
+  assertCharacteristicCreate,
+  assertCharacteristicUpdate,
+  migrateParamValuesToDocuments,
+} from './services/characteristics.js';
+import characteristicsRouter from './routes/characteristics.js';
 
 ensureCollections();
+migrateParamValuesToDocuments();
 warnIfDefaultAdminPassword();
 loginAudit.compactLoginAudit();
 
@@ -98,6 +108,28 @@ function assertTechMap(item) {
   return item;
 }
 
+function normalizeLot(item) {
+  if (item && 'paramValues' in item) delete item.paramValues;
+  return item;
+}
+
+function normalizeSpecLine(line) {
+  const recalcMethod = line.recalcMethod === 'assay_and_dry' ? 'assay_and_dry' : 'none';
+  const qtyMg = line.qtyMgPerTablet;
+  return {
+    id: line.id || randomUUID(),
+    materialId: line.materialId,
+    qtyPerUnit: Number(line.qtyPerUnit) || 0,
+    qtyMgPerTablet:
+      qtyMg === undefined || qtyMg === null || qtyMg === '' ? undefined : Number(qtyMg),
+    componentType: line.componentType || '',
+    recalcMethod,
+    recalcXLabel: recalcMethod === 'assay_and_dry' ? Number(line.recalcXLabel) || 100 : null,
+    recalcComment: line.recalcComment ? String(line.recalcComment) : '',
+    recalcFormula: line.recalcFormula ? String(line.recalcFormula) : '',
+  };
+}
+
 function assertSpecification(item) {
   item.name = String(item.name || '').trim();
   if (!item.name) throw new Error('Укажите название спецификации');
@@ -107,7 +139,19 @@ function assertSpecification(item) {
   if (!getById('tech_maps', item.techMapId)) throw new Error('Технологическая карта не найдена');
   if (!item.type) item.type = 'Основная';
   if (!item.qtyBasis) item.qtyBasis = 'per1000';
-  if (!Array.isArray(item.lines)) item.lines = [];
+  item.lines = (Array.isArray(item.lines) ? item.lines : [])
+    .filter((l) => l.materialId)
+    .map(normalizeSpecLine);
+  const charDefs = readAll('lot_characteristics');
+  for (const line of item.lines) {
+    if (line.recalcMethod !== 'assay_and_dry') continue;
+    const mat = getById('materials', line.materialId);
+    if (!materialHasAssayDryApplication(mat, charDefs)) {
+      throw new Error(
+        `Пересчёт «${RECALC_METHOD_LABEL}» для «${mat?.name || line.materialId}»: сначала назначьте применение количественного содержания и/или потери массы при высушивании в справочнике характеристик.`
+      );
+    }
+  }
   return item;
 }
 
@@ -195,6 +239,14 @@ for (const name of COLLECTIONS) {
         beforeUpdate: (merged, current) => assertPlannedVolumeUnique(merged, current.id),
       })
     );
+  } else if (name === 'substitutions') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => normalizeSubstitution(item),
+        beforeUpdate: (merged) => normalizeSubstitution(merged),
+      })
+    );
   } else if (name === 'series') {
     app.use(
       `/api/${name}`,
@@ -239,10 +291,20 @@ for (const name of COLLECTIONS) {
         },
       })
     );
+  } else if (name === 'lot_characteristics') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => assertCharacteristicCreate(item),
+        beforeUpdate: (merged, current) => assertCharacteristicUpdate(merged, current),
+      })
+    );
   } else if (name === 'lots') {
     app.use(
       `/api/${name}`,
       crudRouter(name, {
+        beforeCreate: (item) => normalizeLot(item),
+        beforeUpdate: (merged) => normalizeLot(merged),
         afterCreate: (lot, req) => {
           const uid = actorId(req);
           if (!uid) throw new Error('Не авторизован: нет пользователя для сценария качества');
@@ -276,6 +338,7 @@ app.use('/api/planning', planningRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/quality', qualityRouter);
+app.use('/api/characteristics', characteristicsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/feedback', feedbackRouter);
 app.use('/api/chat', chatRouter);

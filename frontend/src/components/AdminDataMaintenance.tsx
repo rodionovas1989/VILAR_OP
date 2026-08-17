@@ -29,6 +29,7 @@ export default function AdminDataMaintenance() {
   const [error, setError] = useState('');
   const [clearConfirm, setClearConfirm] = useState('');
   const [demoConfirm, setDemoConfirm] = useState('');
+  const [recipesConfirm, setRecipesConfirm] = useState('');
   const [restoreId, setRestoreId] = useState<string | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState('');
 
@@ -301,6 +302,47 @@ export default function AdminDataMaintenance() {
               }}
             >
               Загрузить демо-слепок
+            </button>
+          </>
+        )}
+      </section>
+
+      <section className="admin-panel danger-panel">
+        <h3>Рецептуры ВИЛАР</h3>
+        <p>
+          Очищает базу (как «Очистить») и загружает производственные справочники из файла заказчика: материалы,
+          спецификации, плановые объёмы серий, рабочий центр и техкарта «Линия №1», справочник аналогов. Партий и
+          запасов нет — их заводят приёмкой. Перед загрузкой создаётся автослепок.
+        </p>
+        {canWrite && (
+          <>
+            <label>
+              Введите <code>RECIPES</code> для подтверждения
+              <input
+                value={recipesConfirm}
+                onChange={(e) => setRecipesConfirm(e.target.value)}
+                disabled={busy}
+                autoComplete="off"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={busy || recipesConfirm !== 'RECIPES'}
+              onClick={() => {
+                void run(async () => {
+                  const res = (await api.loadCustomerRecipes('RECIPES')) as {
+                    counts?: { materials?: number; specifications?: number };
+                    imported?: { products?: number };
+                  };
+                  setRecipesConfirm('');
+                  window.alert(
+                    `Рецептуры загружены (продуктов: ${res?.imported?.products ?? res?.counts?.specifications ?? '—'}, материалов: ${res?.counts?.materials ?? '—'}). Страница будет перезагружена.`
+                  );
+                  window.location.reload();
+                }, 'Рецептуры загружены');
+              }}
+            >
+              Загрузить рецептуры ВИЛАР
             </button>
           </>
         )}

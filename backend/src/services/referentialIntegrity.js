@@ -11,7 +11,9 @@ const COLLECTION_LABELS = {
   tech_maps: 'Технологические карты',
   specifications: 'Спецификации',
   planned_series_volumes: 'Плановые объёмы серий',
+  substitutions: 'Аналоги',
   lot_qualities: 'Качества партий',
+  lot_characteristics: 'Характеристики партий',
   production_orders: 'Заказы на производство',
   stock: 'Запасы',
   active_reservations: 'Регистр резервов',
@@ -20,6 +22,9 @@ const COLLECTION_LABELS = {
   quality_documents: 'Управление качеством',
   quality_register: 'Качества партий (состояние)',
   quality_history: 'Качества партий (история)',
+  characteristic_documents: 'Управление характеристиками',
+  characteristic_register: 'Характеристики партий (состояние)',
+  characteristic_history: 'Характеристики партий (история)',
   ...Object.fromEntries(
     Object.entries(DOCUMENT_TYPES).map(([type, meta]) => [meta.collection, meta.label])
   ),
@@ -73,11 +78,25 @@ function scanSimple(map, collection, id, fieldKeys) {
 }
 
 function scanDocs(map, id, { headerKeys = [], lineKeys = [] } = {}) {
-  for (const collection of [...ALL_DOCUMENT_COLLECTIONS, 'quality_documents']) {
+  for (const collection of [...ALL_DOCUMENT_COLLECTIONS, 'quality_documents', 'characteristic_documents']) {
     for (const row of store.readAll(collection)) {
       const hitHeader = headerKeys.length ? rowHasId(row, id, headerKeys) : false;
       const hitLines = lineKeys.length ? linesHaveId(row, id, lineKeys) : false;
       if (hitHeader || hitLines) pushHit(map, collection, row);
+    }
+  }
+}
+
+function scanSubstitutions(map, id, kind) {
+  for (const row of store.readAll('substitutions')) {
+    if (kind === 'materials') {
+      if (row.baseMaterialId === id) {
+        pushHit(map, 'substitutions', row);
+        continue;
+      }
+      if (linesHaveId(row, id, ['materialId'])) pushHit(map, 'substitutions', row);
+    } else if (kind === 'specifications' && row.specificationId === id) {
+      pushHit(map, 'substitutions', row);
     }
   }
 }
@@ -142,9 +161,15 @@ export function findUsages(collection, id) {
       scanSimple(map, 'reservation_history', id, ['materialId']);
       scanSimple(map, 'quality_register', id, ['materialId']);
       scanSimple(map, 'quality_history', id, ['materialId']);
+      scanSimple(map, 'characteristic_register', id, ['materialId']);
+      scanSimple(map, 'characteristic_history', id, ['materialId']);
       scanSpecifications(map, id, 'materials');
+      scanSubstitutions(map, id, 'materials');
       scanProductionOrders(map, id, 'materials');
       scanDocs(map, id, { lineKeys: ['materialId'] });
+      for (const ch of store.readAll('lot_characteristics')) {
+        if ((ch.materialIds || []).includes(id)) pushHit(map, 'lot_characteristics', ch);
+      }
       break;
 
     case 'lots':
@@ -154,6 +179,8 @@ export function findUsages(collection, id) {
       scanSimple(map, 'reservation_history', id, ['lotId']);
       scanSimple(map, 'quality_register', id, ['lotId']);
       scanSimple(map, 'quality_history', id, ['lotId']);
+      scanSimple(map, 'characteristic_register', id, ['lotId']);
+      scanSimple(map, 'characteristic_history', id, ['lotId']);
       scanProductionOrders(map, id, 'lots');
       scanDocs(map, id, { lineKeys: ['lotId'] });
       break;
@@ -192,6 +219,10 @@ export function findUsages(collection, id) {
 
     case 'specifications':
       scanProductionOrders(map, id, 'specifications');
+      scanSubstitutions(map, id, 'specifications');
+      break;
+
+    case 'substitutions':
       break;
 
     case 'planned_series_volumes':
@@ -202,6 +233,17 @@ export function findUsages(collection, id) {
       scanSimple(map, 'quality_register', id, ['qualityId']);
       scanSimple(map, 'quality_history', id, ['qualityId']);
       scanDocs(map, id, { lineKeys: ['qualityId'] });
+      break;
+
+    case 'lot_characteristics':
+      scanSimple(map, 'characteristic_register', id, ['characteristicId']);
+      scanSimple(map, 'characteristic_history', id, ['characteristicId']);
+      for (const doc of store.readAll('characteristic_documents')) {
+        const hit = (doc.lines || []).some((line) =>
+          (line.values || []).some((v) => v.characteristicId === id)
+        );
+        if (hit) pushHit(map, 'characteristic_documents', doc);
+      }
       break;
 
     default:
@@ -238,6 +280,13 @@ export function assertCanDelete(collection, ids) {
   const list = [...new Set((ids || []).filter(Boolean).map(String))];
   if (!list.length) return;
 
+  if (collection === 'lot_characteristics') {
+    for (const id of list) {
+      const row = store.getById(collection, id);
+      if (row?.kind === 'system') throw new Error('Системную характеристику нельзя удалить');
+    }
+  }
+
   const blocked = [];
   for (const id of list) {
     const usages = findUsages(collection, id);
@@ -271,5 +320,6 @@ export function isProtectedDictionary(collection) {
     'tech_maps',
     'specifications',
     'lot_qualities',
+    'lot_characteristics',
   ].includes(collection);
 }

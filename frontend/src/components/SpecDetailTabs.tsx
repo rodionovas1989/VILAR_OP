@@ -13,6 +13,7 @@ type Props = {
   materials: Opt[];
   counterparties: Opt[];
   techMaps: Opt[];
+  characteristics?: import('../types').LotCharacteristic[];
 };
 
 type TabId = 'general' | 'recipe' | 'suppliers';
@@ -30,6 +31,7 @@ export default function SpecDetailTabs({
   materials,
   counterparties,
   techMaps,
+  characteristics = [],
 }: Props) {
   const [tab, setTab] = useState<TabId>('general');
 
@@ -106,6 +108,7 @@ export default function SpecDetailTabs({
           showTitle={false}
           lines={lines}
           materials={materials}
+          characteristics={characteristics}
           onChange={(next) => setEditing({ ...editing, lines: next })}
         />
       )}

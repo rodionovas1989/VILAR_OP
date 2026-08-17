@@ -1,18 +1,32 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { OrderLine, ProductionOrder, Warehouse } from '../types';
+import { OrderLine, ProductionOrder, Warehouse, LotCharacteristic } from '../types';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
+import { materialHasAssayDryApplication, appliedRecalcTerms, PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY } from '../utils/lotCharacteristics';
 
 type Dicts = {
-  materials: { id: string; name: string }[];
+  materials: { id: string; name: string; type?: string }[];
   series: { id: string; number: string }[];
   workCenters: { id: string; name: string }[];
   lots: { id: string; number: string; materialId: string; counterpartyId?: string | null }[];
   counterparties: { id: string; name: string }[];
   warehouses: Warehouse[];
+  substitutions: {
+    id: string;
+    baseMaterialId: string;
+    bidirectional?: boolean;
+    active?: boolean;
+    specificationId?: string | null;
+    lines?: { materialId: string }[];
+  }[];
+  specifications: {
+    id: string;
+    lines?: { id?: string; materialId: string; recalcMethod?: string }[];
+  }[];
+  characteristics?: LotCharacteristic[];
 };
 
 type Props = { dictionaries: Dicts };
@@ -26,6 +40,7 @@ type LotOpt = {
   qualityName?: string | null;
   qualityMessage?: string | null;
   qualityAllowed?: boolean;
+  characteristicValues?: Record<string, number>;
 };
 
 function nameOf(id: string, list: { id: string; name?: string; number?: string }[]) {
@@ -35,15 +50,41 @@ function nameOf(id: string, list: { id: string; name?: string; number?: string }
 function scaleFactLines(planLines: OrderLine[], planQty: number, factQty: number): OrderLine[] {
   const p = Number(planQty) || 0;
   const f = Number(factQty) || 0;
-  if (!(p > 0) || !(f > 0)) {
-    return planLines.map((l) => ({ materialId: l.materialId, lotId: l.lotId, quantity: Number(l.quantity) }));
-  }
-  const k = f / p;
-  return planLines.map((l) => ({
+  const copyMeta = (l: OrderLine, quantity: number): OrderLine => ({
+    specLineId: l.specLineId,
+    specMaterialId: l.specMaterialId || l.materialId,
     materialId: l.materialId,
     lotId: l.lotId,
-    quantity: Number((Number(l.quantity) * k).toFixed(6)),
-  }));
+    quantity,
+    substitutionRuleId: l.substitutionRuleId,
+  });
+  if (!(p > 0) || !(f > 0)) {
+    return planLines.map((l) => copyMeta(l, Number(l.quantity)));
+  }
+  const k = f / p;
+  return planLines.map((l) => copyMeta(l, Number((Number(l.quantity) * k).toFixed(6))));
+}
+
+function analogMaterialIds(
+  specMaterialId: string,
+  substitutions: Dicts['substitutions'],
+  specificationId?: string | null
+): string[] {
+  const ids = [specMaterialId];
+  for (const rule of substitutions || []) {
+    if (rule.active === false) continue;
+    if (rule.specificationId && rule.specificationId !== specificationId) continue;
+    if (rule.baseMaterialId === specMaterialId) {
+      for (const line of rule.lines || []) {
+        if (line.materialId) ids.push(line.materialId);
+      }
+    } else if (rule.bidirectional !== false) {
+      if ((rule.lines || []).some((l) => l.materialId === specMaterialId)) {
+        ids.push(rule.baseMaterialId);
+      }
+    }
+  }
+  return [...new Set(ids.filter(Boolean))];
 }
 
 export default function ProductionDesktop({ dictionaries }: Props) {
@@ -100,9 +141,12 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     const factLines =
       (order.actualLines?.length ?? 0) > 0
         ? (order.actualLines || []).map((l) => ({
+            specLineId: l.specLineId,
+            specMaterialId: l.specMaterialId || l.materialId,
             materialId: l.materialId,
             lotId: l.lotId,
             quantity: Number(l.quantity),
+            substitutionRuleId: l.substitutionRuleId,
           }))
         : scaleFactLines(order.lines || [], planQty, factQty);
     setActualQuantity(factQty);
@@ -128,9 +172,12 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     const scaled = scaleFactLines(selected.lines || [], Number(selected.quantity), value);
     setActualLines((prev) =>
       scaled.map((s) => {
-        const keep = prev.find((p) => p.materialId === s.materialId);
+        const keep = prev.find(
+          (p) => (s.specLineId && p.specLineId === s.specLineId) || p.materialId === s.materialId
+        );
         return {
-          materialId: s.materialId,
+          ...s,
+          materialId: keep?.materialId || s.materialId,
           lotId: keep?.lotId || s.lotId,
           quantity: s.quantity,
         };
@@ -138,14 +185,74 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     );
   };
 
-  const changeFactLot = (materialId: string, lotId: string) => {
-    setActualLines((prev) => prev.map((l) => (l.materialId === materialId ? { ...l, lotId } : l)));
+  const lineKey = (l: OrderLine, idx: number) => l.specLineId || `${l.materialId}-${idx}`;
+
+  const charWarnings = useMemo(() => {
+    if (!selected) return [];
+    const spec = dictionaries.specifications.find((s) => s.id === selected.specificationId);
+    if (!spec) return [];
+    const out: string[] = [];
+    for (const line of actualLines) {
+      const specLine =
+        (spec.lines || []).find((l) => l.id && l.id === line.specLineId) ||
+        (spec.lines || []).find((l) => l.materialId === (line.specMaterialId || line.materialId));
+      if (specLine?.recalcMethod !== 'assay_and_dry') continue;
+      const specMat = dictionaries.materials.find((m) => m.id === specLine.materialId);
+      const chars = dictionaries.characteristics || [];
+      if (!materialHasAssayDryApplication(specMat, chars)) continue;
+      const terms = appliedRecalcTerms(specMat, chars);
+      const opt = (lotOptions[line.materialId] || []).find((o) => o.id === line.lotId);
+      const vals = opt?.characteristicValues || {};
+      const assayOk = !terms.useAssay || Number(vals[PARAM_ASSAY]) > 0;
+      const lodRaw = vals[PARAM_DRY] ?? vals[LEGACY_PARAM_DRY];
+      const lodOk = !terms.useLod || (lodRaw != null && Number.isFinite(Number(lodRaw)) && Number(lodRaw) >= 0 && Number(lodRaw) < 100);
+      if (!assayOk || !lodOk) {
+        out.push(
+          `${nameOf(line.materialId, dictionaries.materials)} / ${nameOf(line.lotId, dictionaries.lots)}: нет факта в регистре характеристик — расход по эталону спецификации`
+        );
+      }
+    }
+    return out;
+  }, [selected, actualLines, lotOptions, dictionaries.specifications, dictionaries.materials, dictionaries.lots, dictionaries.characteristics]);
+
+  const changeFactLot = (key: string, lotId: string) => {
+    setActualLines((prev) => prev.map((l, idx) => (lineKey(l, idx) === key ? { ...l, lotId } : l)));
   };
 
-  const changeFactQty = (materialId: string, quantity: number) => {
+  const changeFactQty = (key: string, quantity: number) => {
     setActualLines((prev) =>
-      prev.map((l) => (l.materialId === materialId ? { ...l, quantity: Number(quantity) } : l))
+      prev.map((l, idx) => (lineKey(l, idx) === key ? { ...l, quantity: Number(quantity) } : l))
     );
+  };
+
+  const changeFactMaterial = async (key: string, materialId: string) => {
+    const specMaterialId =
+      actualLines.find((l, idx) => lineKey(l, idx) === key)?.specMaterialId || materialId;
+    setActualLines((prev) =>
+      prev.map((l, idx) =>
+        lineKey(l, idx) === key
+          ? {
+              ...l,
+              materialId,
+              specMaterialId: l.specMaterialId || specMaterialId,
+              lotId: '',
+              substitutionRuleId: materialId === (l.specMaterialId || specMaterialId) ? null : l.substitutionRuleId,
+            }
+          : l
+      )
+    );
+    try {
+      const lots = (await api.lotsAvailable(materialId, 'FEFO')) as LotOpt[];
+      setLotOptions((prev) => ({ ...prev, [materialId]: lots }));
+      const suitable = lots.find((o) => o.qualityAllowed !== false && o.freeQty > 0) || lots[0];
+      if (suitable) {
+        setActualLines((prev) =>
+          prev.map((l, idx) => (lineKey(l, idx) === key ? { ...l, lotId: suitable.id } : l))
+        );
+      }
+    } catch {
+      setLotOptions((prev) => ({ ...prev, [materialId]: [] }));
+    }
   };
 
   const saveFact = async () => {
@@ -243,6 +350,13 @@ export default function ProductionDesktop({ dictionaries }: Props) {
         </div>
         {error && <div className="alert error">{error}</div>}
         {message && <div className="alert info">{message}</div>}
+        {charWarnings.length > 0 && (
+          <div className="alert info">
+            {charWarnings.map((w) => (
+              <div key={w}>{w}</div>
+            ))}
+          </div>
+        )}
 
         <div className="prod-order-head">
           <div className="prod-head-field">
@@ -301,8 +415,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
         </div>
 
         <p className="hint">
-          При изменении факта выпуска количества компонентов пересчитываются пропорционально плану. Партии в факте
-          можно заменить. Завершение списывает и приходует по факту.
+          При изменении факта выпуска количества компонентов пересчитываются пропорционально плану. Партию в факте
+          можно заменить. Если для позиции заданы аналоги — можно сменить материал из списка. Завершение списывает и
+          приходует по факту.
         </p>
 
         <div className="tabs spec-inner-tabs">
@@ -358,18 +473,45 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {actualLines.map((l) => {
+                {actualLines.map((l, idx) => {
+                  const key = lineKey(l, idx);
                   const opts = lotOptions[l.materialId] || [];
                   const hasCurrent = opts.some((o) => o.id === l.lotId);
                   const selectedOpt = opts.find((o) => o.id === l.lotId);
                   const unfit = selectedOpt?.qualityAllowed === false;
                   const conditional = selectedOpt?.qualityPermission === 'conditional';
+                  const specMat = l.specMaterialId || l.materialId;
+                  const allowed = analogMaterialIds(
+                    specMat,
+                    dictionaries.substitutions || [],
+                    selected?.specificationId
+                  );
+                  const canSwap = allowed.length > 1;
                   return (
                     <tr
-                      key={`fact-${l.materialId}`}
+                      key={`fact-${key}`}
                       className={unfit ? 'pick-lot-blocked' : conditional ? 'pick-lot-conditional' : undefined}
                     >
-                      <td>{nameOf(l.materialId, dictionaries.materials)}</td>
+                      <td>
+                        {canSwap ? (
+                          <SearchableSelect
+                            allowEmpty={false}
+                            value={l.materialId}
+                            disabled={busy}
+                            onChange={(v) => void changeFactMaterial(key, v)}
+                            options={allowed.map((id) => ({
+                              value: id,
+                              label:
+                                nameOf(id, dictionaries.materials) + (id === specMat ? '' : ' (аналог)'),
+                            }))}
+                          />
+                        ) : (
+                          nameOf(l.materialId, dictionaries.materials)
+                        )}
+                        {l.materialId !== specMat ? (
+                          <div className="muted">вместо {nameOf(specMat, dictionaries.materials)}</div>
+                        ) : null}
+                      </td>
                       <td className="prod-lot-cell">
                         <SearchableSelect
                           triggerClassName={[
@@ -381,7 +523,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           value={l.lotId}
                           disabled={busy}
                           allowEmpty={false}
-                          onChange={(v) => changeFactLot(l.materialId, v)}
+                          onChange={(v) => changeFactLot(key, v)}
                           options={[
                             ...(!hasCurrent && l.lotId
                               ? [
@@ -427,7 +569,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           step="any"
                           value={l.quantity}
                           disabled={busy}
-                          onChange={(e) => changeFactQty(l.materialId, Number(e.target.value))}
+                          onChange={(e) => changeFactQty(key, Number(e.target.value))}
                         />
                       </td>
                     </tr>

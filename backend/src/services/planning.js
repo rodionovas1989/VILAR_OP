@@ -4,6 +4,14 @@ import * as documents from './documents.js';
 import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
 import { resolveLotQuality, assertLotsQualityForUse } from './quality.js';
 import { onLotCreated } from './scenarios.js';
+import {
+  candidateMaterials,
+  isAllowedSubstitute,
+  substitutionRuleId,
+} from './substitutions.js';
+import { computeLineNeed } from './lotRecalc.js';
+import { getLotCharacteristicMap, missingRequiredMessages } from './characteristics.js';
+import { recalcMissingMessage } from '../constants/lotCharacteristics.js';
 
 export { warehouseByType, stockRowForLot, freeQtyByLot };
 
@@ -43,6 +51,7 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
         qualityMessage: quality.message,
         qualityAllowed: quality.allowed,
         qualityDefaulted: quality.defaulted,
+        characteristicValues: getLotCharacteristicMap(l.id),
       };
     })
     .filter((l) => l.freeQty > 0 && new Date(l.expiryDate) >= new Date());
@@ -56,9 +65,63 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
   return lots;
 }
 
+function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialIds, ok) {
+  const material = store.getById('materials', cand.materialId);
+  return {
+    specLineId: line.id,
+    specMaterialId: line.materialId,
+    specMaterialName: specMaterial?.name,
+    materialId: cand.materialId,
+    materialName: material?.name,
+    substituted: cand.materialId !== line.materialId,
+    substitutionRuleId: cand.ruleId || null,
+    allowedMaterialIds,
+    qtyPerUnit: Number(line.qtyPerUnit) || 0,
+    recalcMethod: needResult.method === 'assay_and_dry' ? 'assay_and_dry' : 'none',
+    recalcXLabel: line.recalcXLabel ?? null,
+    nominalQuantity: needResult.nominal,
+    quantity: needResult.quantity,
+    recalcApplied: needResult.applied,
+    recalcMissing: needResult.missing,
+    recalcUseAssay: needResult.useAssay,
+    recalcUseLod: needResult.useLod,
+    recalcSnapshot: needResult.snapshot,
+    ...lotFields(lot),
+    ok,
+  };
+}
+
+function findSpecLine(spec, pick) {
+  const lines = spec.lines || [];
+  if (pick?.specLineId) {
+    const byId = lines.find((l) => l.id === pick.specLineId);
+    if (byId) return byId;
+  }
+  const specMat = pick?.specMaterialId || pick?.materialId;
+  return lines.find((l) => l.materialId === specMat) || null;
+}
+
+function lotFields(lot) {
+  return {
+    lotId: lot?.id || null,
+    lotNumber: lot?.number || null,
+    counterpartyId: lot?.counterpartyId,
+    counterpartyName: lot?.counterparty?.name,
+    expiryDate: lot?.expiryDate,
+    freeQty: lot?.freeQty || 0,
+    qualityPermission: lot?.qualityPermission,
+    qualityPermissionLabel: lot?.qualityPermissionLabel,
+    qualityName: lot?.qualityName,
+    qualityMessage: lot?.qualityMessage,
+    qualityAllowed: lot?.qualityAllowed,
+    characteristicValues: lot?.characteristicValues || (lot?.id ? getLotCharacteristicMap(lot.id) : {}),
+  };
+}
+
 /**
  * GMP: одна партия на один компонент в рамках серии/заказа.
  * Не дробим потребность по нескольким партиям.
+ * Если по материалу спеки нет партии — пробуем аналоги (без транзитивности).
  */
 export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
   const order = store.getById('production_orders', orderId);
@@ -69,63 +132,92 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
   const picks = [];
   const warnings = [];
 
-  for (const line of spec.lines) {
-    // qtyPerUnit — кг на 1000 упаковок
-    const need = Number(((Number(line.qtyPerUnit) * Number(order.quantity)) / 1000).toFixed(6));
-    const lots = availableLotsForMaterial(line.materialId, algorithm);
-    const material = store.getById('materials', line.materialId);
-    const suitable = lots.find((l) => l.freeQty >= need && l.qualityAllowed !== false);
+  for (const line of spec.lines || []) {
+    const specMaterial = store.getById('materials', line.materialId);
+    const candidates = candidateMaterials(line.materialId, spec.id);
+    const allowedMaterialIds = candidates.map((c) => c.materialId);
+
+    let chosenCand = candidates[0];
+    let suitable = null;
+    let suitableNeed = computeLineNeed(line, order.quantity, null);
+
+    for (const cand of candidates) {
+      const lots = availableLotsForMaterial(cand.materialId, algorithm);
+      const hit = lots.find((l) => {
+        const need = computeLineNeed(line, order.quantity, l);
+        return l.freeQty >= need.quantity && l.qualityAllowed !== false;
+      });
+      if (hit) {
+        chosenCand = cand;
+        suitable = hit;
+        suitableNeed = computeLineNeed(line, order.quantity, hit);
+        break;
+      }
+    }
 
     if (!suitable) {
-      const anyQty = lots.find((l) => l.freeQty >= need);
+      const triedLots = availableLotsForMaterial(chosenCand.materialId, algorithm);
+      const fallback = triedLots[0] || null;
+      const fallbackNeed = computeLineNeed(line, order.quantity, fallback);
+      const anyQty = triedLots.find((l) => {
+        const need = computeLineNeed(line, order.quantity, l);
+        return l.freeQty >= need.quantity;
+      });
+      const analogTried = candidates.length > 1;
       warnings.push({
         materialId: line.materialId,
-        materialName: material?.name,
-        need,
+        materialName: specMaterial?.name,
+        need: fallbackNeed.quantity,
         message:
-          lots.length === 0
+          triedLots.length === 0 && !analogTried
             ? 'Нет доступных партий'
-            : anyQty && !anyQty.qualityAllowed
-              ? 'Есть остаток, но партия не годна по качеству'
-              : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
-        candidates: lots.slice(0, 5),
+            : triedLots.length === 0 && analogTried
+              ? 'Нет доступных партий (включая аналоги)'
+              : anyQty && !anyQty.qualityAllowed
+                ? 'Есть остаток, но партия не годна по качеству'
+                : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
+        candidates: triedLots.slice(0, 5),
       });
-      const fallback = lots[0] || null;
-      picks.push({
-        materialId: line.materialId,
-        materialName: material?.name,
-        quantity: need,
-        lotId: fallback?.id || null,
-        lotNumber: fallback?.number || null,
-        counterpartyId: fallback?.counterpartyId,
-        counterpartyName: fallback?.counterparty?.name,
-        expiryDate: fallback?.expiryDate,
-        freeQty: fallback?.freeQty || 0,
-        qualityPermission: fallback?.qualityPermission,
-        qualityPermissionLabel: fallback?.qualityPermissionLabel,
-        qualityName: fallback?.qualityName,
-        qualityMessage: fallback?.qualityMessage,
-        qualityAllowed: fallback?.qualityAllowed,
-        ok: false,
-      });
+      if (fallbackNeed.missing) {
+        warnings.push({
+          materialId: line.materialId,
+          materialName: specMaterial?.name,
+          need: fallbackNeed.quantity,
+          message: recalcMissingMessage(fallbackNeed.missingCodes),
+        });
+      }
+      for (const msg of missingRequiredMessages(fallback?.id, chosenCand.materialId)) {
+        warnings.push({
+          materialId: line.materialId,
+          materialName: specMaterial?.name,
+          need: fallbackNeed.quantity,
+          message: msg,
+        });
+      }
+      picks.push(
+        pickPayload(line, specMaterial, chosenCand, fallback, fallbackNeed, allowedMaterialIds, false)
+      );
     } else {
-      picks.push({
-        materialId: line.materialId,
-        materialName: material?.name,
-        quantity: need,
-        lotId: suitable.id,
-        lotNumber: suitable.number,
-        counterpartyId: suitable.counterpartyId,
-        counterpartyName: suitable.counterparty?.name,
-        expiryDate: suitable.expiryDate,
-        freeQty: suitable.freeQty,
-        qualityPermission: suitable.qualityPermission,
-        qualityPermissionLabel: suitable.qualityPermissionLabel,
-        qualityName: suitable.qualityName,
-        qualityMessage: suitable.qualityMessage,
-        qualityAllowed: suitable.qualityAllowed,
-        ok: true,
-      });
+      if (suitableNeed.missing) {
+        warnings.push({
+          materialId: line.materialId,
+          materialName: specMaterial?.name,
+          need: suitableNeed.quantity,
+          message: recalcMissingMessage(suitableNeed.missingCodes),
+        });
+      }
+      const lotForReq = suitable;
+      for (const msg of missingRequiredMessages(lotForReq?.id, chosenCand.materialId)) {
+        warnings.push({
+          materialId: line.materialId,
+          materialName: specMaterial?.name,
+          need: suitableNeed.quantity,
+          message: msg,
+        });
+      }
+      picks.push(
+        pickPayload(line, specMaterial, chosenCand, suitable, suitableNeed, allowedMaterialIds, true)
+      );
     }
   }
 
@@ -165,26 +257,48 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
   if (!order) throw new Error('Заказ не найден');
   assertOrderStatus(order, [ORDER_STATUS.new, ORDER_STATUS.planned], 'Подтверждение резерва');
   const actorId = resolveActorUserId(userId);
+  const spec = store.getById('specifications', order.specificationId);
+  if (!spec) throw new Error('Спецификация не найдена');
 
   const byMat = new Map();
+  const byLine = new Set();
+  const normalized = [];
   for (const p of picks) {
-    if (!p.lotId) throw new Error(`Не выбрана партия для материала ${p.materialId}`);
-    if (byMat.has(p.materialId) && byMat.get(p.materialId) !== p.lotId) {
+    const specLine = findSpecLine(spec, p);
+    if (!specLine) throw new Error(`Не найдена строка спецификации для материала ${p.materialId}`);
+    if (byLine.has(specLine.id)) {
+      throw new Error('GMP: нельзя резервировать две партии на одну позицию спецификации');
+    }
+    byLine.add(specLine.id);
+    const actualMaterialId = p.materialId || specLine.materialId;
+    if (!isAllowedSubstitute(specLine.materialId, actualMaterialId, spec.id)) {
+      throw new Error('Материал не входит в список аналогов для этой позиции спецификации');
+    }
+    if (!p.lotId) throw new Error(`Не выбрана партия для материала ${actualMaterialId}`);
+    if (byMat.has(actualMaterialId) && byMat.get(actualMaterialId) !== p.lotId) {
       throw new Error('GMP: нельзя резервировать две партии одного материала на одну серию');
     }
-    byMat.set(p.materialId, p.lotId);
+    byMat.set(actualMaterialId, p.lotId);
     const free = freeQtyByLot(p.lotId, { excludeProductionOrderId: orderId });
     if (free < Number(p.quantity)) {
       throw new Error(`Недостаточно свободного остатка по партии ${p.lotId}`);
     }
     const lot = store.getById('lots', p.lotId);
-    if (!lot || lot.materialId !== p.materialId) {
+    if (!lot || lot.materialId !== actualMaterialId) {
       throw new Error('Партия не соответствует материалу');
     }
+    normalized.push({
+      specLineId: specLine.id,
+      specMaterialId: specLine.materialId,
+      materialId: actualMaterialId,
+      lotId: p.lotId,
+      quantity: Number(p.quantity),
+      substitutionRuleId: substitutionRuleId(specLine.materialId, actualMaterialId, spec.id),
+    });
   }
 
   assertLotsQualityForUse(
-    picks.map((p) => p.lotId),
+    normalized.map((p) => p.lotId),
     'Подтверждение резерва'
   );
 
@@ -193,7 +307,7 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
   const whComp = warehouseByType('компоненты')?.id;
   if (!whComp) throw new Error('Не найден склад компонентов');
 
-  const lines = picks.map((p) => ({
+  const lines = normalized.map((p) => ({
     materialId: p.materialId,
     lotId: p.lotId,
     quantity: Number(p.quantity),
@@ -209,10 +323,13 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
   });
   const posted = documents.postDocumentUnchecked('reservation', draft.id, actorId);
 
-  const orderLines = lines.map((l) => ({
+  const orderLines = normalized.map((l) => ({
+    specLineId: l.specLineId,
+    specMaterialId: l.specMaterialId,
     materialId: l.materialId,
     lotId: l.lotId,
     quantity: l.quantity,
+    substitutionRuleId: l.substitutionRuleId,
     reservationDocumentId: posted.id,
   }));
 
@@ -221,9 +338,12 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
     lines: orderLines,
     actualQuantity: Number(order.quantity),
     actualLines: orderLines.map((l) => ({
+      specLineId: l.specLineId,
+      specMaterialId: l.specMaterialId,
       materialId: l.materialId,
       lotId: l.lotId,
       quantity: Number(l.quantity),
+      substitutionRuleId: l.substitutionRuleId || null,
     })),
   });
 
@@ -257,6 +377,12 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
       if (!lot || lot.materialId !== line.materialId) {
         throw new Error('Партия в факте не соответствует материалу');
       }
+      const spec = store.getById('specifications', order.specificationId);
+      const specLine = spec ? findSpecLine(spec, line) : null;
+      const specMaterialId = specLine?.materialId || line.specMaterialId || line.materialId;
+      if (spec && !isAllowedSubstitute(specMaterialId, line.materialId, spec.id)) {
+        throw new Error('Фактический материал не входит в список аналогов для позиции спецификации');
+      }
     }
     assertLotsQualityForUse(
       actualLines.map((l) => l.lotId),
@@ -265,9 +391,12 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
     return store.update('production_orders', orderId, {
       actualQuantity: Number(actualQuantity),
       actualLines: actualLines.map((l) => ({
+        specLineId: l.specLineId || null,
+        specMaterialId: l.specMaterialId || l.materialId,
         materialId: l.materialId,
         lotId: l.lotId,
         quantity: Number(l.quantity),
+        substitutionRuleId: l.substitutionRuleId || null,
       })),
     });
   });

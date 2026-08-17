@@ -367,7 +367,7 @@ button.linkish {
 }
 
 .recent-chip-sub::after {
-  content: '·';
+  content: 'ï¿½';
   margin-left: 6px;
   color: var(--line);
 }
@@ -2346,6 +2346,38 @@ button.danger-outline:hover {
   font-size: 12px;
 }
 
+.pick-recalc-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted, #6b7280);
+}
+
+.pick-recalc-warn {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #b45309;
+}
+
+.char-doc-line {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.chip-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.chip-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+}
+
 .select-bad {
   border: none !important;
   border-bottom: 1px solid #e3a39a !important;
@@ -2832,6 +2864,21 @@ button.danger-outline:hover {
 .spec-lines-table td:last-child {
   width: 1%;
   white-space: nowrap;
+}
+
+.spec-lines-table .spec-recalc-cell {
+  width: 9.5rem;
+  max-width: 10.5rem;
+}
+
+.spec-lines-table .spec-xlabel-cell {
+  width: 5.5rem;
+  max-width: 6.5rem;
+}
+
+.spec-lines-table .spec-recalc-select {
+  width: 100%;
+  max-width: 10.5rem;
 }
 
 .spec-lines-table select,

@@ -1,4 +1,6 @@
-import { SpecLine } from '../types';
+import { SpecLine, LotCharacteristic } from '../types';
+import { characteristicApplies, materialHasAssayDryApplication, RECALC_METHOD_LABEL, RECALC_METHOD_SHORT } from '../utils/lotCharacteristics';
+import { newId } from '../utils/id';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
 
@@ -7,18 +9,27 @@ type MaterialOpt = { id: string; name: string; type?: string };
 type Props = {
   lines: SpecLine[];
   materials: MaterialOpt[];
+  characteristics?: LotCharacteristic[];
   onChange: (lines: SpecLine[]) => void;
   showTitle?: boolean;
 };
 
 const emptyLine = (): SpecLine => ({
+  id: newId(),
   materialId: '',
   qtyPerUnit: 0,
-  qtyMgPerTablet: undefined,
   componentType: 'Вспомогательный',
+  recalcMethod: 'none',
+  recalcXLabel: null,
 });
 
-export default function SpecLinesEditor({ lines, materials, onChange, showTitle = true }: Props) {
+export default function SpecLinesEditor({
+  lines,
+  materials,
+  characteristics = [],
+  onChange,
+  showTitle = true,
+}: Props) {
   const update = (idx: number, patch: Partial<SpecLine>) => {
     onChange(lines.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   };
@@ -35,7 +46,10 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
         </button>
       </div>
       <p className="hint" style={{ margin: 0 }}>
-        Норма расхода в кг на 1000 упаковок. При заказе на N уп. расход = норма × N / 1000.
+        Норма расхода в кг на 1000 упаковок. При заказе на N уп. расход = норма × N / 1000. Метод
+        «{RECALC_METHOD_SHORT}» ({RECALC_METHOD_LABEL}) доступен, только если материалу назначено
+        применение количественного содержания и/или потери массы при высушивании. Эталон содержания
+        % — из регистрации. Факт — документ «Управление характеристиками».
       </p>
       <div className="table-wrap spec-lines-table">
         <table>
@@ -44,20 +58,29 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
               <th>Материал</th>
               <th>Тип компонента</th>
               <th>КГ на 1000 уп</th>
-              <th>мг/табл.</th>
+              <th>Пересчёт</th>
+              <th>Эталон, %</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {lines.length === 0 && (
               <tr>
-                <td colSpan={5} className="muted">
+                <td colSpan={6} className="muted">
                   Нет строк рецептуры. Добавьте компоненты.
                 </td>
               </tr>
             )}
-            {lines.map((line, idx) => (
-              <tr key={idx}>
+            {lines.map((line, idx) => {
+              const mat = materials.find((m) => m.id === line.materialId);
+              const applied = characteristics.filter((c) => characteristicApplies(c, mat));
+              const canRecalc = materialHasAssayDryApplication(mat, characteristics);
+              const recalcOptions = [{ value: 'none', label: 'Нет' }];
+              if (canRecalc || line.recalcMethod === 'assay_and_dry') {
+                recalcOptions.push({ value: 'assay_and_dry', label: RECALC_METHOD_SHORT });
+              }
+              return (
+              <tr key={line.id || idx}>
                 <td>
                   <SearchableSelect
                     required
@@ -65,6 +88,11 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
                     onChange={(v) => update(idx, { materialId: v })}
                     options={materials.map((m) => ({ value: m.id, label: m.name }))}
                   />
+                  {applied.length ? (
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                      ведутся: {applied.map((c) => c.name).join(', ')}
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   <SearchableSelect
@@ -85,15 +113,38 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
                     onChange={(e) => update(idx, { qtyPerUnit: Number(e.target.value) })}
                   />
                 </td>
-                <td>
+                <td className="spec-recalc-cell">
+                  <SearchableSelect
+                    className="spec-recalc-select"
+                    value={line.recalcMethod || 'none'}
+                    allowEmpty={false}
+                    onChange={(v) =>
+                      update(idx, {
+                        recalcMethod: v === 'assay_and_dry' && canRecalc ? v : 'none',
+                        recalcXLabel:
+                          v === 'assay_and_dry' && canRecalc ? line.recalcXLabel || 100 : null,
+                      })
+                    }
+                    options={recalcOptions}
+                  />
+                  {line.recalcMethod === 'assay_and_dry' && !canRecalc ? (
+                    <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                      Нет применения количественного содержания / потери массы при высушивании —
+                      метод не действует. Назначьте применение или выберите «Нет».
+                    </div>
+                  ) : null}
+                  {line.recalcComment ? <div className="muted">{line.recalcComment}</div> : null}
+                </td>
+                <td className="spec-xlabel-cell">
                   <input
                     type="number"
                     step="any"
                     min={0}
-                    value={line.qtyMgPerTablet ?? ''}
+                    disabled={(line.recalcMethod || 'none') !== 'assay_and_dry' || !canRecalc}
+                    value={line.recalcXLabel ?? ''}
                     onChange={(e) =>
                       update(idx, {
-                        qtyMgPerTablet: e.target.value === '' ? undefined : Number(e.target.value),
+                        recalcXLabel: e.target.value === '' ? null : Number(e.target.value),
                       })
                     }
                   />
@@ -104,7 +155,8 @@ export default function SpecLinesEditor({ lines, materials, onChange, showTitle 
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

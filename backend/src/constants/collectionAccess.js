@@ -11,6 +11,8 @@ export const COLLECTION_TO_OBJECT = {
   tech_maps: 'tech_maps',
   warehouses: 'warehouses',
   planned_series_volumes: 'planned_series_volumes',
+  substitutions: 'substitutions',
+  lot_characteristics: 'lot_characteristics',
   production_orders: 'production_orders',
   stock: 'stock',
   active_reservations: 'active_reservations',
@@ -23,6 +25,9 @@ export const COLLECTION_TO_OBJECT = {
   quality_history: 'quality_history',
   lot_qualities: 'lot_qualities',
   quality_scenarios: 'quality_scenarios',
+  characteristic_documents: 'characteristic_documents',
+  characteristic_register: 'characteristic_register',
+  characteristic_history: 'characteristic_history',
   user_favorites: 'admin_users',
   feedback: 'admin_feedback',
 };
@@ -38,7 +43,7 @@ export function objectIdForCollection(collection) {
 /** Черновики документов может править роль с create (кладовщик). */
 export function writeLevelForCollection(collection) {
   const objectId = objectIdForCollection(collection);
-  if (objectId?.startsWith('doc_') || collection === 'quality_documents' || collection === 'feedback') {
+  if (objectId?.startsWith('doc_') || collection === 'quality_documents' || collection === 'characteristic_documents' || collection === 'feedback') {
     return 'create';
   }
   return 'modify';
@@ -53,6 +58,9 @@ export const GENERIC_WRITE_CLOSED = new Set([
   'quality_register',
   'quality_history',
   'quality_documents',
+  'characteristic_register',
+  'characteristic_history',
+  'characteristic_documents',
   'document_sequences',
   'user_favorites',
   'stock_documents',

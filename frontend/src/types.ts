@@ -14,11 +14,17 @@ export interface Material {
 }
 
 export interface SpecLine {
+  id?: string;
   materialId: string;
   /** Норма расхода, кг на 1000 упаковок */
   qtyPerUnit: number;
   qtyMgPerTablet?: number;
   componentType?: string;
+  /** none | assay_and_dry — расчёт по партии будет в следующей итерации */
+  recalcMethod?: string;
+  recalcXLabel?: number | null;
+  recalcComment?: string;
+  recalcFormula?: string;
 }
 
 /** Одобренный поставщик компонента в спецификации */
@@ -56,6 +62,22 @@ export interface Lot {
   blocked?: boolean;
   blockReason?: string | null;
   blockDocumentId?: string | null;
+}
+
+export interface LotCharacteristic {
+  id: string;
+  code: string;
+  name: string;
+  kind?: 'system' | 'user';
+  unit?: string;
+  valueType?: string;
+  min?: number;
+  max?: number;
+  required?: boolean;
+  active?: boolean;
+  comment?: string;
+  materialIds?: string[];
+  materialTypes?: string[];
 }
 
 export interface Series {
@@ -108,11 +130,31 @@ export interface PlannedSeriesVolume {
   quantity: number;
 }
 
+export interface SubstitutionLine {
+  materialId: string;
+  factor?: number;
+  priority?: number;
+}
+
+/** Правило замены: шапка = базовый материал, ТЧ = аналоги */
+export interface Substitution {
+  id: string;
+  name: string;
+  baseMaterialId: string;
+  bidirectional?: boolean;
+  active?: boolean;
+  specificationId?: string | null;
+  lines: SubstitutionLine[];
+}
+
 export interface OrderLine {
+  specLineId?: string | null;
+  specMaterialId?: string | null;
   materialId: string;
   lotId: string;
   quantity: number;
   reservationId?: string;
+  substitutionRuleId?: string | null;
 }
 
 export interface ProductionOrder {
@@ -151,9 +193,24 @@ export interface MaterialMovement {
 }
 
 export interface MaterialPick {
+  specLineId?: string;
+  specMaterialId?: string;
+  specMaterialName?: string;
   materialId: string;
   materialName?: string;
+  substituted?: boolean;
+  substitutionRuleId?: string | null;
+  allowedMaterialIds?: string[];
+  qtyPerUnit?: number;
+  recalcMethod?: string;
+  recalcXLabel?: number | null;
+  nominalQuantity?: number;
   quantity: number;
+  recalcApplied?: boolean;
+  recalcMissing?: boolean;
+  recalcUseAssay?: boolean;
+  recalcUseLod?: boolean;
+  recalcSnapshot?: { xLabel?: number; assay?: number | null; lossOnDrying?: number | null } | null;
   lotId: string | null;
   lotNumber?: string | null;
   counterpartyId?: string;
@@ -166,6 +223,7 @@ export interface MaterialPick {
   qualityName?: string | null;
   qualityMessage?: string | null;
   qualityAllowed?: boolean;
+  characteristicValues?: Record<string, number>;
 }
 
 export interface ReleasedSeriesComponent {

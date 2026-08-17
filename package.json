@@ -7,6 +7,7 @@
     "backend": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend start",
     "backend:seed": "npm --prefix backend run seed",
+    "import:recipes": "npm --prefix backend run import:recipes",
     "frontend": "npm --prefix frontend run dev",
     "install:all": "npm --prefix backend install && npm --prefix frontend install",
     "setup": "npm run install:all && npm --prefix backend run seed:if-needed",

@@ -6,6 +6,7 @@ import GanttChart from './GanttChart';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
+import { PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY, computeLineNeed, lotRecalcValue } from '../utils/lotRecalc';
 
 type SuggestResult = {
   orderId: string;
@@ -15,6 +16,46 @@ type SuggestResult = {
 };
 
 type TabId = 'orders' | 'materials' | 'gantt' | 'planned' | 'matrix';
+
+type AvailableLot = {
+  id: string;
+  number: string;
+  freeQty: number;
+  counterpartyId?: string;
+  counterparty?: { name: string };
+  expiryDate: string;
+  qualityPermission?: string;
+  qualityPermissionLabel?: string;
+  qualityName?: string | null;
+  qualityMessage?: string | null;
+  qualityAllowed?: boolean;
+  paramValues?: Record<string, number>;
+  characteristicValues?: Record<string, number>;
+};
+
+function applyNeedToPick(pick: MaterialPick, lot: AvailableLot | null | undefined, orderQty: number): MaterialPick {
+  const need = computeLineNeed({
+    qtyPerUnit: Number(pick.qtyPerUnit) || 0,
+    orderQty,
+    recalcMethod: pick.recalcMethod,
+    recalcXLabel: pick.recalcXLabel,
+    assay: lotRecalcValue(lot?.characteristicValues || lot?.paramValues, PARAM_ASSAY),
+    lossOnDrying: lotRecalcValue(
+      lot?.characteristicValues || lot?.paramValues,
+      PARAM_DRY,
+      LEGACY_PARAM_DRY
+    ),
+    useAssay: pick.recalcUseAssay,
+    useLod: pick.recalcUseLod,
+  });
+  return {
+    ...pick,
+    quantity: need.quantity,
+    nominalQuantity: need.nominal,
+    recalcApplied: need.applied,
+    recalcMissing: need.missing,
+  };
+}
 
 type Props = {
   dictionaries: {
@@ -330,8 +371,10 @@ export default function PlanningDesktop({ dictionaries }: Props) {
 
   const changeLot = async (orderIdx: number, pickIdx: number, lotId: string) => {
     const next = [...suggestions];
-    const pick = { ...next[orderIdx].picks[pickIdx], lotId: lotId || null };
+    const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
+    let pick = { ...next[orderIdx].picks[pickIdx], lotId: lotId || null };
     if (!lotId) {
+      pick = applyNeedToPick(pick, null, orderQty);
       pick.lotNumber = null;
       pick.freeQty = undefined;
       pick.counterpartyId = undefined;
@@ -344,22 +387,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.qualityAllowed = undefined;
       pick.ok = false;
     } else {
-      const lots = await api.lotsAvailable(pick.materialId, algorithm);
-      const lot = (
-        lots as {
-          id: string;
-          number: string;
-          freeQty: number;
-          counterpartyId?: string;
-          counterparty?: { name: string };
-          expiryDate: string;
-          qualityPermission?: string;
-          qualityPermissionLabel?: string;
-          qualityName?: string | null;
-          qualityMessage?: string | null;
-          qualityAllowed?: boolean;
-        }[]
-      ).find((l) => l.id === lotId);
+      const lots = (await api.lotsAvailable(pick.materialId, algorithm)) as AvailableLot[];
+      const lot = lots.find((l) => l.id === lotId);
+      pick = applyNeedToPick(pick, lot, orderQty);
       pick.lotNumber = lot?.number;
       pick.freeQty = lot?.freeQty;
       pick.counterpartyId = lot?.counterpartyId;
@@ -371,6 +401,63 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.qualityMessage = lot?.qualityMessage;
       pick.qualityAllowed = lot?.qualityAllowed;
       pick.ok = !!lot && lot.freeQty >= pick.quantity && lot.qualityAllowed !== false;
+    }
+    next[orderIdx] = { ...next[orderIdx], picks: next[orderIdx].picks.map((p, i) => (i === pickIdx ? pick : p)) };
+    setSuggestions(recomputeSuggestionOk(next));
+  };
+
+  const changeMaterial = async (orderIdx: number, pickIdx: number, materialId: string) => {
+    const next = [...suggestions];
+    const prev = next[orderIdx].picks[pickIdx];
+    const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
+    const specMaterialId = prev.specMaterialId || prev.materialId;
+    const mat = dictionaries.materials.find((m) => m.id === materialId);
+    let pick: MaterialPick = applyNeedToPick(
+      {
+        ...prev,
+        materialId,
+        materialName: mat?.name || materialId,
+        substituted: materialId !== specMaterialId,
+        lotId: null,
+        lotNumber: null,
+        freeQty: undefined,
+        counterpartyId: undefined,
+        counterpartyName: undefined,
+        expiryDate: undefined,
+        qualityPermission: undefined,
+        qualityPermissionLabel: undefined,
+        qualityName: undefined,
+        qualityMessage: undefined,
+        qualityAllowed: undefined,
+        ok: false,
+      },
+      null,
+      orderQty
+    );
+    try {
+      const lots = (await api.lotsAvailable(materialId, algorithm)) as AvailableLot[];
+      const ranked = lots.map((lot) => ({ lot, pick: applyNeedToPick(pick, lot, orderQty) }));
+      const suitable =
+        ranked.find((x) => x.lot.freeQty >= x.pick.quantity && x.lot.qualityAllowed !== false) || ranked[0];
+      if (suitable) {
+        pick = {
+          ...suitable.pick,
+          lotId: suitable.lot.id,
+          lotNumber: suitable.lot.number,
+          freeQty: suitable.lot.freeQty,
+          counterpartyId: suitable.lot.counterpartyId,
+          counterpartyName: suitable.lot.counterparty?.name || '—',
+          expiryDate: suitable.lot.expiryDate,
+          qualityPermission: suitable.lot.qualityPermission,
+          qualityPermissionLabel: suitable.lot.qualityPermissionLabel,
+          qualityName: suitable.lot.qualityName,
+          qualityMessage: suitable.lot.qualityMessage,
+          qualityAllowed: suitable.lot.qualityAllowed,
+          ok: suitable.lot.freeQty >= suitable.pick.quantity && suitable.lot.qualityAllowed !== false,
+        };
+      }
+    } catch {
+      /* список партий подгрузится в строке */
     }
     next[orderIdx] = { ...next[orderIdx], picks: next[orderIdx].picks.map((p, i) => (i === pickIdx ? pick : p)) };
     setSuggestions(recomputeSuggestionOk(next));
@@ -402,6 +489,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       const items = suggestions.map((s) => ({
         orderId: s.orderId,
         picks: s.picks.map((p) => ({
+          specLineId: p.specLineId,
+          specMaterialId: p.specMaterialId || p.materialId,
           materialId: p.materialId,
           quantity: p.quantity,
           lotId: p.lotId,
@@ -547,8 +636,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           </div>
           <p className="hint">
             GMP: на один компонент в серии — одна партия сырья. Можно вручную заменить партию из списка доступных.
-            Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема (нет партии или нехватка с учётом других
-            заказов). Контрагент: зелёный — одобрен в спецификации, жёлтый — не одобрен.
+            Если для материала заданы аналоги, можно сменить материал в строке (сначала позиция спецификации, затем
+            аналоги). Замена записывается в резерв. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема.
+            Контрагент: зелёный — одобрен в спецификации, жёлтый — не одобрен.
           </p>
           {suggestions.map((s, oi) => {
             const order = orders.find((o) => o.id === s.orderId);
@@ -594,15 +684,17 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                     <tbody>
                       {s.picks.map((p, pi) => (
                         <PickRow
-                          key={p.materialId}
+                          key={p.specLineId || `${p.materialId}-${pi}`}
                           pick={p}
                           algorithm={algorithm}
+                          materials={dictionaries.materials}
                           supplierApproved={isSupplierApproved(
                             order?.specificationId,
                             p.materialId,
                             p.counterpartyId
                           )}
                           onChangeLot={(lotId) => changeLot(oi, pi, lotId)}
+                          onChangeMaterial={(materialId) => void changeMaterial(oi, pi, materialId)}
                         />
                       ))}
                     </tbody>
@@ -1000,13 +1092,17 @@ function formatExpiry(iso?: string) {
 function PickRow({
   pick,
   algorithm,
+  materials,
   supplierApproved,
   onChangeLot,
+  onChangeMaterial,
 }: {
   pick: MaterialPick;
   algorithm: string;
+  materials: { id: string; name: string }[];
   supplierApproved: boolean;
   onChangeLot: (lotId: string) => void;
+  onChangeMaterial: (materialId: string) => void;
 }) {
   const [lots, setLots] = useState<
     {
@@ -1022,12 +1118,15 @@ function PickRow({
       qualityAllowed?: boolean;
     }[]
   >([]);
-  const loaded = useRef(false);
 
   useEffect(() => {
-    if (loaded.current) return;
-    loaded.current = true;
-    api.lotsAvailable(pick.materialId, algorithm).then((data) => setLots(data as typeof lots));
+    let cancelled = false;
+    api.lotsAvailable(pick.materialId, algorithm).then((data) => {
+      if (!cancelled) setLots(data as typeof lots);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [pick.materialId, algorithm]);
 
   const ok = !!pick.ok;
@@ -1037,13 +1136,45 @@ function PickRow({
     !qualityUnfit &&
     (selectedLot?.qualityPermission === 'conditional' || pick.qualityPermission === 'conditional');
   const qualityMessage = selectedLot?.qualityMessage || pick.qualityMessage;
+  const allowedIds = pick.allowedMaterialIds?.length ? pick.allowedMaterialIds : [pick.materialId];
+  const canSwap = allowedIds.length > 1;
 
   return (
     <tr
       className={`${ok && !qualityUnfit ? 'pick-ok' : 'pick-bad'}${qualityUnfit ? ' pick-lot-blocked' : ''}${qualityConditional ? ' pick-lot-conditional' : ''}`}
     >
-      <td>{pick.materialName}</td>
-      <td className="col-center num">{pick.quantity}</td>
+      <td>
+        {canSwap ? (
+          <SearchableSelect
+            allowEmpty={false}
+            value={pick.materialId}
+            onChange={onChangeMaterial}
+            options={allowedIds.map((id) => ({
+              value: id,
+              label:
+                (materials.find((m) => m.id === id)?.name || id) +
+                (id === (pick.specMaterialId || pick.materialId) ? '' : ' (аналог)'),
+            }))}
+          />
+        ) : (
+          pick.materialName
+        )}
+        {pick.substituted && pick.specMaterialName ? (
+          <div className="muted">вместо {pick.specMaterialName}</div>
+        ) : null}
+      </td>
+      <td className="col-center num">
+        {pick.quantity}
+        {pick.recalcApplied ? (
+          <div className="pick-recalc-hint">
+            пересчёт
+            {pick.nominalQuantity != null ? ` (ном. ${pick.nominalQuantity})` : ''}
+          </div>
+        ) : null}
+        {pick.recalcMissing ? (
+          <div className="pick-recalc-warn">нет факта в регистре — расход по эталону спецификации</div>
+        ) : null}
+      </td>
       <td>
         <SearchableSelect
           triggerClassName={[

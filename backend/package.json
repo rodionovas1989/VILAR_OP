@@ -8,7 +8,8 @@
     "start": "node --experimental-sqlite src/index.js",
     "seed": "node --experimental-sqlite scripts/seed.js",
     "seed:if-needed": "node --experimental-sqlite scripts/seed-if-needed.js",
-    "test": "node --experimental-sqlite --test tests/chain.test.js tests/loginRateLimit.test.js tests/referentialIntegrity.test.js tests/scenarios.test.js"
+    "test": "node --experimental-sqlite --test tests/chain.test.js tests/loginRateLimit.test.js tests/referentialIntegrity.test.js tests/scenarios.test.js tests/customerRecipes.test.js tests/substitutions.test.js tests/lotRecalc.test.js",
+    "import:recipes": "node --experimental-sqlite scripts/import-customer-recipes.js --force"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
