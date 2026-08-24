@@ -1424,10 +1424,21 @@ th {
   font-size: 11px;
 }
 
+.admin-data-maintenance {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .admin-data-maintenance .admin-panel {
   margin: 16px 0 28px;
   padding: 12px 0;
   border-top: 1px solid rgba(15, 42, 61, 0.12);
+}
+
+/* Список слепков вложен в section — не получает .page > .table-wrap flex-скролл */
+.admin-data-maintenance .admin-panel > .table-wrap {
+  max-height: min(45vh, 420px);
+  overflow: auto;
 }
 
 .admin-data-maintenance .danger-panel {
