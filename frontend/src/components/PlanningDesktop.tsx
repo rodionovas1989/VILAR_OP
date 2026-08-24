@@ -1275,4 +1275,7 @@ function PickRow({
         <span className={ok ? 'ok-mark ok-yes' : 'ok-mark ok-no'} title={ok ? 'OK' : 'Проблема'}>
           {ok ? '✓' : '✗'}
         </span>
-      </
+      </td>
+    </tr>
+  );
+}
