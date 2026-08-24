@@ -1626,10 +1626,6 @@ th {
   position: relative;
 }
 
-.actions-menu.is-open {
-  z-index: 5;
-}
-
 .actions-menu-trigger {
   display: inline-flex;
   align-items: center;
@@ -1654,6 +1650,13 @@ th {
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 8px 24px rgba(15, 42, 61, 0.12);
+}
+
+.actions-menu-panel-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 120;
 }
 
 .actions-menu-item {
