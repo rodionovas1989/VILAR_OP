@@ -272,6 +272,8 @@ export interface StockReportRow {
   lotNumber: string;
   counterpartyId: string;
   counterpartyName: string;
+  manufacturerId: string;
+  manufacturerName: string;
   productionDate: string;
   expiryDate: string;
   quantity: number;

@@ -102,6 +102,7 @@ export default function StockReportPage() {
       { key: 'materialType', label: 'Тип материала', getValue: (r) => r.materialType },
       { key: 'lotNumber', label: 'Партия', getValue: (r) => r.lotNumber },
       { key: 'counterpartyName', label: 'Контрагент', getValue: (r) => r.counterpartyName },
+      { key: 'manufacturerName', label: 'Производитель', getValue: (r) => r.manufacturerName },
       { key: 'productionDate', label: 'Дата производства', getValue: (r) => r.productionDate },
       { key: 'expiryDate', label: 'Срок годности', getValue: (r) => r.expiryDate },
     ];
@@ -244,6 +245,7 @@ export default function StockReportPage() {
               <th>Ед.</th>
               <th>Партия</th>
               <th>Контрагент</th>
+              <th>Производитель</th>
               <th>Дата производства</th>
               <th>Срок годности</th>
               <th className="report-num">Остаток</th>
@@ -264,6 +266,7 @@ export default function StockReportPage() {
                       </span>
                     </td>
                     <td>{wh.type}</td>
+                    <td />
                     <td />
                     <td />
                     <td />
@@ -294,6 +297,7 @@ export default function StockReportPage() {
                             <td />
                             <td />
                             <td />
+                            <td />
                             <td className="report-num">{formatQty(mat.quantity)}</td>
                             <td className="report-num">{formatQty(mat.reserved)}</td>
                             <td className="report-num">{formatQty(mat.free)}</td>
@@ -310,6 +314,7 @@ export default function StockReportPage() {
                                 <td>{lot.unit}</td>
                                 <td>{lot.lotNumber}</td>
                                 <td>{lot.counterpartyName}</td>
+                                <td>{lot.manufacturerName}</td>
                                 <td>{lot.productionDate}</td>
                                 <td>{lot.expiryDate}</td>
                                 <td className="report-num">{formatQty(lot.quantity)}</td>
@@ -325,7 +330,7 @@ export default function StockReportPage() {
             })}
             {!tree.length && (
               <tr>
-                <td colSpan={10} className="muted">
+                <td colSpan={11} className="muted">
                   Нет остатков по выбранным отборам
                 </td>
               </tr>
@@ -334,7 +339,7 @@ export default function StockReportPage() {
           {tree.length > 0 && (
             <tfoot>
               <tr className="report-tree-total">
-                <td colSpan={7}>Итого</td>
+                <td colSpan={8}>Итого</td>
                 <td className="report-num">{formatQty(totals.quantity)}</td>
                 <td className="report-num">{formatQty(totals.reserved)}</td>
                 <td className="report-num">{formatQty(totals.free)}</td>

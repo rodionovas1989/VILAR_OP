@@ -240,6 +240,7 @@ export function stockReport() {
   const lots = indexById(store.readAll('lots'));
   const warehouses = indexById(store.readAll('warehouses'));
   const counterparties = indexById(store.readAll('counterparties'));
+  const manufacturers = indexById(store.readAll('manufacturers'));
   const reservations = store.readAll('active_reservations');
 
   const reservedByKey = {};
@@ -257,6 +258,7 @@ export function stockReport() {
     const warehouseId = s.warehouseId || '';
     const warehouse = warehouses[warehouseId];
     const cp = lot?.counterpartyId ? counterparties[lot.counterpartyId] : null;
+    const mfr = lot?.manufacturerId ? manufacturers[lot.manufacturerId] : null;
     const reserved = reservedByKey[`${warehouseId}|${s.lotId}`] || 0;
     const free = roundQty(qty - reserved);
     if (qty === 0 && reserved === 0) continue;
@@ -274,6 +276,8 @@ export function stockReport() {
       lotNumber: lot?.number || s.lotId || '—',
       counterpartyId: lot?.counterpartyId || '',
       counterpartyName: cp?.name || '—',
+      manufacturerId: lot?.manufacturerId || '',
+      manufacturerName: mfr?.name || '—',
       productionDate: lot?.productionDate || '—',
       expiryDate: lot?.expiryDate || '—',
       quantity: qty,
