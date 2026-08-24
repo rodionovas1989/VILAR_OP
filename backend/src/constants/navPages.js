@@ -13,6 +13,7 @@ export const NAV_PAGE_IDS = new Set([
   'materials',
   'specifications',
   'counterparties',
+  'manufacturers',
   'lots',
   'series',
   'work_centers',

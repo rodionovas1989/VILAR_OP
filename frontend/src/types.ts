@@ -27,10 +27,11 @@ export interface SpecLine {
   recalcFormula?: string;
 }
 
-/** Одобренный поставщик компонента в спецификации */
+/** Одобренная тройка: компонент × контрагент × производитель */
 export interface ApprovedSupplier {
   materialId: string;
   counterpartyId: string;
+  manufacturerId: string;
 }
 
 export interface Specification {
@@ -52,11 +53,17 @@ export interface Counterparty {
   name: string;
 }
 
+export interface Manufacturer {
+  id: string;
+  name: string;
+}
+
 export interface Lot {
   id: string;
   number: string;
   materialId: string;
   counterpartyId: string | null;
+  manufacturerId: string | null;
   productionDate: string;
   expiryDate: string;
   blocked?: boolean;
@@ -215,6 +222,8 @@ export interface MaterialPick {
   lotNumber?: string | null;
   counterpartyId?: string;
   counterpartyName?: string;
+  manufacturerId?: string;
+  manufacturerName?: string;
   expiryDate?: string;
   freeQty?: number;
   ok?: boolean;

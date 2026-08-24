@@ -15,6 +15,7 @@ export const DICTIONARY_COLLECTIONS = [
   { id: 'materials', label: 'Материалы', sheet: 'Материалы' },
   { id: 'specifications', label: 'Спецификации', sheet: 'Спецификации' },
   { id: 'counterparties', label: 'Контрагенты', sheet: 'Контрагенты' },
+  { id: 'manufacturers', label: 'Производители', sheet: 'Производители' },
   { id: 'lots', label: 'Партии', sheet: 'Партии' },
   { id: 'series', label: 'Серии', sheet: 'Серии' },
   { id: 'work_centers', label: 'Рабочие центры', sheet: 'Рабочие_центры' },

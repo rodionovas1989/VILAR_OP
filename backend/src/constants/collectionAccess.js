@@ -5,6 +5,7 @@ export const COLLECTION_TO_OBJECT = {
   materials: 'materials',
   specifications: 'specifications',
   counterparties: 'counterparties',
+  manufacturers: 'manufacturers',
   lots: 'lots',
   series: 'series',
   work_centers: 'work_centers',

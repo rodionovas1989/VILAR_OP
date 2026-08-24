@@ -8,17 +8,23 @@ type Props = {
   lines: SpecLine[];
   suppliers: ApprovedSupplier[];
   counterparties: Opt[];
+  manufacturers: Opt[];
   materials: Opt[];
   onChange: (rows: ApprovedSupplier[]) => void;
   showTitle?: boolean;
 };
 
-const emptyRow = (): ApprovedSupplier => ({ materialId: '', counterpartyId: '' });
+const emptyRow = (): ApprovedSupplier => ({
+  materialId: '',
+  counterpartyId: '',
+  manufacturerId: '',
+});
 
 export default function SpecSuppliersEditor({
   lines,
   suppliers,
   counterparties,
+  manufacturers,
   materials,
   onChange,
   showTitle = true,
@@ -46,8 +52,8 @@ export default function SpecSuppliersEditor({
         </button>
       </div>
       <p className="hint" style={{ margin: 0 }}>
-        Для компонентов спецификации укажите одобренных для производства поставщиков (контрагентов). При подборе
-        партий неодобренный контрагент выделяется жёлтым, одобренный — зелёным.
+        Для компонентов укажите одобренную тройку: материал, контрагент и производитель. При подборе партий
+        зелёный бейдж — оба совпали с регистрацией, жёлтый — нет.
       </p>
       {!componentOptions.length && (
         <p className="muted">Сначала добавьте компоненты на вкладке «Рецептура».</p>
@@ -57,15 +63,16 @@ export default function SpecSuppliersEditor({
           <thead>
             <tr>
               <th>Компонент</th>
-              <th>Одобренный поставщик</th>
+              <th>Контрагент</th>
+              <th>Производитель</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {suppliers.length === 0 && (
               <tr>
-                <td colSpan={3} className="muted">
-                  Нет записей. Добавьте пары компонент — поставщик.
+                <td colSpan={4} className="muted">
+                  Нет записей. Добавьте тройки компонент — контрагент — производитель.
                 </td>
               </tr>
             )}
@@ -85,6 +92,14 @@ export default function SpecSuppliersEditor({
                     value={row.counterpartyId}
                     onChange={(v) => update(idx, { counterpartyId: v })}
                     options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
+                  />
+                </td>
+                <td>
+                  <SearchableSelect
+                    required
+                    value={row.manufacturerId}
+                    onChange={(v) => update(idx, { manufacturerId: v })}
+                    options={manufacturers.map((m) => ({ value: m.id, label: m.name }))}
                   />
                 </td>
                 <td>

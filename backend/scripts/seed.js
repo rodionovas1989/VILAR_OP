@@ -44,6 +44,15 @@ const COUNTERPARTY_POOL = [
   'АО «Субстанция-Трейд»',
 ];
 
+const MANUFACTURER_POOL = [
+  'АО «ФармПроизводство»',
+  'ООО «БиоСинтез»',
+  'ЗАО «ХимФарм Завод»',
+  'ООО «АктивСубстанция»',
+  'АО «ЕвроAPI»',
+  'ООО «МедХимПлант»',
+];
+
 function buildMaterialsAndSpecs() {
   const materialsByName = new Map();
   const productsKey = new Map(); // prep|form|dosage -> materialId
@@ -113,13 +122,19 @@ function buildMaterialsAndSpecs() {
   return { materials: mats, specifications, products: mats.filter((m) => m.type === 'продукт') };
 }
 
-function attachApprovedSuppliers(specifications, materialCounterparties) {
+function attachApprovedSuppliers(specifications, materialCounterparties, materialManufacturers) {
   for (const spec of specifications) {
     const rows = [];
     for (const line of spec.lines || []) {
       const cps = materialCounterparties.get(line.materialId) || [];
-      // первый поставщик компонента — одобрен; при нескольких партиях часть будет жёлтой
-      if (cps[0]) rows.push({ materialId: line.materialId, counterpartyId: cps[0] });
+      const mfrs = materialManufacturers.get(line.materialId) || [];
+      if (cps[0] && mfrs[0]) {
+        rows.push({
+          materialId: line.materialId,
+          counterpartyId: cps[0],
+          manufacturerId: mfrs[0],
+        });
+      }
     }
     spec.approvedSuppliers = rows;
   }
@@ -149,6 +164,30 @@ function buildCounterparties(componentMaterials) {
   return { counterparties, materialCounterparties: used };
 }
 
+function buildManufacturers(componentMaterials) {
+  const used = new Map();
+  const manufacturers = [];
+  const byName = new Map();
+
+  const ensure = (name) => {
+    if (byName.has(name)) return byName.get(name);
+    const m = { id: uid(), name };
+    byName.set(name, m);
+    manufacturers.push(m);
+    return m;
+  };
+
+  for (const mat of componentMaterials) {
+    const n = rnd(1, 2);
+    const names = [...MANUFACTURER_POOL].sort(() => Math.random() - 0.5).slice(0, n);
+    used.set(
+      mat.id,
+      names.map((name) => ensure(name).id)
+    );
+  }
+  return { manufacturers, materialManufacturers: used };
+}
+
 function addMonths(date, months) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + months);
@@ -166,7 +205,14 @@ function buildWarehouses() {
   ];
 }
 
-function buildLotsAndStock(componentMaterials, materialCounterparties, products, monthStart, warehouses) {
+function buildLotsAndStock(
+  componentMaterials,
+  materialCounterparties,
+  materialManufacturers,
+  products,
+  monthStart,
+  warehouses
+) {
   const lots = [];
   const stock = [];
   const whComp = warehouses.find((w) => w.type === 'компоненты')?.id;
@@ -174,9 +220,11 @@ function buildLotsAndStock(componentMaterials, materialCounterparties, products,
 
   for (const mat of componentMaterials) {
     const cps = materialCounterparties.get(mat.id) || [];
+    const mfrs = materialManufacturers.get(mat.id) || [];
     const lotCount = rnd(2, 5);
     for (let i = 0; i < lotCount; i++) {
       const cpId = cps[i % cps.length];
+      const mfrId = mfrs[i % mfrs.length];
       const prodDate = new Date(monthStart);
       prodDate.setMonth(prodDate.getMonth() - rnd(1, 10));
       const expDate = addMonths(prodDate, rnd(18, 36));
@@ -185,6 +233,7 @@ function buildLotsAndStock(componentMaterials, materialCounterparties, products,
         number: `ПТ-${mat.name.slice(0, 3).toUpperCase().replace(/[^A-ZА-Я0-9]/gi, '')}-${String(i + 1).padStart(3, '0')}-${rnd(100, 999)}`,
         materialId: mat.id,
         counterpartyId: cpId,
+        manufacturerId: mfrId,
         productionDate: isoDate(prodDate),
         expiryDate: isoDate(expDate),
       };
@@ -209,6 +258,7 @@ function buildLotsAndStock(componentMaterials, materialCounterparties, products,
       number: `ГП-${rnd(10000, 99999)}`,
       materialId: p.id,
       counterpartyId: null,
+      manufacturerId: null,
       productionDate: isoDate(prodDate),
       expiryDate: isoDate(addMonths(prodDate, 24)),
     };
@@ -345,11 +395,13 @@ function main() {
   const { materials, specifications, products } = buildMaterialsAndSpecs();
   const components = materials.filter((m) => m.type !== 'продукт');
   const { counterparties, materialCounterparties } = buildCounterparties(components);
-  attachApprovedSuppliers(specifications, materialCounterparties);
+  const { manufacturers, materialManufacturers } = buildManufacturers(components);
+  attachApprovedSuppliers(specifications, materialCounterparties, materialManufacturers);
   const warehouses = buildWarehouses();
   const { lots, stock } = buildLotsAndStock(
     components,
     materialCounterparties,
+    materialManufacturers,
     products,
     monthStart,
     warehouses
@@ -382,6 +434,7 @@ function main() {
     materials,
     specifications,
     counterparties,
+    manufacturers,
     lots,
     series,
     warehouses,
@@ -404,6 +457,7 @@ function main() {
     materials: materials.length,
     specifications: specifications.length,
     counterparties: counterparties.length,
+    manufacturers: manufacturers.length,
     lots: lots.length,
     stock: stock.length,
     series: series.length,

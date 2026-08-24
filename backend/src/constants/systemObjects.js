@@ -4,6 +4,7 @@ export const REFERENCE_OBJECTS = [
   { id: 'materials', label: 'Материалы' },
   { id: 'specifications', label: 'Спецификации' },
   { id: 'counterparties', label: 'Контрагенты' },
+  { id: 'manufacturers', label: 'Производители' },
   { id: 'lots', label: 'Партии' },
   { id: 'series', label: 'Серии' },
   { id: 'work_centers', label: 'Рабочие центры' },

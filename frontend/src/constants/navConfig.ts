@@ -34,6 +34,7 @@ export const NAV: NavGroup[] = [
       { id: 'materials', label: 'Материалы', kind: 'dictionary' },
       { id: 'specifications', label: 'Спецификации', kind: 'dictionary' },
       { id: 'counterparties', label: 'Контрагенты', kind: 'dictionary' },
+      { id: 'manufacturers', label: 'Производители', kind: 'dictionary' },
       { id: 'lots', label: 'Партии', kind: 'dictionary' },
       { id: 'series', label: 'Серии', kind: 'dictionary' },
       { id: 'work_centers', label: 'Рабочие центры', kind: 'dictionary' },

@@ -23,6 +23,8 @@ type AvailableLot = {
   freeQty: number;
   counterpartyId?: string;
   counterparty?: { name: string };
+  manufacturerId?: string;
+  manufacturer?: { name: string };
   expiryDate: string;
   qualityPermission?: string;
   qualityPermissionLabel?: string;
@@ -62,11 +64,18 @@ type Props = {
     materials: { id: string; name: string; type?: string }[];
     series: { id: string; number: string }[];
     workCenters: { id: string; name: string }[];
-    lots: { id: string; number: string; materialId: string; counterpartyId?: string | null }[];
+    lots: {
+      id: string;
+      number: string;
+      materialId: string;
+      counterpartyId?: string | null;
+      manufacturerId?: string | null;
+    }[];
     counterparties: { id: string; name: string }[];
+    manufacturers: { id: string; name: string }[];
     specifications: {
       id: string;
-      approvedSuppliers: { materialId: string; counterpartyId: string }[];
+      approvedSuppliers: { materialId: string; counterpartyId: string; manufacturerId: string }[];
     }[];
   };
 };
@@ -101,21 +110,34 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     return dictionaries.counterparties.find((c) => c.id === lot.counterpartyId)?.name || '—';
   };
 
+  const lotManufacturer = (lotId: string) => {
+    const lot = dictionaries.lots.find((l) => l.id === lotId);
+    if (!lot?.manufacturerId) return '—';
+    return dictionaries.manufacturers.find((m) => m.id === lot.manufacturerId)?.name || '—';
+  };
+
   const isSupplierApproved = (
     specificationId: string | null | undefined,
     materialId: string,
-    counterpartyId: string | null | undefined
+    counterpartyId: string | null | undefined,
+    manufacturerId: string | null | undefined
   ) => {
-    if (!specificationId || !counterpartyId) return false;
+    if (!specificationId || !counterpartyId || !manufacturerId) return false;
     const spec = dictionaries.specifications.find((s) => s.id === specificationId);
     if (!spec?.approvedSuppliers?.length) return false;
     return spec.approvedSuppliers.some(
-      (a) => a.materialId === materialId && a.counterpartyId === counterpartyId
+      (a) =>
+        a.materialId === materialId &&
+        a.counterpartyId === counterpartyId &&
+        a.manufacturerId === manufacturerId
     );
   };
 
-  const counterpartyBadgeHtml = (name: string, approved: boolean) =>
-    `<span class="cp-badge ${approved ? 'cp-approved' : 'cp-unapproved'}">${name}</span>`;
+  const counterpartyBadgeHtml = (name: string, manufacturerName: string, approved: boolean) => {
+    const label =
+      manufacturerName && manufacturerName !== '—' ? `${name} / ${manufacturerName}` : name;
+    return `<span class="cp-badge ${approved ? 'cp-approved' : 'cp-unapproved'}">${label}</span>`;
+  };
 
   const loadOrders = async () => {
     const data = await api.list<ProductionOrder>('production_orders');
@@ -211,11 +233,17 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                 .map((line) => {
                   const lot = dictionaries.lots.find((l) => l.id === line.lotId);
                   const cpName = lotCounterparty(line.lotId);
-                  const approved = isSupplierApproved(o.specificationId, line.materialId, lot?.counterpartyId);
+                  const mfrName = lotManufacturer(line.lotId);
+                  const approved = isSupplierApproved(
+                    o.specificationId,
+                    line.materialId,
+                    lot?.counterpartyId,
+                    lot?.manufacturerId
+                  );
                   const cpCell =
-                    cpName === '—'
+                    cpName === '—' && mfrName === '—'
                       ? '—'
-                      : counterpartyBadgeHtml(cpName, approved);
+                      : counterpartyBadgeHtml(cpName, mfrName, approved);
                   return `
               <tr>
                 <td>${nameOf(line.materialId, dictionaries.materials)}</td>
@@ -247,7 +275,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
               <tr>
                 <th>Материал</th>
                 <th>Партия</th>
-                <th>Контрагент</th>
+                <th>Контрагент / Производитель</th>
                 <th class="num">Количество</th>
               </tr>
             </thead>
@@ -379,6 +407,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.freeQty = undefined;
       pick.counterpartyId = undefined;
       pick.counterpartyName = undefined;
+      pick.manufacturerId = undefined;
+      pick.manufacturerName = undefined;
       pick.expiryDate = undefined;
       pick.qualityPermission = undefined;
       pick.qualityPermissionLabel = undefined;
@@ -394,6 +424,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.freeQty = lot?.freeQty;
       pick.counterpartyId = lot?.counterpartyId;
       pick.counterpartyName = lot?.counterparty?.name || '—';
+      pick.manufacturerId = lot?.manufacturerId;
+      pick.manufacturerName = lot?.manufacturer?.name || '—';
       pick.expiryDate = lot?.expiryDate;
       pick.qualityPermission = lot?.qualityPermission;
       pick.qualityPermissionLabel = lot?.qualityPermissionLabel;
@@ -423,6 +455,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
         freeQty: undefined,
         counterpartyId: undefined,
         counterpartyName: undefined,
+        manufacturerId: undefined,
+        manufacturerName: undefined,
         expiryDate: undefined,
         qualityPermission: undefined,
         qualityPermissionLabel: undefined,
@@ -447,6 +481,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           freeQty: suitable.lot.freeQty,
           counterpartyId: suitable.lot.counterpartyId,
           counterpartyName: suitable.lot.counterparty?.name || '—',
+          manufacturerId: suitable.lot.manufacturerId,
+          manufacturerName: suitable.lot.manufacturer?.name || '—',
           expiryDate: suitable.lot.expiryDate,
           qualityPermission: suitable.lot.qualityPermission,
           qualityPermissionLabel: suitable.lot.qualityPermissionLabel,
@@ -638,7 +674,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
             GMP: на один компонент в серии — одна партия сырья. Можно вручную заменить партию из списка доступных.
             Если для материала заданы аналоги, можно сменить материал в строке (сначала позиция спецификации, затем
             аналоги). Замена записывается в резерв. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема.
-            Контрагент: зелёный — одобрен в спецификации, жёлтый — не одобрен.
+            Контрагент / производитель: зелёный — оба одобрены в спецификации, жёлтый — нет.
           </p>
           {suggestions.map((s, oi) => {
             const order = orders.find((o) => o.id === s.orderId);
@@ -675,7 +711,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                         <th>Материал</th>
                         <th className="col-center">Кол-во</th>
                         <th>Партия</th>
-                        <th>Контрагент</th>
+                        <th>Контрагент / Производитель</th>
                         <th className="col-center">Срок годности</th>
                         <th className="col-center">Свободно</th>
                         <th className="col-center">OK</th>
@@ -691,7 +727,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           supplierApproved={isSupplierApproved(
                             order?.specificationId,
                             p.materialId,
-                            p.counterpartyId
+                            p.counterpartyId,
+                            p.manufacturerId
                           )}
                           onChangeLot={(lotId) => changeLot(oi, pi, lotId)}
                           onChangeMaterial={(materialId) => void changeMaterial(oi, pi, materialId)}
@@ -794,7 +831,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                   <th>Заказ / материал</th>
                   <th>Серия ГП</th>
                   <th>Партия сырья</th>
-                  <th>Контрагент</th>
+                  <th>Контрагент / Производитель</th>
                   <th>Статус</th>
                   <th>Начало</th>
                   <th>Кол-во</th>
@@ -842,10 +879,12 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           ? o.lines.map((line, idx) => {
                               const lot = dictionaries.lots.find((l) => l.id === line.lotId);
                               const cpName = lotCounterparty(line.lotId);
+                              const mfrName = lotManufacturer(line.lotId);
                               const approved = isSupplierApproved(
                                 o.specificationId,
                                 line.materialId,
-                                lot?.counterpartyId
+                                lot?.counterpartyId,
+                                lot?.manufacturerId
                               );
                               return (
                               <tr key={`${o.id}-${line.materialId}-${line.lotId}-${idx}`} className="tree-child-row">
@@ -855,10 +894,14 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                                 <td>{seriesNum}</td>
                                 <td>{nameOf(line.lotId, dictionaries.lots)}</td>
                                 <td>
-                                  {cpName === '—' ? (
+                                  {cpName === '—' && mfrName === '—' ? (
                                     '—'
                                   ) : (
-                                    <CounterpartyBadge name={cpName} approved={approved} />
+                                    <CounterpartyBadge
+                                      name={cpName}
+                                      manufacturerName={mfrName}
+                                      approved={approved}
+                                    />
                                   )}
                                 </td>
                                 <td className="muted">компонент</td>
@@ -1214,8 +1257,14 @@ function PickRow({
         )}
       </td>
       <td>
-        {pick.lotId && pick.counterpartyName && pick.counterpartyName !== '—' ? (
-          <CounterpartyBadge name={pick.counterpartyName} approved={supplierApproved} />
+        {pick.lotId &&
+        ((pick.counterpartyName && pick.counterpartyName !== '—') ||
+          (pick.manufacturerName && pick.manufacturerName !== '—')) ? (
+          <CounterpartyBadge
+            name={pick.counterpartyName || '—'}
+            manufacturerName={pick.manufacturerName}
+            approved={supplierApproved}
+          />
         ) : (
           '—'
         )}
@@ -1226,7 +1275,4 @@ function PickRow({
         <span className={ok ? 'ok-mark ok-yes' : 'ok-mark ok-no'} title={ok ? 'OK' : 'Проблема'}>
           {ok ? '✓' : '✗'}
         </span>
-      </td>
-    </tr>
-  );
-}
+      </

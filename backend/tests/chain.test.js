@@ -38,11 +38,13 @@ function seedWorld() {
   store.create('materials', { id: 'mat-rm', name: 'Сырьё А', type: 'основной компонент', unit: 'кг' });
   store.create('materials', { id: 'mat-gp', name: 'Препарат', type: 'продукт', unit: 'уп' });
   store.create('counterparties', { id: 'cp-1', name: 'Поставщик' });
+  store.create('manufacturers', { id: 'mfr-1', name: 'Производитель' });
   store.create('lots', {
     id: 'lot-rm',
     number: 'RM-001',
     materialId: 'mat-rm',
     counterpartyId: 'cp-1',
+    manufacturerId: 'mfr-1',
     productionDate: isoDays(-30),
     expiryDate: isoDays(365),
   });
@@ -51,6 +53,7 @@ function seedWorld() {
     number: 'RM-002',
     materialId: 'mat-rm',
     counterpartyId: 'cp-1',
+    manufacturerId: 'mfr-1',
     productionDate: isoDays(-10),
     expiryDate: isoDays(200),
   });
@@ -65,7 +68,7 @@ function seedWorld() {
     techMapId: 'tm-1',
     qtyBasis: 'per1000',
     lines: [{ id: 'sl-1', materialId: 'mat-rm', qtyPerUnit: 2 }],
-    approvedSuppliers: [{ counterpartyId: 'cp-1' }],
+    approvedSuppliers: [{ materialId: 'mat-rm', counterpartyId: 'cp-1', manufacturerId: 'mfr-1' }],
   });
   store.create('production_orders', {
     id: 'ord-1',

@@ -27,6 +27,7 @@ const COLLECTIONS = [
   'materials',
   'specifications',
   'counterparties',
+  'manufacturers',
   'lots',
   'series',
   'warehouses',

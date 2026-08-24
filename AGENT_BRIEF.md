@@ -78,7 +78,7 @@ frontend/
   src/components/SubstitutionForm.tsx     — карточка аналогов (шапка + ТЧ)
   src/components/SpecSuppliersEditor.tsx  — регистрация поставщиков
   src/components/SpecDetailTabs.tsx       — вкладки Рецептура / Поставщики
-  src/components/CounterpartyBadge.tsx    — зелёный/жёлтый бейдж
+  src/components/CounterpartyBadge.tsx    — зелёный/жёлтый бейдж (контрагент / производитель)
   src/components/ProductionDesktop.tsx       — управление заказами (план/факт)
   src/components/PlanFactReportPage.tsx      — отчёт План/Факт
   src/components/AdminExportDictionaries.tsx — экспорт справочников
@@ -132,9 +132,9 @@ frontend/
 Документы API: `/api/documents/:type` (`receipt`, `reservation`, `production_issue`, …)  
 Связи: `GET /api/documents/:type/:id/related`, `GET /api/planning/order-trace/:id`
 
-Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`id`, `qtyPerUnit` = кг на 1000 уп, `recalcMethod`/`recalcXLabel` = эталон), `approvedSuppliers`, `techMapId`  
+Спецификация: `name`, `type`, `qtyBasis: per1000`, `lines` (`id`, `qtyPerUnit` = кг на 1000 уп, `recalcMethod`/`recalcXLabel` = эталон), `approvedSuppliers` (тройка materialId+counterpartyId+manufacturerId), `techMapId`  
 Аналоги (`substitutions`): `baseMaterialId`, `lines` (материал-аналог, factor, priority), `bidirectional`, `specificationId` (null = все)  
-Характеристики: справочник `lot_characteristics` (system/user, применение = поля LCH и право на пересчёт); документ LCH; регистр `characteristic_register`. Системные код/название/единица не меняются. Партия без аналитических реквизитов.  
+Характеристики: справочник `lot_characteristics` (system/user, применение = поля LCH и право на пересчёт); документ LCH; регистр `characteristic_register`. Системные код/название/единица не меняются. Партия: `counterpartyId`, `manufacturerId` (без аналитических реквизитов).  
 Техкарта (`tech_maps`): `name`, `workCenterId`  
 Расход компонента (план): `need = qtyPerUnit * order.quantity / 1000`; при `assay_and_dry` только коэффициенты из применения: `need × (эталон / содержание) × (100 / (100 − потеря))`. Нет факта — эталон и потеря 0 % + warning, без стопа. Методика: `docs/LOT_RECALC.md`.
 
@@ -156,7 +156,7 @@ frontend/
 
 ## Рабочий стол (вкладки)
 1. Подбор заказов  
-2. Подбор сырья (бейдж контрагента: зелёный = одобрен в спецификации, жёлтый = нет)  
+2. Подбор сырья (бейдж: зелёный = контрагент и производитель одобрены в спецификации, жёлтый = нет)  
 3. Гант (ECharts: параллельная загрузка по РЦ)  
 4. Иерархия заказов/материалов (та же индикация; фильтры, печать, Excel)  
 5. Матрица планового расхода

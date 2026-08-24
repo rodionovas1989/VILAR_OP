@@ -12,6 +12,7 @@ type Props = {
   productMaterials: Opt[];
   materials: Opt[];
   counterparties: Opt[];
+  manufacturers: Opt[];
   techMaps: Opt[];
   characteristics?: import('../types').LotCharacteristic[];
 };
@@ -30,6 +31,7 @@ export default function SpecDetailTabs({
   productMaterials,
   materials,
   counterparties,
+  manufacturers,
   techMaps,
   characteristics = [],
 }: Props) {
@@ -119,6 +121,7 @@ export default function SpecDetailTabs({
           lines={lines}
           suppliers={approvedSuppliers}
           counterparties={counterparties}
+          manufacturers={manufacturers}
           materials={materials}
           onChange={(next) => setEditing({ ...editing, approvedSuppliers: next })}
         />

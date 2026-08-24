@@ -7,6 +7,7 @@ const COLLECTION_LABELS = {
   series: 'Серии',
   warehouses: 'Склады',
   counterparties: 'Контрагенты',
+  manufacturers: 'Производители',
   work_centers: 'Рабочие центры',
   tech_maps: 'Технологические карты',
   specifications: 'Спецификации',
@@ -117,6 +118,9 @@ function scanSpecifications(map, id, kind) {
     } else if (kind === 'counterparties') {
       const suppliers = Array.isArray(row.approvedSuppliers) ? row.approvedSuppliers : [];
       if (suppliers.some((s) => s?.counterpartyId === id)) pushHit(map, 'specifications', row);
+    } else if (kind === 'manufacturers') {
+      const suppliers = Array.isArray(row.approvedSuppliers) ? row.approvedSuppliers : [];
+      if (suppliers.some((s) => s?.manufacturerId === id)) pushHit(map, 'specifications', row);
     }
   }
 }
@@ -205,6 +209,11 @@ export function findUsages(collection, id) {
     case 'counterparties':
       scanSimple(map, 'lots', id, ['counterpartyId']);
       scanSpecifications(map, id, 'counterparties');
+      break;
+
+    case 'manufacturers':
+      scanSimple(map, 'lots', id, ['manufacturerId']);
+      scanSpecifications(map, id, 'manufacturers');
       break;
 
     case 'work_centers':
@@ -316,6 +325,7 @@ export function isProtectedDictionary(collection) {
     'series',
     'warehouses',
     'counterparties',
+    'manufacturers',
     'work_centers',
     'tech_maps',
     'specifications',

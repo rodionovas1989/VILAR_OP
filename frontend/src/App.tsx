@@ -42,6 +42,7 @@ import {
   Counterparty,
   Lot,
   LotCharacteristic,
+  Manufacturer,
   Material,
   PlannedSeriesVolume,
   Series,
@@ -66,6 +67,7 @@ export default function App() {
   const [page, setPage] = useState('home');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
+  const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [lots, setLots] = useState<Lot[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
   const [workCenters, setWorkCenters] = useState<WorkCenter[]>([]);
@@ -110,9 +112,10 @@ export default function App() {
 
   const reloadDicts = async () => {
     const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
-    const [m, c, l, s, w, tm, wh, sp, pv, rl, lq, sub, lp] = await Promise.all([
+    const [m, c, mf, l, s, w, tm, wh, sp, pv, rl, lq, sub, lp] = await Promise.all([
       listOrEmpty<Material>('materials'),
       listOrEmpty<Counterparty>('counterparties'),
+      listOrEmpty<Manufacturer>('manufacturers'),
       listOrEmpty<Lot>('lots'),
       listOrEmpty<Series>('series'),
       listOrEmpty<WorkCenter>('work_centers'),
@@ -129,6 +132,7 @@ export default function App() {
     ]);
     setMaterials(m);
     setCounterparties(c);
+    setManufacturers(mf);
     setLots(l);
     setSeries(s);
     setWorkCenters(w);
@@ -155,6 +159,7 @@ export default function App() {
   const tmName = (id: string) => techMaps.find((t) => t.id === id)?.name || id;
   const whName = (id: string) => warehouses.find((w) => w.id === id)?.name || id;
   const cpName = (id: string) => counterparties.find((c) => c.id === id)?.name || '—';
+  const mfrName = (id: string) => manufacturers.find((m) => m.id === id)?.name || '—';
   const lotCpName = (lotId: string) => {
     const lot = lotById(lotId);
     return lot?.counterpartyId ? cpName(lot.counterpartyId) : '—';
@@ -294,10 +299,11 @@ export default function App() {
                   recalcFormula: l.recalcFormula || '',
                 })),
               approvedSuppliers: ((row.approvedSuppliers as ApprovedSupplier[]) || [])
-                .filter((s) => s.materialId && s.counterpartyId)
+                .filter((s) => s.materialId && s.counterpartyId && s.manufacturerId)
                 .map((s) => ({
                   materialId: s.materialId,
                   counterpartyId: s.counterpartyId,
+                  manufacturerId: s.manufacturerId,
                 })),
             })}
             formExtra={({ editing, setEditing }) => (
@@ -307,6 +313,7 @@ export default function App() {
                 productMaterials={materials.filter((m) => m.type === 'продукт').map((m) => ({ id: m.id, name: m.name }))}
                 materials={materials.filter((m) => m.type !== 'продукт')}
                 counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
+                manufacturers={manufacturers.map((m) => ({ id: m.id, name: m.name }))}
                 techMaps={techMaps.map((t) => ({ id: t.id, name: t.name }))}
                 characteristics={lotCharacteristics}
               />
@@ -318,6 +325,15 @@ export default function App() {
           <CrudPage
             title="Контрагенты"
             collection="counterparties"
+            fields={[{ key: 'name', label: 'Название', required: true }]}
+            columns={[{ key: 'name', label: 'Название' }]}
+          />
+        );
+      case 'manufacturers':
+        return (
+          <CrudPage
+            title="Производители"
+            collection="manufacturers"
             fields={[{ key: 'name', label: 'Название', required: true }]}
             columns={[{ key: 'name', label: 'Название' }]}
           />
@@ -336,6 +352,12 @@ export default function App() {
                 type: 'select',
                 options: opt(counterparties),
               },
+              {
+                key: 'manufacturerId',
+                label: 'Производитель',
+                type: 'select',
+                options: opt(manufacturers),
+              },
               { key: 'productionDate', label: 'Дата производства', type: 'date', required: true },
               { key: 'expiryDate', label: 'Срок годности', type: 'date', required: true },
             ]}
@@ -346,6 +368,11 @@ export default function App() {
                 key: 'counterpartyId',
                 label: 'Контрагент',
                 render: (r) => (r.counterpartyId ? cpName(String(r.counterpartyId)) : '—'),
+              },
+              {
+                key: 'manufacturerId',
+                label: 'Производитель',
+                render: (r) => (r.manufacturerId ? mfrName(String(r.manufacturerId)) : '—'),
               },
               { key: 'productionDate', label: 'Произведено' },
               { key: 'expiryDate', label: 'Годен до' },
@@ -1019,6 +1046,7 @@ export default function App() {
                 number: l.number,
                 materialId: l.materialId,
                 counterpartyId: l.counterpartyId,
+                manufacturerId: l.manufacturerId,
               })),
               counterparties: counterparties.map((c) => ({ id: c.id, name: c.name })),
               warehouses,
@@ -1055,8 +1083,10 @@ export default function App() {
                 number: l.number,
                 materialId: l.materialId,
                 counterpartyId: l.counterpartyId,
+                manufacturerId: l.manufacturerId,
               })),
               counterparties: counterparties.map((c) => ({ id: c.id, name: c.name })),
+              manufacturers: manufacturers.map((m) => ({ id: m.id, name: m.name })),
               specifications: specs.map((s) => ({
                 id: s.id,
                 approvedSuppliers: s.approvedSuppliers || [],
