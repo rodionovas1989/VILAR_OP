@@ -2292,10 +2292,13 @@ button.danger-outline:hover {
   width: 22%;
 }
 .materials-suggest .col-cp {
-  width: 18%;
+  width: 12%;
+}
+.materials-suggest .col-mfr {
+  width: 12%;
 }
 .materials-suggest .col-exp {
-  width: 12%;
+  width: 10%;
 }
 .materials-suggest .col-free {
   width: 10%;

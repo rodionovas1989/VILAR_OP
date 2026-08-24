@@ -166,36 +166,20 @@ function scanProductionRegister(map, id, kind) {
       pushHit(map, 'production_register', row);
       continue;
     }
-    if (kind === 'materials') {
-      if (row.productMaterialId === id) {
-        pushHit(map, 'production_register', row);
-        continue;
-      }
-      if ((row.components || []).some((c) => c?.materialId === id)) {
-        pushHit(map, 'production_register', row);
-      }
+    if (kind === 'materials' && row.materialId === id) {
+      pushHit(map, 'production_register', row);
       continue;
     }
-    if (kind === 'lots') {
-      if (row.gpLotId === id) {
-        pushHit(map, 'production_register', row);
-        continue;
-      }
-      if ((row.components || []).some((c) => c?.lotId === id)) {
-        pushHit(map, 'production_register', row);
-      }
+    if (kind === 'lots' && row.lotId === id) {
+      pushHit(map, 'production_register', row);
       continue;
     }
-    if (kind === 'counterparties') {
-      if ((row.components || []).some((c) => c?.counterpartyId === id)) {
-        pushHit(map, 'production_register', row);
-      }
+    if (kind === 'counterparties' && row.counterpartyId === id) {
+      pushHit(map, 'production_register', row);
       continue;
     }
-    if (kind === 'manufacturers') {
-      if ((row.components || []).some((c) => c?.manufacturerId === id)) {
-        pushHit(map, 'production_register', row);
-      }
+    if (kind === 'manufacturers' && row.manufacturerId === id) {
+      pushHit(map, 'production_register', row);
     }
   }
 }

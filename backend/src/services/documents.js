@@ -8,6 +8,10 @@ import {
 } from '../constants/documentTypes.js';
 import { freeQtyByLot, stockRowForLot } from './stock.js';
 import { appendDocumentStatusLog } from './documentStatusLog.js';
+import {
+  appendProductionMovement,
+  cancelProductionMovementsForDocument,
+} from './productionRegister.js';
 
 function cryptoRandom() {
   return randomUUID();
@@ -245,10 +249,16 @@ function postShipment(doc) {
 
 function postProductionIssue(doc) {
   postWriteoff(doc);
+  for (const line of doc.lines) {
+    appendProductionMovement(doc, line, -Number(line.quantity));
+  }
 }
 
 function postProductionReceipt(doc) {
   postPosting(doc);
+  for (const line of doc.lines) {
+    appendProductionMovement(doc, line, Number(line.quantity));
+  }
 }
 
 function postReservation(doc, userId) {
@@ -537,6 +547,7 @@ function reverseStockMovements(doc, userId) {
   for (const m of reversed) {
     store.update('material_movements', m.id, { documentStatus: 'cancelled' });
   }
+  cancelProductionMovementsForDocument(doc.id);
 }
 
 export function cancelDocument(type, id, userId) {

@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto';
 import * as store from '../store.js';
 import * as documents from './documents.js';
-import * as productionRegister from './productionRegister.js';
 import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
 import { resolveLotQuality, assertLotsQualityForUse } from './quality.js';
 import { onLotCreated } from './scenarios.js';
@@ -547,17 +546,6 @@ export function completeOrder(orderId, userId, opts = {}) {
       lines: planLines,
       actualQuantity: outputQty,
       actualLines: factLines,
-    });
-
-    productionRegister.upsertProductionRegister({
-      order: updated,
-      gpLot,
-      outputQty,
-      actorId,
-      resDoc: fulfilledRes,
-      priDoc,
-      prrDoc,
-      factLines,
     });
 
     return {

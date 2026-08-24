@@ -116,28 +116,34 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     return dictionaries.manufacturers.find((m) => m.id === lot.manufacturerId)?.name || '—';
   };
 
-  const isSupplierApproved = (
+  const isCounterpartyApproved = (
     specificationId: string | null | undefined,
     materialId: string,
-    counterpartyId: string | null | undefined,
-    manufacturerId: string | null | undefined
+    counterpartyId: string | null | undefined
   ) => {
-    if (!specificationId || !counterpartyId || !manufacturerId) return false;
+    if (!specificationId || !counterpartyId) return false;
     const spec = dictionaries.specifications.find((s) => s.id === specificationId);
     if (!spec?.approvedSuppliers?.length) return false;
     return spec.approvedSuppliers.some(
-      (a) =>
-        a.materialId === materialId &&
-        a.counterpartyId === counterpartyId &&
-        a.manufacturerId === manufacturerId
+      (a) => a.materialId === materialId && a.counterpartyId === counterpartyId
     );
   };
 
-  const counterpartyBadgeHtml = (name: string, manufacturerName: string, approved: boolean) => {
-    const label =
-      manufacturerName && manufacturerName !== '—' ? `${name} / ${manufacturerName}` : name;
-    return `<span class="cp-badge ${approved ? 'cp-approved' : 'cp-unapproved'}">${label}</span>`;
+  const isManufacturerApproved = (
+    specificationId: string | null | undefined,
+    materialId: string,
+    manufacturerId: string | null | undefined
+  ) => {
+    if (!specificationId || !manufacturerId) return false;
+    const spec = dictionaries.specifications.find((s) => s.id === specificationId);
+    if (!spec?.approvedSuppliers?.length) return false;
+    return spec.approvedSuppliers.some(
+      (a) => a.materialId === materialId && a.manufacturerId === manufacturerId
+    );
   };
+
+  const approvalBadgeHtml = (name: string, approved: boolean) =>
+    `<span class="cp-badge ${approved ? 'cp-approved' : 'cp-unapproved'}">${name}</span>`;
 
   const loadOrders = async () => {
     const data = await api.list<ProductionOrder>('production_orders');
@@ -234,26 +240,31 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                   const lot = dictionaries.lots.find((l) => l.id === line.lotId);
                   const cpName = lotCounterparty(line.lotId);
                   const mfrName = lotManufacturer(line.lotId);
-                  const approved = isSupplierApproved(
+                  const cpApproved = isCounterpartyApproved(
                     o.specificationId,
                     line.materialId,
-                    lot?.counterpartyId,
+                    lot?.counterpartyId
+                  );
+                  const mfrApproved = isManufacturerApproved(
+                    o.specificationId,
+                    line.materialId,
                     lot?.manufacturerId
                   );
                   const cpCell =
-                    cpName === '—' && mfrName === '—'
-                      ? '—'
-                      : counterpartyBadgeHtml(cpName, mfrName, approved);
+                    cpName === '—' ? '—' : approvalBadgeHtml(cpName, cpApproved);
+                  const mfrCell =
+                    mfrName === '—' ? '—' : approvalBadgeHtml(mfrName, mfrApproved);
                   return `
               <tr>
                 <td>${nameOf(line.materialId, dictionaries.materials)}</td>
                 <td>${nameOf(line.lotId, dictionaries.lots)}</td>
                 <td>${cpCell}</td>
+                <td>${mfrCell}</td>
                 <td class="num">${line.quantity}</td>
               </tr>`;
                 })
                 .join('')
-            : `<tr><td colspan="4" class="empty">Состав не подобран</td></tr>`;
+            : `<tr><td colspan="5" class="empty">Состав не подобран</td></tr>`;
 
         const pageBreak = idx < selectedFilteredOrders.length - 1 ? ' page-break' : '';
         return `
@@ -275,7 +286,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
               <tr>
                 <th>Материал</th>
                 <th>Партия</th>
-                <th>Контрагент / Производитель</th>
+                <th>Контрагент</th>
+                <th>Производитель</th>
                 <th class="num">Количество</th>
               </tr>
             </thead>
@@ -674,7 +686,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
             GMP: на один компонент в серии — одна партия сырья. Можно вручную заменить партию из списка доступных.
             Если для материала заданы аналоги, можно сменить материал в строке (сначала позиция спецификации, затем
             аналоги). Замена записывается в резерв. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема.
-            Контрагент / производитель: зелёный — оба одобрены в спецификации, жёлтый — нет.
+            Контрагент и производитель — в отдельных столбцах: зелёный = одобрен в спецификации, жёлтый = нет
+            (подсветка независимая).
           </p>
           {suggestions.map((s, oi) => {
             const order = orders.find((o) => o.id === s.orderId);
@@ -702,6 +715,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                       <col className="col-qty" />
                       <col className="col-lot" />
                       <col className="col-cp" />
+                      <col className="col-mfr" />
                       <col className="col-exp" />
                       <col className="col-free" />
                       <col className="col-ok" />
@@ -711,7 +725,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                         <th>Материал</th>
                         <th className="col-center">Кол-во</th>
                         <th>Партия</th>
-                        <th>Контрагент / Производитель</th>
+                        <th>Контрагент</th>
+                        <th>Производитель</th>
                         <th className="col-center">Срок годности</th>
                         <th className="col-center">Свободно</th>
                         <th className="col-center">OK</th>
@@ -724,10 +739,14 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           pick={p}
                           algorithm={algorithm}
                           materials={dictionaries.materials}
-                          supplierApproved={isSupplierApproved(
+                          counterpartyApproved={isCounterpartyApproved(
                             order?.specificationId,
                             p.materialId,
-                            p.counterpartyId,
+                            p.counterpartyId
+                          )}
+                          manufacturerApproved={isManufacturerApproved(
+                            order?.specificationId,
+                            p.materialId,
                             p.manufacturerId
                           )}
                           onChangeLot={(lotId) => changeLot(oi, pi, lotId)}
@@ -831,7 +850,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                   <th>Заказ / материал</th>
                   <th>Серия ГП</th>
                   <th>Партия сырья</th>
-                  <th>Контрагент / Производитель</th>
+                  <th>Контрагент</th>
+                  <th>Производитель</th>
                   <th>Статус</th>
                   <th>Начало</th>
                   <th>Кол-во</th>
@@ -868,6 +888,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                         <td>{seriesNum}</td>
                         <td className="muted">{o.lines?.length || 0} парт.</td>
                         <td className="muted">—</td>
+                        <td className="muted">—</td>
                         <td>
                           <span className={`status-pill status-${o.status}`}>{o.status}</span>
                         </td>
@@ -880,10 +901,14 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                               const lot = dictionaries.lots.find((l) => l.id === line.lotId);
                               const cpName = lotCounterparty(line.lotId);
                               const mfrName = lotManufacturer(line.lotId);
-                              const approved = isSupplierApproved(
+                              const cpApproved = isCounterpartyApproved(
                                 o.specificationId,
                                 line.materialId,
-                                lot?.counterpartyId,
+                                lot?.counterpartyId
+                              );
+                              const mfrApproved = isManufacturerApproved(
+                                o.specificationId,
+                                line.materialId,
                                 lot?.manufacturerId
                               );
                               return (
@@ -894,13 +919,24 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                                 <td>{seriesNum}</td>
                                 <td>{nameOf(line.lotId, dictionaries.lots)}</td>
                                 <td>
-                                  {cpName === '—' && mfrName === '—' ? (
+                                  {cpName === '—' ? (
                                     '—'
                                   ) : (
                                     <CounterpartyBadge
                                       name={cpName}
-                                      manufacturerName={mfrName}
-                                      approved={approved}
+                                      approved={cpApproved}
+                                      kind="counterparty"
+                                    />
+                                  )}
+                                </td>
+                                <td>
+                                  {mfrName === '—' ? (
+                                    '—'
+                                  ) : (
+                                    <CounterpartyBadge
+                                      name={mfrName}
+                                      approved={mfrApproved}
+                                      kind="manufacturer"
                                     />
                                   )}
                                 </td>
@@ -914,7 +950,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                               <tr key={`${o.id}-empty`} className="tree-child-row">
                                 <td></td>
                                 <td></td>
-                                <td className="tree-indent muted" colSpan={7}>
+                                <td className="tree-indent muted" colSpan={8}>
                                   Материалы ещё не подобраны
                                 </td>
                               </tr>,
@@ -1136,14 +1172,16 @@ function PickRow({
   pick,
   algorithm,
   materials,
-  supplierApproved,
+  counterpartyApproved,
+  manufacturerApproved,
   onChangeLot,
   onChangeMaterial,
 }: {
   pick: MaterialPick;
   algorithm: string;
   materials: { id: string; name: string }[];
-  supplierApproved: boolean;
+  counterpartyApproved: boolean;
+  manufacturerApproved: boolean;
   onChangeLot: (lotId: string) => void;
   onChangeMaterial: (materialId: string) => void;
 }) {
@@ -1257,13 +1295,22 @@ function PickRow({
         )}
       </td>
       <td>
-        {pick.lotId &&
-        ((pick.counterpartyName && pick.counterpartyName !== '—') ||
-          (pick.manufacturerName && pick.manufacturerName !== '—')) ? (
+        {pick.lotId && pick.counterpartyName && pick.counterpartyName !== '—' ? (
           <CounterpartyBadge
-            name={pick.counterpartyName || '—'}
-            manufacturerName={pick.manufacturerName}
-            approved={supplierApproved}
+            name={pick.counterpartyName}
+            approved={counterpartyApproved}
+            kind="counterparty"
+          />
+        ) : (
+          '—'
+        )}
+      </td>
+      <td>
+        {pick.lotId && pick.manufacturerName && pick.manufacturerName !== '—' ? (
+          <CounterpartyBadge
+            name={pick.manufacturerName}
+            approved={manufacturerApproved}
+            kind="manufacturer"
           />
         ) : (
           '—'

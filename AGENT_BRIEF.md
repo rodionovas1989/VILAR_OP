@@ -37,10 +37,9 @@ backend/
   src/constants/lotCharacteristics.js — системные assay / loss_on_drying
   src/services/characteristics.js — LCH документ, регистры состояния/истории
   src/services/substitutions.js — правила замены материалов (без транзитивности)
-  src/services/opsDebugLog.js — ops_debug.jsonl (мутации API + ошибки)
+  src/services/productionRegister.js — движения PRI/PRR (расход/выпуск) + заказ/серия/документ
   src/middleware/opsDebug.js — middleware + error handler
   src/services/documentStatusLog.js — журнал статусов складских документов
-  src/services/productionRegister.js — снимок серии при completeOrder
   src/services/customerRecipes.js — загрузка рецептур ВИЛАР из customer_recipes.json
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
   src/services/quality.js    — качество: QCM документ, регистры, resolveLotQuality
@@ -160,7 +159,7 @@ frontend/
 
 ## Рабочий стол (вкладки)
 1. Подбор заказов  
-2. Подбор сырья (бейдж: зелёный = контрагент и производитель одобрены в спецификации, жёлтый = нет)  
+2. Подбор сырья (отдельные столбцы: контрагент и производитель; зелёный/жёлтый независимо)  
 3. Гант (ECharts: параллельная загрузка по РЦ)  
 4. Иерархия заказов/материалов (та же индикация; фильтры, печать, Excel)  
 5. Матрица планового расхода

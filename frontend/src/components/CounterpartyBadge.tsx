@@ -1,25 +1,29 @@
-/** Индикация одобрения контрагента и производителя по регистрации в спецификации */
+/** Индикация одобрения контрагента или производителя по регистрации в спецификации */
 export default function CounterpartyBadge({
   name,
-  manufacturerName,
   approved,
+  kind = 'counterparty',
 }: {
   name: string;
-  manufacturerName?: string | null;
   approved: boolean;
+  kind?: 'counterparty' | 'manufacturer';
 }) {
-  const label =
-    manufacturerName && manufacturerName !== '—' ? `${name} / ${manufacturerName}` : name;
+  const titles =
+    kind === 'manufacturer'
+      ? {
+          yes: 'Производитель одобрен для производства',
+          no: 'Производитель не одобрен для производства',
+        }
+      : {
+          yes: 'Контрагент одобрен для производства',
+          no: 'Контрагент не одобрен для производства',
+        };
   return (
     <span
       className={`cp-badge ${approved ? 'cp-approved' : 'cp-unapproved'}`}
-      title={
-        approved
-          ? 'Контрагент и производитель одобрены для производства'
-          : 'Контрагент и/или производитель не одобрены для производства'
-      }
+      title={approved ? titles.yes : titles.no}
     >
-      {label}
+      {name}
     </span>
   );
 }

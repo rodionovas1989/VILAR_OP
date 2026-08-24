@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `feature/prod-analytics-movements-split-badges` | Регистр аналитики = движения PRI/PRR; раздельные бейджи CP/MFR | **активна** |
 | `main` | + производители, production_register, аудит статусов, ops-debug | **эталон** |
 | `feature/ops-debug-log` | Операционный JSONL-журнал API (мутации + ошибки) | **слита** в main |
 | `feature/document-status-audit` | Журнал статусов документов (A3b) | **слита** в main |

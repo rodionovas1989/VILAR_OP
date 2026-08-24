@@ -309,12 +309,12 @@ describe('Полная цепочка: приёмка → резерв → за�
     assert.equal(trace.productionOrder.status, 'завершен');
     assert.ok(trace.reservationHistory.some((h) => h.action === 'fulfill'));
 
-    const prodReg = store.readAll('production_register').find((r) => r.productionOrderId === 'ord-1');
-    assert.ok(prodReg);
-    assert.equal(prodReg.gpLotId, gpLot.id);
-    assert.equal(prodReg.quantity, 1000);
-    assert.equal(prodReg.components?.length, 1);
-    assert.equal(prodReg.components[0].lotId, 'lot-rm');
+    const prodReg = store
+      .readAll('production_register')
+      .filter((r) => r.productionOrderId === 'ord-1' && r.documentStatus !== 'cancelled');
+    assert.ok(prodReg.some((r) => r.type === 'issue' && r.lotId === 'lot-rm'));
+    assert.ok(prodReg.some((r) => r.type === 'receipt' && r.lotId === gpLot.id));
+    assert.ok(prodReg.every((r) => r.documentId && r.documentNumber));
 
     const statusLogs = store.readAll('document_status_log');
     assert.ok(statusLogs.some((r) => r.action === 'post' && r.documentType === 'reservation'));

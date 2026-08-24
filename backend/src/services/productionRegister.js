@@ -5,60 +5,64 @@ function cryptoRandom() {
   return crypto.randomUUID();
 }
 
-function rowForOrder(productionOrderId) {
-  return store.readAll('production_register').find((r) => r.productionOrderId === productionOrderId) || null;
+/**
+ * Движение аналитики производства (параллельно material_movements / stock).
+ * Пишется при проведении PRI (расход) и PRR (выпуск).
+ */
+export function appendProductionMovement(doc, line, qtyDelta) {
+  const qty = Number(qtyDelta) || 0;
+  if (Math.abs(qty) < 1e-12) return null;
+
+  const order = doc.productionOrderId
+    ? store.getById('production_orders', doc.productionOrderId)
+    : null;
+  const seriesId = doc.seriesId || order?.seriesId || null;
+  const series = seriesId ? store.getById('series', seriesId) : null;
+  const lot = line.lotId ? store.getById('lots', line.lotId) : null;
+
+  return store.create('production_register', {
+    id: cryptoRandom(),
+    at: new Date().toISOString(),
+    type: qty >= 0 ? 'receipt' : 'issue',
+    materialId: line.materialId,
+    lotId: line.lotId || null,
+    quantity: qty,
+    productionOrderId: doc.productionOrderId || null,
+    seriesId,
+    seriesNumber: series?.number || null,
+    specificationId: order?.specificationId || null,
+    workCenterId: order?.workCenterId || null,
+    documentId: doc.id,
+    documentNumber: doc.number || '',
+    documentType: doc.type,
+    documentStatus: 'posted',
+    counterpartyId: lot?.counterpartyId || null,
+    manufacturerId: lot?.manufacturerId || null,
+    userId: doc.postedByUserId || doc.createdByUserId || null,
+  });
 }
 
-/** Снимок аналитики производства при завершении заказа (одна запись на заказ). */
-export function upsertProductionRegister({
-  order,
-  gpLot,
-  outputQty,
-  actorId,
-  resDoc,
-  priDoc,
-  prrDoc,
-  factLines,
-}) {
-  const series = store.getById('series', order.seriesId);
-  const components = (factLines || []).map((l) => {
-    const lot = store.getById('lots', l.lotId);
-    return {
-      materialId: l.materialId,
-      lotId: l.lotId || null,
-      quantity: Number(l.quantity) || 0,
-      counterpartyId: lot?.counterpartyId || null,
-      manufacturerId: lot?.manufacturerId || null,
-    };
-  });
-
-  const patch = {
-    productionOrderId: order.id,
-    seriesId: order.seriesId || null,
-    seriesNumber: series?.number || null,
-    specificationId: order.specificationId || null,
-    workCenterId: order.workCenterId || null,
-    productMaterialId: order.materialId,
-    gpLotId: gpLot?.id || null,
-    gpLotNumber: gpLot?.number || null,
-    quantity: Number(outputQty) || 0,
-    productionDate: gpLot?.productionDate || new Date().toISOString().slice(0, 10),
-    completedAt: new Date().toISOString(),
-    completedByUserId: actorId || null,
-    reservationDocumentId: resDoc?.id || null,
-    productionIssueDocumentId: priDoc?.id || null,
-    productionReceiptDocumentId: prrDoc?.id || null,
-    documentNumber: prrDoc?.number || '',
-    components,
-  };
-
-  const existing = rowForOrder(order.id);
-  if (existing) {
-    return store.update('production_register', existing.id, patch);
+/** Пометить движения регистра отменёнными при отмене/перепроведении документа. */
+export function cancelProductionMovementsForDocument(documentId) {
+  const rows = store
+    .readAll('production_register')
+    .filter((r) => r.documentId === documentId && r.documentStatus !== 'cancelled');
+  for (const row of rows) {
+    store.update('production_register', row.id, { documentStatus: 'cancelled' });
   }
-  return store.create('production_register', { id: cryptoRandom(), ...patch });
+  return rows.length;
 }
 
 export function listProductionRegister() {
   return store.readAll('production_register');
+}
+
+/** Активные (не отменённые) движения по заказу. */
+export function activeMovementsForOrder(productionOrderId) {
+  return store
+    .readAll('production_register')
+    .filter(
+      (r) =>
+        r.productionOrderId === productionOrderId && r.documentStatus !== 'cancelled'
+    );
 }

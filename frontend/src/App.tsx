@@ -759,31 +759,51 @@ export default function App() {
             collection="production_register"
             readOnly
             fields={[
-              { key: 'productionOrderId', label: 'Заказ' },
-              { key: 'seriesNumber', label: 'Серия' },
-              { key: 'productMaterialId', label: 'Продукт', type: 'select', options: opt(materials) },
-              { key: 'gpLotNumber', label: 'Партия ГП' },
+              { key: 'type', label: 'Тип' },
+              { key: 'materialId', label: 'Материал', type: 'select', options: opt(materials) },
+              { key: 'lotId', label: 'Партия', type: 'select', options: opt(lots.map((l) => ({ id: l.id, name: l.number }))) },
               { key: 'quantity', label: 'Количество', type: 'number' },
+              { key: 'documentNumber', label: 'Документ' },
             ]}
             columns={[
               {
-                key: 'completedAt',
-                label: 'Завершено',
-                render: (r) =>
-                  r.completedAt
-                    ? `${dateFromIso(String(r.completedAt))} ${displayTimeFromIso(String(r.completedAt))}`
-                    : '—',
+                key: 'atDate',
+                label: 'Дата',
+                render: (r) => dateFromIso(String(r.at || '')),
               },
-              { key: 'seriesNumber', label: 'Серия' },
               {
-                key: 'productMaterialId',
-                label: 'Продукт',
-                render: (r) => matName(String(r.productMaterialId || '')),
+                key: 'atTime',
+                label: 'Время',
+                render: (r) => displayTimeFromIso(String(r.at || '')),
               },
-              { key: 'gpLotNumber', label: 'Партия ГП' },
+              {
+                key: 'type',
+                label: 'Тип',
+                render: (r) =>
+                  r.type === 'issue' || Number(r.quantity) < 0 ? 'расход' : 'выпуск',
+              },
+              {
+                key: 'materialId',
+                label: 'Материал',
+                render: (r) => matName(String(r.materialId || '')),
+              },
+              { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId || '')) },
+              {
+                key: 'seriesId',
+                label: 'Серия',
+                render: (r) =>
+                  r.seriesNumber || (r.seriesId ? serNum(String(r.seriesId)) : '—'),
+              },
               { key: 'quantity', label: 'Кол-во' },
-              { key: 'documentNumber', label: 'Выпуск' },
-              { key: 'workCenterId', label: 'РЦ', render: (r) => wcName(String(r.workCenterId || '')) },
+              { key: 'documentNumber', label: 'Документ' },
+              { key: 'documentType', label: 'Тип док.' },
+              { key: 'documentStatus', label: 'Статус док.' },
+              {
+                key: 'productionOrderId',
+                label: 'Заказ',
+                render: (r) =>
+                  r.productionOrderId ? String(r.productionOrderId).slice(0, 8) : '—',
+              },
             ]}
           />
         );

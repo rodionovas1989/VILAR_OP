@@ -18,27 +18,43 @@ export function releasedSeriesReport() {
   const seriesMap = indexById(store.readAll('series'));
   const lotsList = store.readAll('lots');
   const lots = indexById(lotsList);
-  const register = store.readAll('production_register');
+  const register = store
+    .readAll('production_register')
+    .filter((r) => r.documentStatus !== 'cancelled');
 
   const orders = store.readAll('production_orders').filter((o) => o.status === DONE_STATUS);
   const rows = [];
 
   for (const order of orders) {
-    const snap = register.find((r) => r.productionOrderId === order.id);
-    if (snap) {
+    const moves = register.filter((r) => r.productionOrderId === order.id);
+    const receipts = moves.filter((r) => r.type === 'receipt' || Number(r.quantity) > 0);
+    const issues = moves.filter((r) => r.type === 'issue' || Number(r.quantity) < 0);
+
+    if (receipts.length || issues.length) {
+      const gpMove = receipts[0] || null;
+      const gpLot = gpMove?.lotId ? lots[gpMove.lotId] : null;
+      const quantity = receipts.reduce((s, r) => s + Math.abs(Number(r.quantity) || 0), 0);
       rows.push({
         id: order.id,
         orderId: order.id,
-        productId: snap.productMaterialId || order.materialId,
-        productName: materials[snap.productMaterialId || order.materialId]?.name || order.materialId,
-        seriesId: snap.seriesId || order.seriesId || '',
-        seriesNumber: snap.seriesNumber || seriesMap[order.seriesId]?.number || order.seriesId || '—',
-        lotId: snap.gpLotId || '',
-        lotNumber: snap.gpLotNumber || '—',
-        productionDate: snap.productionDate || '—',
-        quantity: Number(snap.quantity) || 0,
-        documentNumber: snap.documentNumber || '',
-        components: (snap.components || []).map((l) => {
+        productId: gpMove?.materialId || order.materialId,
+        productName:
+          materials[gpMove?.materialId || order.materialId]?.name || order.materialId,
+        seriesId: gpMove?.seriesId || order.seriesId || '',
+        seriesNumber:
+          gpMove?.seriesNumber ||
+          seriesMap[order.seriesId]?.number ||
+          order.seriesId ||
+          '—',
+        lotId: gpLot?.id || gpMove?.lotId || '',
+        lotNumber: gpLot?.number || gpMove?.lotId || '—',
+        productionDate: gpLot?.productionDate || String(gpMove?.at || '').slice(0, 10) || '—',
+        quantity:
+          quantity ||
+          (order.actualQuantity != null ? Number(order.actualQuantity) : Number(order.quantity)) ||
+          0,
+        documentNumber: gpMove?.documentNumber || '',
+        components: issues.map((l) => {
           const mat = materials[l.materialId];
           const lot = lots[l.lotId];
           return {
@@ -47,14 +63,14 @@ export function releasedSeriesReport() {
             unit: mat?.unit || '',
             lotId: l.lotId || '',
             lotNumber: lot?.number || l.lotId || '—',
-            quantity: Number(l.quantity) || 0,
+            quantity: Math.abs(Number(l.quantity) || 0),
           };
         }),
       });
       continue;
     }
 
-    // fallback: старые завершённые заказы без снимка в регистре
+    // fallback: старые завершённые заказы без движений в регистре
     const series = seriesMap[order.seriesId];
     const prrDocs = documents
       .listDocuments('production_receipt', { productionOrderId: order.id })
