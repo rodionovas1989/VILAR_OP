@@ -8,6 +8,7 @@ import { requirePermission } from '../middleware/access.js';
 import * as dataMaintenance from '../services/dataMaintenance.js';
 import * as loginAudit from '../services/loginAudit.js';
 import * as documentStatusLog from '../services/documentStatusLog.js';
+import * as opsDebugLog from '../services/opsDebugLog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -198,6 +199,15 @@ router.get(
     }
   }
 );
+
+router.get('/ops-debug-log', requirePermission('admin_ops_debug_log', 'read'), (req, res) => {
+  try {
+    const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 300));
+    res.json({ items: opsDebugLog.listOpsEvents({ limit }) });
+  } catch (e) {
+    res.status(400).json({ error: e.message || String(e) });
+  }
+});
 
 router.get('/changelog', requirePermission('admin_changelog', 'read'), (_req, res) => {
   try {

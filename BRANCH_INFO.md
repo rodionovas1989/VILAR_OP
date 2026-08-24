@@ -3,7 +3,8 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | + аналоги, рецептуры ВИЛАР, характеристики партий (LCH) | **эталон** |
-| `feature/document-status-audit` | Журнал статусов документов (A3b) | **активна** |
+| `feature/ops-debug-log` | Операционный JSONL-журнал API (мутации + ошибки) | **активна** |
+| `feature/document-status-audit` | Журнал статусов документов (A3b) | **слита** в main |
 | `feature/production-analytics-register` | Регистр аналитики производства при completeOrder | **слита** в main |
 | `feature/lot-manufacturer-approvals` | Справочник Производители; тройка в одобренных; мягкий бейдж | **слита** в main |
 | `fix/admin-backups-list-scroll` | Скролл списка слепков на странице резервных копий | **слита** в main |

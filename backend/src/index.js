@@ -22,6 +22,8 @@ import { isGenericWriteClosed } from './constants/collectionAccess.js';
 import * as planning from './services/planning.js';
 import { warnIfDefaultAdminPassword } from './services/auth.js';
 import * as loginAudit from './services/loginAudit.js';
+import * as opsDebugLog from './services/opsDebugLog.js';
+import { opsDebugMiddleware, opsDebugErrorHandler } from './middleware/opsDebug.js';
 import {
   prepareUserCreate,
   prepareUserUpdate,
@@ -42,6 +44,7 @@ ensureCollections();
 migrateParamValuesToDocuments();
 warnIfDefaultAdminPassword();
 loginAudit.compactLoginAudit();
+opsDebugLog.compactOpsDebugLog();
 
 const app = express();
 const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173')
@@ -65,6 +68,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
+app.use(opsDebugMiddleware);
 
 if (
   process.env.TRUST_PROXY === '1' ||
@@ -384,6 +388,8 @@ if (process.env.SERVE_FRONTEND === '1' && fs.existsSync(path.join(frontendDist, 
   });
   console.log(`UI from ${frontendDist}`);
 }
+
+app.use(opsDebugErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`Vilar OP API http://localhost:${PORT}`);

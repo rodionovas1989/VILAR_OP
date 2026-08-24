@@ -195,6 +195,21 @@ export const api = {
       }[];
     }>(`/admin/document-status-log?${q}`);
   },
+  listOpsDebugLog: (limit = 300) =>
+    request<{
+      items: {
+        at: string;
+        requestId?: string | null;
+        level?: string;
+        method?: string;
+        path?: string;
+        statusCode?: number;
+        durationMs?: number;
+        userId?: string | null;
+        error?: string | null;
+        refs?: Record<string, string> | null;
+      }[];
+    }>(`/admin/ops-debug-log?limit=${limit}`),
   clearAllData: (confirm: string) =>
     request('/admin/data/clear', { method: 'POST', body: JSON.stringify({ confirm }) }),
   loadDemoData: (confirm: string) =>
