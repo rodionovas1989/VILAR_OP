@@ -750,6 +750,41 @@ export default function App() {
             ]}
           />
         );
+      case 'production_register':
+        return (
+          <CrudPage
+            title="Аналитика производства"
+            collection="production_register"
+            readOnly
+            fields={[
+              { key: 'productionOrderId', label: 'Заказ' },
+              { key: 'seriesNumber', label: 'Серия' },
+              { key: 'productMaterialId', label: 'Продукт', type: 'select', options: opt(materials) },
+              { key: 'gpLotNumber', label: 'Партия ГП' },
+              { key: 'quantity', label: 'Количество', type: 'number' },
+            ]}
+            columns={[
+              {
+                key: 'completedAt',
+                label: 'Завершено',
+                render: (r) =>
+                  r.completedAt
+                    ? `${dateFromIso(String(r.completedAt))} ${displayTimeFromIso(String(r.completedAt))}`
+                    : '—',
+              },
+              { key: 'seriesNumber', label: 'Серия' },
+              {
+                key: 'productMaterialId',
+                label: 'Продукт',
+                render: (r) => matName(String(r.productMaterialId || '')),
+              },
+              { key: 'gpLotNumber', label: 'Партия ГП' },
+              { key: 'quantity', label: 'Кол-во' },
+              { key: 'documentNumber', label: 'Выпуск' },
+              { key: 'workCenterId', label: 'РЦ', render: (r) => wcName(String(r.workCenterId || '')) },
+            ]}
+          />
+        );
       case 'lot_qualities':
         return (
           <CrudPage

@@ -14,14 +14,47 @@ function indexById(rows) {
 
 /** Отчёт: выпущенные серии продукции (завершённые заказы). */
 export function releasedSeriesReport() {
-  const orders = store.readAll('production_orders').filter((o) => o.status === DONE_STATUS);
   const materials = indexById(store.readAll('materials'));
   const seriesMap = indexById(store.readAll('series'));
   const lotsList = store.readAll('lots');
   const lots = indexById(lotsList);
+  const register = store.readAll('production_register');
 
+  const orders = store.readAll('production_orders').filter((o) => o.status === DONE_STATUS);
   const rows = [];
+
   for (const order of orders) {
+    const snap = register.find((r) => r.productionOrderId === order.id);
+    if (snap) {
+      rows.push({
+        id: order.id,
+        orderId: order.id,
+        productId: snap.productMaterialId || order.materialId,
+        productName: materials[snap.productMaterialId || order.materialId]?.name || order.materialId,
+        seriesId: snap.seriesId || order.seriesId || '',
+        seriesNumber: snap.seriesNumber || seriesMap[order.seriesId]?.number || order.seriesId || '—',
+        lotId: snap.gpLotId || '',
+        lotNumber: snap.gpLotNumber || '—',
+        productionDate: snap.productionDate || '—',
+        quantity: Number(snap.quantity) || 0,
+        documentNumber: snap.documentNumber || '',
+        components: (snap.components || []).map((l) => {
+          const mat = materials[l.materialId];
+          const lot = lots[l.lotId];
+          return {
+            materialId: l.materialId,
+            materialName: mat?.name || l.materialId,
+            unit: mat?.unit || '',
+            lotId: l.lotId || '',
+            lotNumber: lot?.number || l.lotId || '—',
+            quantity: Number(l.quantity) || 0,
+          };
+        }),
+      });
+      continue;
+    }
+
+    // fallback: старые завершённые заказы без снимка в регистре
     const series = seriesMap[order.seriesId];
     const prrDocs = documents
       .listDocuments('production_receipt', { productionOrderId: order.id })

@@ -20,6 +20,7 @@ const COLLECTION_LABELS = {
   active_reservations: 'Регистр резервов',
   reservation_history: 'История резервов',
   material_movements: 'Движение материалов',
+  production_register: 'Аналитика производства',
   quality_documents: 'Управление качеством',
   quality_register: 'Качества партий (состояние)',
   quality_history: 'Качества партий (история)',
@@ -39,6 +40,7 @@ function sampleOf(row, collection) {
   if (!row) return null;
   if (row.number) return String(row.number);
   if (row.name) return String(row.name);
+  if (row.seriesNumber) return String(row.seriesNumber);
   if (collection === 'production_orders' && row.id) return String(row.id).slice(0, 8);
   if (row.id) return String(row.id).slice(0, 8);
   return null;
@@ -150,6 +152,54 @@ function scanProductionOrders(map, id, kind) {
   }
 }
 
+function scanProductionRegister(map, id, kind) {
+  for (const row of store.readAll('production_register')) {
+    if (kind === 'series' && row.seriesId === id) {
+      pushHit(map, 'production_register', row);
+      continue;
+    }
+    if (kind === 'specifications' && row.specificationId === id) {
+      pushHit(map, 'production_register', row);
+      continue;
+    }
+    if (kind === 'work_centers' && row.workCenterId === id) {
+      pushHit(map, 'production_register', row);
+      continue;
+    }
+    if (kind === 'materials') {
+      if (row.productMaterialId === id) {
+        pushHit(map, 'production_register', row);
+        continue;
+      }
+      if ((row.components || []).some((c) => c?.materialId === id)) {
+        pushHit(map, 'production_register', row);
+      }
+      continue;
+    }
+    if (kind === 'lots') {
+      if (row.gpLotId === id) {
+        pushHit(map, 'production_register', row);
+        continue;
+      }
+      if ((row.components || []).some((c) => c?.lotId === id)) {
+        pushHit(map, 'production_register', row);
+      }
+      continue;
+    }
+    if (kind === 'counterparties') {
+      if ((row.components || []).some((c) => c?.counterpartyId === id)) {
+        pushHit(map, 'production_register', row);
+      }
+      continue;
+    }
+    if (kind === 'manufacturers') {
+      if ((row.components || []).some((c) => c?.manufacturerId === id)) {
+        pushHit(map, 'production_register', row);
+      }
+    }
+  }
+}
+
 /** Где используется объект справочника. Возвращает [{ label, count, samples }] */
 export function findUsages(collection, id) {
   const map = new Map();
@@ -170,6 +220,7 @@ export function findUsages(collection, id) {
       scanSpecifications(map, id, 'materials');
       scanSubstitutions(map, id, 'materials');
       scanProductionOrders(map, id, 'materials');
+      scanProductionRegister(map, id, 'materials');
       scanDocs(map, id, { lineKeys: ['materialId'] });
       for (const ch of store.readAll('lot_characteristics')) {
         if ((ch.materialIds || []).includes(id)) pushHit(map, 'lot_characteristics', ch);
@@ -186,11 +237,13 @@ export function findUsages(collection, id) {
       scanSimple(map, 'characteristic_register', id, ['lotId']);
       scanSimple(map, 'characteristic_history', id, ['lotId']);
       scanProductionOrders(map, id, 'lots');
+      scanProductionRegister(map, id, 'lots');
       scanDocs(map, id, { lineKeys: ['lotId'] });
       break;
 
     case 'series':
       scanProductionOrders(map, id, 'series');
+      scanProductionRegister(map, id, 'series');
       scanSimple(map, 'active_reservations', id, ['seriesId']);
       scanSimple(map, 'reservation_history', id, ['seriesId']);
       scanSimple(map, 'material_movements', id, ['seriesId']);
@@ -209,15 +262,18 @@ export function findUsages(collection, id) {
     case 'counterparties':
       scanSimple(map, 'lots', id, ['counterpartyId']);
       scanSpecifications(map, id, 'counterparties');
+      scanProductionRegister(map, id, 'counterparties');
       break;
 
     case 'manufacturers':
       scanSimple(map, 'lots', id, ['manufacturerId']);
       scanSpecifications(map, id, 'manufacturers');
+      scanProductionRegister(map, id, 'manufacturers');
       break;
 
     case 'work_centers':
       scanProductionOrders(map, id, 'work_centers');
+      scanProductionRegister(map, id, 'work_centers');
       scanSimple(map, 'planned_series_volumes', id, ['workCenterId']);
       scanSimple(map, 'tech_maps', id, ['workCenterId']);
       break;
@@ -228,6 +284,7 @@ export function findUsages(collection, id) {
 
     case 'specifications':
       scanProductionOrders(map, id, 'specifications');
+      scanProductionRegister(map, id, 'specifications');
       scanSubstitutions(map, id, 'specifications');
       break;
 

@@ -38,6 +38,7 @@ export const STOCK_OBJECTS = [
   { id: 'active_reservations', label: 'Регистр резервов' },
   { id: 'reservation_history', label: 'История резервов' },
   { id: 'material_movements', label: 'Движение материалов' },
+  { id: 'production_register', label: 'Аналитика производства' },
 ];
 
 export const QUALITY_OBJECTS = [

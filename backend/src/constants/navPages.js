@@ -35,6 +35,7 @@ export const NAV_PAGE_IDS = new Set([
   'active_reservations',
   'reservation_history',
   'material_movements',
+  'production_register',
   'production_orders',
   'series_planning',
   'planning_desktop',

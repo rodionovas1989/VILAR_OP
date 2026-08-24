@@ -55,6 +55,7 @@ const COLLECTIONS = [
   'characteristic_register',
   'characteristic_history',
   'quality_scenarios',
+  'production_register',
   'user_favorites',
   'feedback',
 ];

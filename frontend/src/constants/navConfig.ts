@@ -57,6 +57,7 @@ export const NAV: NavGroup[] = [
       { id: 'active_reservations', label: 'Регистр резервов', kind: 'register' },
       { id: 'reservation_history', label: 'История резервов', kind: 'register' },
       { id: 'material_movements', label: 'Движение материалов', kind: 'register' },
+      { id: 'production_register', label: 'Аналитика производства', kind: 'register' },
     ],
   },
   {

@@ -308,6 +308,13 @@ describe('Полная цепочка: приёмка → резерв → за�
     assert.equal(trace.relatedDocuments.some((d) => d.type === 'production_issue'), true);
     assert.equal(trace.productionOrder.status, 'завершен');
     assert.ok(trace.reservationHistory.some((h) => h.action === 'fulfill'));
+
+    const prodReg = store.readAll('production_register').find((r) => r.productionOrderId === 'ord-1');
+    assert.ok(prodReg);
+    assert.equal(prodReg.gpLotId, gpLot.id);
+    assert.equal(prodReg.quantity, 1000);
+    assert.equal(prodReg.components?.length, 1);
+    assert.equal(prodReg.components[0].lotId, 'lot-rm');
   });
 
   test('отчёт выпущенных серий показывает ГП и фактические компоненты', async () => {
