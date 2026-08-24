@@ -133,6 +133,7 @@ export function writeAll(name, rows) {
 }
 
 export function getById(name, id) {
+  if (id == null || id === '') return null;
   const row = getDb().prepare('SELECT data FROM records WHERE collection = ? AND id = ?').get(name, id);
   return row ? JSON.parse(row.data) : null;
 }

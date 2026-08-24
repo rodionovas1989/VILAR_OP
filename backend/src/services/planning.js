@@ -45,8 +45,8 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
       return {
         ...l,
         freeQty: freeQtyByLot(l.id),
-        counterparty: store.getById('counterparties', l.counterpartyId),
-        manufacturer: store.getById('manufacturers', l.manufacturerId),
+        counterparty: l.counterpartyId ? store.getById('counterparties', l.counterpartyId) : null,
+        manufacturer: l.manufacturerId ? store.getById('manufacturers', l.manufacturerId) : null,
         qualityPermission: quality.permission,
         qualityPermissionLabel: quality.permissionLabel,
         qualityName: quality.qualityName,
