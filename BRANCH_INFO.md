@@ -2,8 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | + производители, analytics movements PRI/PRR, аудит, ops-debug | **эталон** |
-| `feature/inventory-plan-fact-diff` | INV: План/Факт/Разница; черновики WOF/PST; без stock на INV | **активна** |
+| `main` | + INV План/Факт/Разница → черновики WOF/PST | **эталон** |
+| `feature/inventory-plan-fact-diff` | INV: План/Факт/Разница; черновики WOF/PST; без stock на INV | **слита** в main |
 | `feature/prod-analytics-movements-split-badges` | Регистр аналитики = движения PRI/PRR; раздельные бейджи CP/MFR | **слита** в main |
 | `feature/ops-debug-log` | Операционный JSONL-журнал API (мутации + ошибки) | **слита** в main |
 | `feature/document-status-audit` | Журнал статусов документов (A3b) | **слита** в main |
