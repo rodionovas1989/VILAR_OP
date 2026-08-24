@@ -41,7 +41,7 @@ backend/
   src/middleware/opsDebug.js — middleware + error handler
   src/services/documentStatusLog.js — журнал статусов складских документов
   src/services/customerRecipes.js — загрузка рецептур ВИЛАР из customer_recipes.json
-  src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
+  src/services/documents.js  — складские документы; INV→черновики WOF/PST; stock-preview
   src/services/quality.js    — качество: QCM документ, регистры, resolveLotQuality
   src/services/scenarios.js  — сценарии: onLotCreated → авто-QCM
   src/services/referentialIntegrity.js — запрет удаления справочников при наличии ссылок
@@ -49,8 +49,8 @@ backend/
   src/services/chat.js       — общий чат
   src/constants/documentTypes.js
   src/routes/planning.js     — /api/planning/* (+ GET order-trace/:id)
-  src/routes/documents.js    — /api/documents/* (+ GET :id/related)
-  tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, guards
+  src/routes/documents.js    — /api/documents/* (+ inventory/stock-preview, :id/related)
+  tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, INV→WOF/PST, guards
   tests/lotRecalc.test.js    — формула содержания/потери, LCH регистр, подбор
   src/routes/quality.js      — /api/quality/*
   src/routes/characteristics.js — /api/characteristics/*

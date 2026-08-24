@@ -39,6 +39,7 @@ type Props = {
 };
 
 type FormMode = 'create' | 'edit' | 'view';
+type InvTab = 'plan' | 'fact' | 'diff';
 
 const STATUS_LABEL: Record<string, string> = {
   draft: 'Создан',
@@ -49,6 +50,21 @@ const STATUS_LABEL: Record<string, string> = {
 
 function emptyLine(): StockDocumentLine {
   return { id: newId(), materialId: '', lotId: '', quantity: 0 };
+}
+
+function emptyInvFactLine(): StockDocumentLine {
+  return {
+    id: newId(),
+    materialId: '',
+    lotId: '',
+    quantity: 0,
+    bookQuantity: 0,
+    actualQuantity: 0,
+  };
+}
+
+function invLineKey(line: Pick<StockDocumentLine, 'materialId' | 'lotId'>) {
+  return `${line.materialId}::${line.lotId}`;
 }
 
 function lotsForMaterial(lots: Lot[], materialId: string) {
@@ -76,7 +92,14 @@ function buildDocumentActions(
   if (doc?.id && status === 'draft' && canRun && formMode !== 'view') {
     items.push({ id: 'post', label: 'Провести' });
   }
-  if (doc?.id && status === 'posted' && postedEdit && formMode === 'edit' && canRun) {
+  if (
+    doc?.id &&
+    status === 'posted' &&
+    postedEdit &&
+    formMode === 'edit' &&
+    canRun &&
+    doc.type !== 'inventory'
+  ) {
     items.push({ id: 'repost', label: 'Провести повторно' });
   }
   if (doc?.id && status !== 'cancelled' && status !== 'fulfilled' && canRun) {
@@ -105,6 +128,8 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const [trace, setTrace] = useState<DocumentTrace | null>(null);
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceOpen, setTraceOpen] = useState(false);
+  const [invTab, setInvTab] = useState<InvTab>('fact');
+  const [postInfo, setPostInfo] = useState('');
 
   const matName = (id: string) => materials.find((m) => m.id === id)?.name || id;
   const lotNum = (id: string) => lots.find((l) => l.id === id)?.number || id;
@@ -255,6 +280,44 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     setEditing(null);
     setFormMode('create');
     setTraceOpen(false);
+    setInvTab('fact');
+    setPostInfo('');
+  };
+
+  const linesFromStockPreview = async (warehouseId: string): Promise<StockDocumentLine[]> => {
+    const preview = await api.inventoryStockPreview(warehouseId);
+    return preview.lines.map((l) => ({
+      id: newId(),
+      materialId: l.materialId,
+      lotId: l.lotId,
+      quantity: l.quantity,
+      bookQuantity: l.bookQuantity,
+      actualQuantity: l.actualQuantity,
+    }));
+  };
+
+  const applyInventoryWarehouse = async (warehouseId: string, confirmIfFilled: boolean) => {
+    if (!editing || editing.type !== 'inventory') return;
+    const hasData = editing.lines.some((l) => l.materialId && l.lotId);
+    if (confirmIfFilled && hasData) {
+      const ok = window.confirm('Перезаполнить план и факт по остаткам выбранного склада?');
+      if (!ok) return;
+    }
+    if (!warehouseId) {
+      setEditing({ ...editing, warehouseId: '', lines: [] });
+      return;
+    }
+    setBusy(true);
+    setError('');
+    try {
+      const lines = await linesFromStockPreview(warehouseId);
+      setEditing({ ...editing, warehouseId, lines });
+      setInvTab('fact');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
   };
 
   const startCreate = () => {
@@ -278,7 +341,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
       createdByUserId: currentUserId,
       createdAt: '',
       comment: '',
-      lines: [emptyLine()],
+      lines: documentType === 'inventory' ? [] : [emptyLine()],
       warehouseId: meta.warehouseMode === 'single' ? whComp : null,
       warehouseFromId: meta.warehouseMode === 'from' || meta.warehouseMode === 'both' ? whComp : null,
       warehouseToId: meta.warehouseMode === 'to' ? whComp : null,
@@ -286,6 +349,18 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     setFormMode('create');
     setEditing(base);
     setError('');
+    setPostInfo('');
+    setInvTab('fact');
+    if (documentType === 'inventory' && whComp) {
+      void (async () => {
+        try {
+          const lines = await linesFromStockPreview(whComp);
+          setEditing((d) => (d && d.type === 'inventory' && !d.id ? { ...d, lines } : d));
+        } catch (err) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      })();
+    }
   };
 
   const openEdit = (doc: StockDocument) => {
@@ -349,7 +424,21 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     productionOrderId: doc.productionOrderId,
     seriesId: doc.seriesId,
     comment: doc.comment,
-    lines: doc.lines.filter((l) => l.materialId && l.lotId && l.quantity > 0),
+    lines:
+      doc.type === 'inventory'
+        ? doc.lines
+            .filter((l) => l.materialId && l.lotId)
+            .map((l) => {
+              const book = Number(l.bookQuantity ?? 0);
+              const actual = Number(l.actualQuantity ?? l.quantity ?? 0);
+              return {
+                ...l,
+                bookQuantity: book,
+                actualQuantity: actual,
+                quantity: actual,
+              };
+            })
+        : doc.lines.filter((l) => l.materialId && l.lotId && l.quantity > 0),
   });
 
   const persistDraft = async (doc: StockDocument): Promise<StockDocument> => {
@@ -447,9 +536,23 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           await load();
         }
         if (!docId) throw new Error('Сначала сохраните документ');
-        await api.postDocument(documentType, docId, currentUserId);
+        const posted = await api.postDocument(documentType, docId, currentUserId);
         const fresh = await reloadEditingDoc(docId);
         applySavedDoc(fresh, formModeAfterPost(fresh));
+        if (documentType === 'inventory') {
+          const parts: string[] = [];
+          if (posted.linkedWriteoffId || fresh.linkedWriteoffId) {
+            parts.push('черновик списания');
+          }
+          if (posted.linkedPostingId || fresh.linkedPostingId) {
+            parts.push('черновик оприходования');
+          }
+          setPostInfo(
+            parts.length
+              ? `Инвентаризация проведена. Созданы: ${parts.join(' и ')}. Проведите их отдельно — остатки меняются только ими.`
+              : 'Инвентаризация проведена. Расхождений нет — связанные документы не созданы.'
+          );
+        }
         await load();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
@@ -485,7 +588,13 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
           ) : (
             <SearchableSelect
               value={editing.warehouseId || ''}
-              onChange={(v) => setEditing((d) => (d ? { ...d, warehouseId: v } : d))}
+              onChange={(v) => {
+                if (editing.type === 'inventory') {
+                  void applyInventoryWarehouse(v, true);
+                  return;
+                }
+                setEditing((d) => (d ? { ...d, warehouseId: v } : d));
+              }}
               options={warehouses.map((w) => ({ value: w.id, label: w.name }))}
             />
           )}
@@ -569,142 +678,326 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     formMode === 'create'
   );
 
+  const invDiffRows = useMemo(() => {
+    if (!editing || editing.type !== 'inventory') return [];
+    return editing.lines
+      .filter((l) => l.materialId && l.lotId)
+      .map((l) => {
+        const book = Number(l.bookQuantity ?? 0);
+        const actual = Number(l.actualQuantity ?? l.quantity ?? 0);
+        return { ...l, book, actual, delta: actual - book };
+      })
+      .filter((row) => Math.abs(row.delta) >= 1e-9);
+  }, [editing]);
+
+  const invFactRows = useMemo(() => {
+    if (!editing || editing.type !== 'inventory') return [];
+    // Факт: все строки, кроме «снятых» с факта (book>0 и actual===0) — они видны в Разнице
+    return editing.lines
+      .map((l, idx) => ({ line: l, idx }))
+      .filter(({ line: l }) => {
+        const book = Number(l.bookQuantity ?? 0);
+        const actual = Number(l.actualQuantity ?? 0);
+        if (book > 0 && actual === 0) return false;
+        return true;
+      });
+  }, [editing]);
+
   const linesTable = editing ? (
-    <div className="doc-lines-table-wrap">
-      <table className="data-table doc-lines-table">
-        <thead>
-          <tr>
-            <th>Материал</th>
-            <th>Партия</th>
-            <th>Количество</th>
-            {editing.type === 'inventory' && (
-              <>
-                <th>Учёт</th>
-                <th>Факт</th>
-              </>
-            )}
-            {canEditFields && <th />}
-          </tr>
-        </thead>
-        <tbody>
-          {editing.lines.map((line, idx) => (
-            <tr key={line.id}>
-              <td>
-                {canEditFields ? (
-                  <SearchableSelect
-                    value={line.materialId}
-                    onChange={(v) => {
-                      const lines = [...editing.lines];
-                      lines[idx] = { ...line, materialId: v, lotId: '' };
-                      setEditing({ ...editing, lines });
-                    }}
-                    options={materials.map((m) => ({ value: m.id, label: m.name }))}
-                  />
-                ) : (
-                  matName(line.materialId)
-                )}
-              </td>
-              <td>
-                {canEditFields ? (
-                  <SearchableSelect
-                    value={line.lotId}
-                    onChange={(v) => {
-                      const lines = [...editing.lines];
-                      lines[idx] = { ...line, lotId: v };
-                      setEditing({ ...editing, lines });
-                    }}
-                    disabled={!line.materialId}
-                    options={lotsForMaterial(lots, line.materialId).map((l) => ({
-                      value: l.id,
-                      label: l.number,
-                    }))}
-                  />
-                ) : (
-                  lotNum(line.lotId)
-                )}
-              </td>
-              <td>
-                {canEditFields ? (
-                  <input
-                    type="number"
-                    step="any"
-                    min={0}
-                    value={line.quantity || ''}
-                    onChange={(e) => {
-                      const lines = [...editing.lines];
-                      lines[idx] = { ...line, quantity: Number(e.target.value) };
-                      setEditing({ ...editing, lines });
-                    }}
-                  />
-                ) : (
-                  line.quantity
-                )}
-              </td>
-              {editing.type === 'inventory' && (
-                <>
-                  <td>
-                    {canEditFields ? (
-                      <input
-                        type="number"
-                        step="any"
-                        value={line.bookQuantity ?? ''}
-                        onChange={(e) => {
-                          const lines = [...editing.lines];
-                          lines[idx] = { ...line, bookQuantity: Number(e.target.value) };
-                          setEditing({ ...editing, lines });
-                        }}
-                      />
-                    ) : (
-                      line.bookQuantity
-                    )}
-                  </td>
-                  <td>
-                    {canEditFields ? (
-                      <input
-                        type="number"
-                        step="any"
-                        value={line.actualQuantity ?? ''}
-                        onChange={(e) => {
-                          const lines = [...editing.lines];
-                          lines[idx] = { ...line, actualQuantity: Number(e.target.value) };
-                          setEditing({ ...editing, lines });
-                        }}
-                      />
-                    ) : (
-                      line.actualQuantity
-                    )}
-                  </td>
-                </>
-              )}
-              {canEditFields && (
-                <td>
-                  <IconButton
-                    icon="delete"
-                    label="Удалить строку"
-                    tone="danger"
-                    onClick={() =>
-                      setEditing({
-                        ...editing,
-                        lines: editing.lines.filter((_, i) => i !== idx),
-                      })
-                    }
-                  />
-                </td>
-              )}
-            </tr>
+    editing.type === 'inventory' ? (
+      <div className="inv-doc-lines">
+        <div className="tabs inv-tabs">
+          {(
+            [
+              ['plan', 'План'],
+              ['fact', 'Факт'],
+              ['diff', 'Разница'],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              className={invTab === id ? 'active' : ''}
+              onClick={() => setInvTab(id)}
+            >
+              {label}
+            </button>
           ))}
-        </tbody>
-      </table>
-      {canEditFields && (
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => setEditing({ ...editing, lines: [...editing.lines, emptyLine()] })}
-        >
-          + Строка
-        </button>
-      )}
-    </div>
+        </div>
+
+        <div className="doc-lines-table-wrap">
+          {invTab === 'plan' && (
+            <table className="data-table doc-lines-table">
+              <thead>
+                <tr>
+                  <th>Материал</th>
+                  <th>Партия</th>
+                  <th>Учёт (план)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {editing.lines
+                  .filter((l) => l.materialId && l.lotId && Number(l.bookQuantity ?? 0) > 0)
+                  .map((line) => (
+                    <tr key={line.id}>
+                      <td>{matName(line.materialId)}</td>
+                      <td>{lotNum(line.lotId)}</td>
+                      <td>{line.bookQuantity ?? 0}</td>
+                    </tr>
+                  ))}
+                {!editing.lines.some((l) => Number(l.bookQuantity ?? 0) > 0) && (
+                  <tr>
+                    <td colSpan={3} className="muted">
+                      Нет остатков на складе — выберите склад или добавьте позиции во вкладке «Факт»
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {invTab === 'fact' && (
+            <table className="data-table doc-lines-table">
+              <thead>
+                <tr>
+                  <th>Материал</th>
+                  <th>Партия</th>
+                  <th>Факт</th>
+                  {canEditFields && <th />}
+                </tr>
+              </thead>
+              <tbody>
+                {invFactRows.map(({ line, idx }) => (
+                  <tr key={line.id}>
+                    <td>
+                      {canEditFields && Number(line.bookQuantity ?? 0) === 0 ? (
+                        <SearchableSelect
+                          value={line.materialId}
+                          onChange={(v) => {
+                            const lines = [...editing.lines];
+                            lines[idx] = { ...line, materialId: v, lotId: '' };
+                            setEditing({ ...editing, lines });
+                          }}
+                          options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                        />
+                      ) : (
+                        matName(line.materialId)
+                      )}
+                    </td>
+                    <td>
+                      {canEditFields && Number(line.bookQuantity ?? 0) === 0 ? (
+                        <SearchableSelect
+                          value={line.lotId}
+                          onChange={(v) => {
+                            const lines = [...editing.lines];
+                            lines[idx] = { ...line, lotId: v };
+                            setEditing({ ...editing, lines });
+                          }}
+                          disabled={!line.materialId}
+                          options={lotsForMaterial(lots, line.materialId).map((l) => ({
+                            value: l.id,
+                            label: l.number,
+                          }))}
+                        />
+                      ) : (
+                        lotNum(line.lotId)
+                      )}
+                    </td>
+                    <td>
+                      {canEditFields ? (
+                        <input
+                          type="number"
+                          step="any"
+                          min={0}
+                          value={line.actualQuantity ?? ''}
+                          onChange={(e) => {
+                            const actual = Number(e.target.value);
+                            const lines = [...editing.lines];
+                            lines[idx] = { ...line, actualQuantity: actual, quantity: actual };
+                            setEditing({ ...editing, lines });
+                          }}
+                        />
+                      ) : (
+                        line.actualQuantity ?? line.quantity
+                      )}
+                    </td>
+                    {canEditFields && (
+                      <td>
+                        <IconButton
+                          icon="delete"
+                          label="Убрать из факта"
+                          tone="danger"
+                          onClick={() => {
+                            const book = Number(line.bookQuantity ?? 0);
+                            if (book > 0) {
+                              const lines = [...editing.lines];
+                              lines[idx] = { ...line, actualQuantity: 0, quantity: 0 };
+                              setEditing({ ...editing, lines });
+                            } else {
+                              setEditing({
+                                ...editing,
+                                lines: editing.lines.filter((_, i) => i !== idx),
+                              });
+                            }
+                          }}
+                        />
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {!invFactRows.length && (
+                  <tr>
+                    <td colSpan={canEditFields ? 4 : 3} className="muted">
+                      Нет строк факта
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+
+          {invTab === 'diff' && (
+            <table className="data-table doc-lines-table">
+              <thead>
+                <tr>
+                  <th>Материал</th>
+                  <th>Партия</th>
+                  <th>Учёт</th>
+                  <th>Факт</th>
+                  <th>Разница</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invDiffRows.map((row) => (
+                  <tr key={row.id || invLineKey(row)}>
+                    <td>{matName(row.materialId)}</td>
+                    <td>{lotNum(row.lotId)}</td>
+                    <td>{row.book}</td>
+                    <td>{row.actual}</td>
+                    <td className={row.delta > 0 ? 'inv-delta-plus' : 'inv-delta-minus'}>
+                      {row.delta > 0 ? `+${row.delta}` : row.delta}
+                    </td>
+                  </tr>
+                ))}
+                {!invDiffRows.length && (
+                  <tr>
+                    <td colSpan={5} className="muted">
+                      Нет расхождений
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {invTab === 'fact' && canEditFields && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              setEditing({ ...editing, lines: [...editing.lines, emptyInvFactLine()] })
+            }
+          >
+            + Строка
+          </button>
+        )}
+      </div>
+    ) : (
+      <div className="doc-lines-table-wrap">
+        <table className="data-table doc-lines-table">
+          <thead>
+            <tr>
+              <th>Материал</th>
+              <th>Партия</th>
+              <th>Количество</th>
+              {canEditFields && <th />}
+            </tr>
+          </thead>
+          <tbody>
+            {editing.lines.map((line, idx) => (
+              <tr key={line.id}>
+                <td>
+                  {canEditFields ? (
+                    <SearchableSelect
+                      value={line.materialId}
+                      onChange={(v) => {
+                        const lines = [...editing.lines];
+                        lines[idx] = { ...line, materialId: v, lotId: '' };
+                        setEditing({ ...editing, lines });
+                      }}
+                      options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                    />
+                  ) : (
+                    matName(line.materialId)
+                  )}
+                </td>
+                <td>
+                  {canEditFields ? (
+                    <SearchableSelect
+                      value={line.lotId}
+                      onChange={(v) => {
+                        const lines = [...editing.lines];
+                        lines[idx] = { ...line, lotId: v };
+                        setEditing({ ...editing, lines });
+                      }}
+                      disabled={!line.materialId}
+                      options={lotsForMaterial(lots, line.materialId).map((l) => ({
+                        value: l.id,
+                        label: l.number,
+                      }))}
+                    />
+                  ) : (
+                    lotNum(line.lotId)
+                  )}
+                </td>
+                <td>
+                  {canEditFields ? (
+                    <input
+                      type="number"
+                      step="any"
+                      min={0}
+                      value={line.quantity || ''}
+                      onChange={(e) => {
+                        const lines = [...editing.lines];
+                        lines[idx] = { ...line, quantity: Number(e.target.value) };
+                        setEditing({ ...editing, lines });
+                      }}
+                    />
+                  ) : (
+                    line.quantity
+                  )}
+                </td>
+                {canEditFields && (
+                  <td>
+                    <IconButton
+                      icon="delete"
+                      label="Удалить строку"
+                      tone="danger"
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          lines: editing.lines.filter((_, i) => i !== idx),
+                        })
+                      }
+                    />
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {canEditFields && (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setEditing({ ...editing, lines: [...editing.lines, emptyLine()] })}
+          >
+            + Строка
+          </button>
+        )}
+      </div>
+    )
   ) : null;
 
   if (!canViewObject(permissions, objectId, loggedIn)) {
@@ -752,12 +1045,15 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
         />
       )}
       <p className="hint">
-        {typeMeta?.canFulfill
-          ? 'Резерв не меняет остатки. Статус «Выполнен» — после списания в производство.'
-          : 'Проведение документа изменяет остатки и журнал движений.'}
+        {documentType === 'inventory'
+          ? 'План заполняется из остатков склада. Проведение INV не меняет склад — создаются черновики списания и/или оприходования по разнице.'
+          : typeMeta?.canFulfill
+            ? 'Резерв не меняет остатки. Статус «Выполнен» — после списания в производство.'
+            : 'Проведение документа изменяет остатки и журнал движений.'}
       </p>
 
       {error && <p className="error">{error}</p>}
+      {postInfo && <p className="hint">{postInfo}</p>}
 
       <div className="table-wrap">
         <table className="data-table">
@@ -841,10 +1137,18 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
             className="doc-form"
           >
             <div className="doc-form-scroll">
-            {postedEdit && (
+            {postedEdit && editing.type !== 'inventory' && (
               <p className="doc-form-notice">
                 Изменение проведённого документа выполняется через «Провести повторно»: движения будут
                 пересчитаны.
+              </p>
+            )}
+            {editing.type === 'inventory' && editing.status === 'posted' && (
+              <p className="doc-form-notice">
+                Остатки меняют связанные списание/оприходование. Повторное проведение INV недоступно.
+                {editing.linkedWriteoffId || editing.linkedPostingId
+                  ? ' Связанные документы — во вкладке «Движения и связанные объекты».'
+                  : ''}
               </p>
             )}
 

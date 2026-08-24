@@ -1848,11 +1848,13 @@ button.danger-outline:hover {
 
 .doc-lines-table th {
   border-bottom: 2px solid var(--line);
-  background: transparent;
+  background: #fff;
+  box-shadow: 0 1px 0 var(--line);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+  z-index: 2;
 }
 
 .doc-lines-table td {
@@ -2245,6 +2247,43 @@ button.danger-outline:hover {
 .tabs button.active {
   background: var(--accent);
   color: #fff;
+}
+
+.inv-tabs {
+  margin-top: 4px;
+  margin-bottom: 8px;
+  flex: 0 0 auto;
+}
+
+.inv-doc-lines {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.inv-doc-lines .doc-lines-table-wrap {
+  flex: 1 1 auto;
+}
+
+.inv-doc-lines > .secondary {
+  flex: 0 0 auto;
+  margin-top: 10px;
+  align-self: flex-start;
+}
+
+.modal-doc .doc-form-scroll .inv-doc-lines {
+  min-height: 80px;
+}
+
+.inv-delta-plus {
+  color: #1a7a62;
+  font-weight: 600;
+}
+
+.inv-delta-minus {
+  color: #b42318;
+  font-weight: 600;
 }
 
 .hint {

@@ -306,6 +306,17 @@ export const api = {
     }),
   getDocumentRelated: (type: string, id: string) =>
     request<import('./types.documents').DocumentTrace>(`/documents/${type}/${id}/related`),
+  inventoryStockPreview: (warehouseId: string) =>
+    request<{
+      warehouseId: string;
+      lines: {
+        materialId: string;
+        lotId: string;
+        bookQuantity: number;
+        actualQuantity: number;
+        quantity: number;
+      }[];
+    }>(`/documents/inventory/stock-preview?warehouseId=${encodeURIComponent(warehouseId)}`),
   getOrderTrace: (id: string) =>
     request<import('./types.documents').OrderTrace>(`/planning/order-trace/${id}`),
 

@@ -90,6 +90,10 @@ export interface StockDocument {
   fulfilledByUserId?: string | null;
   comment?: string;
   lines: StockDocumentLine[];
+  /** После проведения INV — id черновика списания (если была недостача) */
+  linkedWriteoffId?: string | null;
+  /** После проведения INV — id черновика оприходования (если был излишек) */
+  linkedPostingId?: string | null;
 }
 
 export interface DocumentTypeMeta {

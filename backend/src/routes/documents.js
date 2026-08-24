@@ -29,6 +29,21 @@ function requireDoc(level) {
   return (req, res, next) => requirePermission(`doc_${req.docType}`, level)(req, res, next);
 }
 
+/** Предзаполнение плана/факта INV по остаткам склада (до /:type/:id). */
+router.get(
+  '/inventory/stock-preview',
+  requirePermission('doc_inventory', 'read'),
+  (req, res) => {
+    try {
+      const warehouseId = req.query.warehouseId;
+      if (!warehouseId) return res.status(400).json({ error: 'Укажите warehouseId' });
+      res.json(documents.inventoryStockPreview(String(warehouseId)));
+    } catch (e) {
+      res.status(400).json({ error: e.message || String(e) });
+    }
+  }
+);
+
 router.get('/:type', parseType, requireDoc('read'), (req, res) => {
   res.json(
     documents.listDocuments(req.docType, {

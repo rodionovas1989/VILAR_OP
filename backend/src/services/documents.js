@@ -89,6 +89,7 @@ function assertPosted(doc) {
 
 function validateLines(lines, docType) {
   if (!Array.isArray(lines) || !lines.length) {
+    if (docType === 'inventory') return; // черновик может быть пустым до заполнения склада
     throw new Error('Добавьте хотя бы одну строку в табличную часть');
   }
   for (const line of lines) {
@@ -100,11 +101,36 @@ function validateLines(lines, docType) {
     if (docType === 'inventory') {
       const book = line.bookQuantity != null ? line.bookQuantity : line.quantity;
       const actual = line.actualQuantity != null ? line.actualQuantity : line.quantity;
-      if (book == null || actual == null) throw new Error('Для инвентаризации укажите учётное и фактическое количество');
+      if (book == null || actual == null) {
+        throw new Error('Для инвентаризации укажите учётное и фактическое количество');
+      }
+      if (Number(book) < 0 || Number(actual) < 0) {
+        throw new Error('Количество в инвентаризации не может быть отрицательным');
+      }
     } else if (!(Number(line.quantity) > 0)) {
       throw new Error('Количество в строке должно быть больше 0');
     }
   }
+}
+
+function normalizeLines(lines, docType = null) {
+  return lines.map((l) => {
+    const bookQuantity = l.bookQuantity != null ? roundQty(l.bookQuantity) : undefined;
+    const actualQuantity = l.actualQuantity != null ? roundQty(l.actualQuantity) : undefined;
+    let quantity = roundQty(l.quantity);
+    if (docType === 'inventory') {
+      if (actualQuantity != null) quantity = actualQuantity;
+      else if (bookQuantity != null && !(Number(quantity) > 0)) quantity = bookQuantity;
+    }
+    return {
+      id: l.id || cryptoRandom(),
+      materialId: l.materialId,
+      lotId: l.lotId,
+      quantity,
+      bookQuantity,
+      actualQuantity,
+    };
+  });
 }
 
 function validateWarehouses(doc) {
@@ -126,17 +152,6 @@ function validateWarehouses(doc) {
       throw new Error('Склады перемещения должны различаться');
     }
   }
-}
-
-function normalizeLines(lines) {
-  return lines.map((l) => ({
-    id: l.id || cryptoRandom(),
-    materialId: l.materialId,
-    lotId: l.lotId,
-    quantity: roundQty(l.quantity),
-    bookQuantity: l.bookQuantity != null ? roundQty(l.bookQuantity) : undefined,
-    actualQuantity: l.actualQuantity != null ? roundQty(l.actualQuantity) : undefined,
-  }));
 }
 
 function movementBase(doc) {
@@ -284,15 +299,104 @@ function postReservation(doc, userId) {
   appendReservationHistory(doc, 'post', doc.lines, { userId });
 }
 
-function postInventory(doc) {
-  const wh = doc.warehouseId;
-  for (const line of doc.lines) {
-    const book = line.bookQuantity != null ? line.bookQuantity : line.quantity;
-    const actual = line.actualQuantity != null ? line.actualQuantity : line.quantity;
+/** Остатки склада → строки плана инвентаризации (quantity > 0). */
+export function stockLinesForWarehouse(warehouseId) {
+  if (!warehouseId) return [];
+  return store
+    .readAll('stock')
+    .filter((s) => s.warehouseId === warehouseId && Number(s.quantity) > 0)
+    .map((s) => ({
+      materialId: s.materialId,
+      lotId: s.lotId,
+      bookQuantity: roundQty(s.quantity),
+    }))
+    .sort(
+      (a, b) =>
+        String(a.materialId).localeCompare(String(b.materialId)) ||
+        String(a.lotId).localeCompare(String(b.lotId))
+    );
+}
+
+/** Предзаполнение UI: план + факт = book. */
+export function inventoryStockPreview(warehouseId) {
+  if (!warehouseId) throw new Error('Укажите склад');
+  if (!store.getById('warehouses', warehouseId)) throw new Error('Склад не найден');
+  const plan = stockLinesForWarehouse(warehouseId);
+  return {
+    warehouseId,
+    lines: plan.map((row) => ({
+      materialId: row.materialId,
+      lotId: row.lotId,
+      bookQuantity: row.bookQuantity,
+      actualQuantity: row.bookQuantity,
+      quantity: row.bookQuantity,
+    })),
+  };
+}
+
+function inventoryDeltas(doc) {
+  const shortage = [];
+  const surplus = [];
+  for (const line of doc.lines || []) {
+    const book = roundQty(line.bookQuantity != null ? line.bookQuantity : 0);
+    const actual = roundQty(line.actualQuantity != null ? line.actualQuantity : line.quantity || 0);
     const delta = roundQty(actual - book);
     if (Math.abs(delta) < 1e-9) continue;
-    applyStockDelta(line.materialId, line.lotId, wh, delta, doc);
+    const row = {
+      materialId: line.materialId,
+      lotId: line.lotId,
+      quantity: roundQty(Math.abs(delta)),
+    };
+    if (delta < 0) shortage.push(row);
+    else surplus.push(row);
   }
+  return { shortage, surplus };
+}
+
+function findInventoryChildDocs(invId) {
+  const out = [];
+  for (const type of ['writeoff', 'posting']) {
+    for (const d of store.readAll(collectionForType(type))) {
+      if (d.basisDocumentId === invId) out.push(d);
+    }
+  }
+  return out;
+}
+
+/**
+ * INV не меняет склад. При ненулевой дельте создаёт черновики WOF и/или PST
+ * с basisDocumentId = INV.id; ссылки пишутся в linkedWriteoffId / linkedPostingId.
+ */
+function postInventory(doc, userId) {
+  const wh = doc.warehouseId;
+  if (!wh) throw new Error('Укажите склад');
+  const { shortage, surplus } = inventoryDeltas(doc);
+  const comment = `По инвентаризации ${doc.number}`;
+  let linkedWriteoffId = null;
+  let linkedPostingId = null;
+
+  if (shortage.length) {
+    const wof = createDocumentUnchecked('writeoff', {
+      createdByUserId: userId,
+      warehouseFromId: wh,
+      basisDocumentId: doc.id,
+      comment,
+      lines: shortage,
+    });
+    linkedWriteoffId = wof.id;
+  }
+  if (surplus.length) {
+    const pst = createDocumentUnchecked('posting', {
+      createdByUserId: userId,
+      warehouseToId: wh,
+      basisDocumentId: doc.id,
+      comment,
+      lines: surplus,
+    });
+    linkedPostingId = pst.id;
+  }
+
+  updateDocRecord(doc, { linkedWriteoffId, linkedPostingId });
 }
 
 const POST_HANDLERS = {
@@ -359,7 +463,7 @@ export function createDocumentUnchecked(type, payload) {
   const date = payload.date || todayIso();
   const time = normalizeTime(payload.time ?? nowTime());
   const number = nextDocumentNumber(type, date);
-  const lines = normalizeLines(payload.lines || []);
+  const lines = normalizeLines(payload.lines || [], type);
 
   const doc = {
     id: cryptoRandom(),
@@ -374,6 +478,8 @@ export function createDocumentUnchecked(type, payload) {
     productionOrderId: payload.productionOrderId || null,
     seriesId: payload.seriesId || null,
     basisDocumentId: payload.basisDocumentId || null,
+    linkedWriteoffId: payload.linkedWriteoffId || null,
+    linkedPostingId: payload.linkedPostingId || null,
     createdByUserId: userId,
     createdAt: new Date().toISOString(),
     postedAt: null,
@@ -406,7 +512,7 @@ export function updateDocument(type, id, patch, userId = null) {
     type: current.type,
     number: current.number,
     status: current.status,
-    lines: patch.lines != null ? normalizeLines(patch.lines) : current.lines,
+    lines: patch.lines != null ? normalizeLines(patch.lines, type) : current.lines,
   };
 
   validateWarehouses(merged);
@@ -475,10 +581,13 @@ export function postDocumentUnchecked(type, id, userId, opts = {}) {
     postedAt: postedView.postedAt,
     postedByUserId: userId,
   });
+  // inventory пишет linked* внутри handler — вернуть актуальный снимок
+  const result =
+    doc.type === 'inventory' ? getDocument(type, id) || posted : posted;
   if (!opts.skipLog) {
-    logDocStatus('post', posted, { fromStatus: 'draft', toStatus: 'posted', userId });
+    logDocStatus('post', result, { fromStatus: 'draft', toStatus: 'posted', userId });
   }
-  return posted;
+  return result;
 }
 
 export function repostDocument(type, id, userId, patch = {}) {
@@ -489,6 +598,12 @@ export function repostDocument(type, id, userId, patch = {}) {
       throw new Error('Повторное проведение доступно только для проведённых документов');
     }
     assertUserExists(userId);
+
+    if (doc.type === 'inventory') {
+      throw new Error(
+        'Повторное проведение инвентаризации недоступно — отмените документ и создайте новый'
+      );
+    }
 
     if (doc.type === 'reservation') {
       clearActiveReservationsForDocument(doc.id);
@@ -503,7 +618,7 @@ export function repostDocument(type, id, userId, patch = {}) {
       id: doc.id,
       type: doc.type,
       number: doc.number,
-      lines: patch.lines != null ? normalizeLines(patch.lines) : doc.lines,
+      lines: patch.lines != null ? normalizeLines(patch.lines, type) : doc.lines,
     };
 
     validateWarehouses(merged);
@@ -571,6 +686,30 @@ export function cancelDocumentUnchecked(type, id, userId) {
   }
 
   assertPosted(doc);
+
+  if (doc.type === 'inventory') {
+    const children = findInventoryChildDocs(doc.id);
+    const postedChild = children.find((c) => c.status === 'posted');
+    if (postedChild) {
+      throw new Error(
+        `Нельзя отменить инвентаризацию: связанный документ ${postedChild.number} уже проведён`
+      );
+    }
+    for (const child of children) {
+      if (child.status === 'draft') {
+        store.removeMany(collectionForType(child.type), [child.id]);
+      }
+    }
+    const cancelled = store.update(collectionForType(type), id, {
+      status: 'cancelled',
+      cancelledAt: new Date().toISOString(),
+      cancelledByUserId: userId,
+      linkedWriteoffId: null,
+      linkedPostingId: null,
+    });
+    logDocStatus('cancel', cancelled, { fromStatus: 'posted', toStatus: 'cancelled', userId });
+    return cancelled;
+  }
 
   if (doc.type === 'reservation') {
     clearActiveReservationsForDocument(doc.id);

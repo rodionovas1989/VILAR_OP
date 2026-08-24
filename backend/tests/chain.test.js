@@ -182,26 +182,54 @@ describe('Приёмка и складские документы', () => {
     assert.equal(movementsFor(shp.id)[0].type, 'issue');
   });
 
-  test('инвентаризация пишет движение только при расхождении', () => {
+  test('инвентаризация создаёт черновики WOF/PST без движения по INV', () => {
     postReceipt(10);
     const same = documents.createDocument('inventory', {
       createdByUserId: USER,
       warehouseId: WH_C,
       lines: [{ materialId: 'mat-rm', lotId: 'lot-rm', quantity: 10, bookQuantity: 10, actualQuantity: 10 }],
     });
-    documents.postDocument('inventory', same.id, USER);
+    const postedSame = documents.postDocument('inventory', same.id, USER);
     assert.equal(movementsFor(same.id).length, 0);
     assert.equal(stockQty('lot-rm', WH_C), 10);
+    assert.equal(postedSame.linkedWriteoffId || null, null);
+    assert.equal(postedSame.linkedPostingId || null, null);
 
     const plus = documents.createDocument('inventory', {
       createdByUserId: USER,
       warehouseId: WH_C,
       lines: [{ materialId: 'mat-rm', lotId: 'lot-rm', quantity: 12, bookQuantity: 10, actualQuantity: 12 }],
     });
-    documents.postDocument('inventory', plus.id, USER);
-    assert.equal(stockQty('lot-rm', WH_C), 12);
-    assert.equal(movementsFor(plus.id).length, 1);
-    assert.equal(movementsFor(plus.id)[0].quantity, 2);
+    const postedPlus = documents.postDocument('inventory', plus.id, USER);
+    assert.equal(stockQty('lot-rm', WH_C), 10);
+    assert.equal(movementsFor(plus.id).length, 0);
+    assert.ok(postedPlus.linkedPostingId);
+    assert.equal(postedPlus.linkedWriteoffId || null, null);
+    const pst = documents.getDocument('posting', postedPlus.linkedPostingId);
+    assert.equal(pst.status, 'draft');
+    assert.equal(pst.basisDocumentId, plus.id);
+    assert.equal(pst.lines[0].quantity, 2);
+
+    const short = documents.createDocument('inventory', {
+      createdByUserId: USER,
+      warehouseId: WH_C,
+      lines: [{ materialId: 'mat-rm', lotId: 'lot-rm', quantity: 8, bookQuantity: 10, actualQuantity: 8 }],
+    });
+    const postedShort = documents.postDocument('inventory', short.id, USER);
+    assert.ok(postedShort.linkedWriteoffId);
+    const wof = documents.getDocument('writeoff', postedShort.linkedWriteoffId);
+    assert.equal(wof.status, 'draft');
+    assert.equal(wof.lines[0].quantity, 2);
+
+    documents.cancelDocument('inventory', plus.id, USER);
+    assert.equal(documents.getDocument('posting', postedPlus.linkedPostingId), null);
+
+    documents.postDocument('writeoff', wof.id, USER);
+    assert.equal(stockQty('lot-rm', WH_C), 8);
+    assert.throws(
+      () => documents.cancelDocument('inventory', short.id, USER),
+      /уже проведён/
+    );
   });
 });
 
