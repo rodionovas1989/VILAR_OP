@@ -51,6 +51,8 @@ backend/
   src/routes/planning.js     — /api/planning/* (+ GET order-trace/:id)
   src/routes/documents.js    — /api/documents/* (+ inventory/stock-preview, :id/related)
   tests/chain.test.js        — автотесты: приёмка, RES, completeOrder, INV→WOF/PST, guards
+  scripts/import-customer-stock-xlsx.js — импорт CP/MFR/партий/остатков из Excel заказчика
+  scripts/import-customer-recipes.js — загрузка рецептур ВИЛАР
   tests/lotRecalc.test.js    — формула содержания/потери, LCH регистр, подбор
   src/routes/quality.js      — /api/quality/*
   src/routes/characteristics.js — /api/characteristics/*

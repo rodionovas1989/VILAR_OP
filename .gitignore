@@ -16,3 +16,5 @@ backend/data/auth_secret
 backend/data/backups/
 backend/data/factory/
 backups/
+backend/scripts/data/*.xlsx
+backend/scripts/_tmp_*
