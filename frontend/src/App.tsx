@@ -791,8 +791,12 @@ export default function App() {
               {
                 key: 'seriesId',
                 label: 'Серия',
-                render: (r) =>
-                  r.seriesNumber || (r.seriesId ? serNum(String(r.seriesId)) : '—'),
+                render: (r) => {
+                  if (r.seriesNumber != null && String(r.seriesNumber) !== '') {
+                    return String(r.seriesNumber);
+                  }
+                  return r.seriesId ? serNum(String(r.seriesId)) : '—';
+                },
               },
               { key: 'quantity', label: 'Кол-во' },
               { key: 'documentNumber', label: 'Документ' },
