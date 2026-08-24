@@ -61,7 +61,7 @@ router.post('/:type', parseType, requireDoc('create'), (req, res) => {
 
 router.put('/:type/:id', parseType, requireDoc('create'), (req, res) => {
   try {
-    res.json(documents.updateDocument(req.docType, req.params.id, req.body));
+    res.json(documents.updateDocument(req.docType, req.params.id, req.body, actorId(req)));
   } catch (e) {
     res.status(400).json({ error: e.message || String(e) });
   }

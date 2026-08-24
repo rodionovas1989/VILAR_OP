@@ -3,7 +3,8 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | + аналоги, рецептуры ВИЛАР, характеристики партий (LCH) | **эталон** |
-| `feature/production-analytics-register` | Регистр аналитики производства при completeOrder | **активна** |
+| `feature/document-status-audit` | Журнал статусов документов (A3b) | **активна** |
+| `feature/production-analytics-register` | Регистр аналитики производства при completeOrder | **слита** в main |
 | `feature/lot-manufacturer-approvals` | Справочник Производители; тройка в одобренных; мягкий бейдж | **слита** в main |
 | `fix/admin-backups-list-scroll` | Скролл списка слепков на странице резервных копий | **слита** в main |
 | `fix/hide-spec-recalc-comment` | Убрана подсказка «норма для N% сухого» под методом пересчёта | **слита** в main |

@@ -59,6 +59,7 @@ export const NAV_PAGE_IDS = new Set([
   'admin_changelog',
   'admin_data_maintenance',
   'admin_login_audit',
+  'admin_document_status_log',
   'users',
   'roles',
   'admin_export_dictionaries',

@@ -315,6 +315,10 @@ describe('Полная цепочка: приёмка → резерв → за�
     assert.equal(prodReg.quantity, 1000);
     assert.equal(prodReg.components?.length, 1);
     assert.equal(prodReg.components[0].lotId, 'lot-rm');
+
+    const statusLogs = store.readAll('document_status_log');
+    assert.ok(statusLogs.some((r) => r.action === 'post' && r.documentType === 'reservation'));
+    assert.ok(statusLogs.some((r) => r.action === 'fulfill' && r.documentType === 'reservation'));
   });
 
   test('отчёт выпущенных серий показывает ГП и фактические компоненты', async () => {

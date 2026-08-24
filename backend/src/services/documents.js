@@ -7,9 +7,24 @@ import {
   collectionForType,
 } from '../constants/documentTypes.js';
 import { freeQtyByLot, stockRowForLot } from './stock.js';
+import { appendDocumentStatusLog } from './documentStatusLog.js';
 
 function cryptoRandom() {
   return randomUUID();
+}
+
+function logDocStatus(action, doc, { fromStatus, toStatus, userId } = {}) {
+  if (!doc) return;
+  appendDocumentStatusLog({
+    action,
+    documentType: doc.type,
+    documentId: doc.id,
+    documentNumber: doc.number,
+    fromStatus: fromStatus ?? null,
+    toStatus: toStatus ?? doc.status ?? null,
+    userId: userId || null,
+    productionOrderId: doc.productionOrderId || null,
+  });
 }
 
 function todayIso() {
@@ -364,10 +379,12 @@ export function createDocumentUnchecked(type, payload) {
   validateWarehouses(doc);
   if (lines.length) validateLines(lines, type);
 
-  return store.create(collectionForType(type), doc);
+  const created = store.create(collectionForType(type), doc);
+  logDocStatus('create', created, { fromStatus: null, toStatus: 'draft', userId });
+  return created;
 }
 
-export function updateDocument(type, id, patch) {
+export function updateDocument(type, id, patch, userId = null) {
   const current = getDocument(type, id);
   if (!current) throw new Error('Документ не найден');
   assertDraft(current);
@@ -385,17 +402,25 @@ export function updateDocument(type, id, patch) {
   validateWarehouses(merged);
   if (merged.lines.length) validateLines(merged.lines, merged.type);
 
-  return store.update(collectionForType(type), id, {
-    date: merged.date,
-    time: merged.time != null ? normalizeTime(merged.time) : current.time ?? null,
-    warehouseId: merged.warehouseId,
-    warehouseFromId: merged.warehouseFromId,
-    warehouseToId: merged.warehouseToId,
-    productionOrderId: merged.productionOrderId,
-    seriesId: merged.seriesId,
-    basisDocumentId: merged.basisDocumentId,
-    comment: merged.comment,
-    lines: merged.lines,
+  return store.runWrite(() => {
+    const updated = store.update(collectionForType(type), id, {
+      date: merged.date,
+      time: merged.time != null ? normalizeTime(merged.time) : current.time ?? null,
+      warehouseId: merged.warehouseId,
+      warehouseFromId: merged.warehouseFromId,
+      warehouseToId: merged.warehouseToId,
+      productionOrderId: merged.productionOrderId,
+      seriesId: merged.seriesId,
+      basisDocumentId: merged.basisDocumentId,
+      comment: merged.comment,
+      lines: merged.lines,
+    });
+    logDocStatus('save', updated, {
+      fromStatus: 'draft',
+      toStatus: 'draft',
+      userId: userId || updated?.createdByUserId,
+    });
+    return updated;
   });
 }
 
@@ -417,7 +442,7 @@ export function postDocument(type, id, userId) {
   return store.runWrite(() => postDocumentUnchecked(type, id, userId));
 }
 
-export function postDocumentUnchecked(type, id, userId) {
+export function postDocumentUnchecked(type, id, userId, opts = {}) {
   const doc = getDocument(type, id);
   if (!doc) throw new Error('Документ не найден');
   assertDraft(doc);
@@ -435,11 +460,15 @@ export function postDocumentUnchecked(type, id, userId) {
     postedByUserId: userId,
   };
   handler(postedView, userId);
-  return updateDocRecord(doc, {
+  const posted = updateDocRecord(doc, {
     status: 'posted',
     postedAt: postedView.postedAt,
     postedByUserId: userId,
   });
+  if (!opts.skipLog) {
+    logDocStatus('post', posted, { fromStatus: 'draft', toStatus: 'posted', userId });
+  }
+  return posted;
 }
 
 export function repostDocument(type, id, userId, patch = {}) {
@@ -486,7 +515,9 @@ export function repostDocument(type, id, userId, patch = {}) {
       lines: merged.lines,
     });
 
-    return postDocumentUnchecked(type, id, userId);
+    const posted = postDocumentUnchecked(type, id, userId, { skipLog: true });
+    logDocStatus('repost', posted, { fromStatus: 'posted', toStatus: 'posted', userId });
+    return posted;
   });
 }
 
@@ -519,11 +550,13 @@ export function cancelDocumentUnchecked(type, id, userId) {
     throw new Error(`Нельзя отменить документ в статусе «${DOCUMENT_STATUS[doc.status]}»`);
   }
   if (doc.status === 'draft') {
-    return store.update(collectionForType(type), id, {
+    const cancelled = store.update(collectionForType(type), id, {
       status: 'cancelled',
       cancelledAt: new Date().toISOString(),
       cancelledByUserId: userId,
     });
+    logDocStatus('cancel', cancelled, { fromStatus: 'draft', toStatus: 'cancelled', userId });
+    return cancelled;
   }
 
   assertPosted(doc);
@@ -536,15 +569,18 @@ export function cancelDocumentUnchecked(type, id, userId) {
       cancelledByUserId: userId,
     });
     appendReservationHistory(cancelled, 'cancel', doc.lines, { userId });
+    logDocStatus('cancel', cancelled, { fromStatus: 'posted', toStatus: 'cancelled', userId });
     return cancelled;
   }
 
   reverseStockMovements(doc, userId);
-  return store.update(collectionForType(type), id, {
+  const cancelled = store.update(collectionForType(type), id, {
     status: 'cancelled',
     cancelledAt: new Date().toISOString(),
     cancelledByUserId: userId,
   });
+  logDocStatus('cancel', cancelled, { fromStatus: 'posted', toStatus: 'cancelled', userId });
+  return cancelled;
 }
 
 export function fulfillDocument(type, id, userId, basis = {}) {
@@ -573,6 +609,7 @@ export function fulfillDocumentUnchecked(type, id, userId, basis = {}) {
     basisDocumentNumber: basis.basisDocumentNumber || null,
   });
 
+  logDocStatus('fulfill', fulfilled, { fromStatus: 'posted', toStatus: 'fulfilled', userId });
   return fulfilled;
 }
 

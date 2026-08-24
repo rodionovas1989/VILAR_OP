@@ -176,6 +176,25 @@ export const api = {
         reason?: string | null;
       }[];
     }>(`/admin/login-audit?limit=${limit}`),
+  listDocumentStatusLog: (limit = 300, opts?: { documentType?: string; userId?: string }) => {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (opts?.documentType) q.set('documentType', opts.documentType);
+    if (opts?.userId) q.set('userId', opts.userId);
+    return request<{
+      items: {
+        id?: string;
+        at: string;
+        action: string;
+        documentType: string;
+        documentId: string;
+        documentNumber?: string;
+        fromStatus?: string | null;
+        toStatus?: string | null;
+        userId?: string | null;
+        productionOrderId?: string | null;
+      }[];
+    }>(`/admin/document-status-log?${q}`);
+  },
   clearAllData: (confirm: string) =>
     request('/admin/data/clear', { method: 'POST', body: JSON.stringify({ confirm }) }),
   loadDemoData: (confirm: string) =>

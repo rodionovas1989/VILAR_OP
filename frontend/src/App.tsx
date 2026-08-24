@@ -7,6 +7,7 @@ import AccessDenied from './components/AccessDenied';
 import AdminExportDictionaries from './components/AdminExportDictionaries';
 import AdminDataMaintenance from './components/AdminDataMaintenance';
 import AdminLoginAuditPage from './components/AdminLoginAuditPage';
+import AdminDocumentStatusLogPage from './components/AdminDocumentStatusLogPage';
 import AdminChangelogPage from './components/AdminChangelogPage';
 import AppHeader from './components/AppHeader';
 import AuthGate from './components/AuthGate';
@@ -1067,6 +1068,8 @@ export default function App() {
         return <AdminDataMaintenance />;
       case 'admin_login_audit':
         return <AdminLoginAuditPage />;
+      case 'admin_document_status_log':
+        return <AdminDocumentStatusLogPage />;
       case 'admin_changelog':
         return <AdminChangelogPage />;
       case 'production_desktop':

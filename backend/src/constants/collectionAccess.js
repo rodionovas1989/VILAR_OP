@@ -30,6 +30,7 @@ export const COLLECTION_TO_OBJECT = {
   characteristic_register: 'characteristic_register',
   characteristic_history: 'characteristic_history',
   production_register: 'production_register',
+  document_status_log: 'admin_document_status_log',
   user_favorites: 'admin_users',
   feedback: 'admin_feedback',
 };
@@ -64,6 +65,7 @@ export const GENERIC_WRITE_CLOSED = new Set([
   'characteristic_history',
   'characteristic_documents',
   'production_register',
+  'document_status_log',
   'document_sequences',
   'user_favorites',
   'stock_documents',

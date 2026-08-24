@@ -56,6 +56,7 @@ const COLLECTIONS = [
   'characteristic_history',
   'quality_scenarios',
   'production_register',
+  'document_status_log',
   'user_favorites',
   'feedback',
 ];

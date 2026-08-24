@@ -111,6 +111,7 @@ export const NAV: NavGroup[] = [
       { id: 'admin_export_dictionaries', label: 'Экспорт справочников', kind: 'admin' },
       { id: 'admin_data_maintenance', label: 'Данные и резервные копии', kind: 'admin' },
       { id: 'admin_login_audit', label: 'Журнал входов', kind: 'admin' },
+      { id: 'admin_document_status_log', label: 'Изменение статусов документов', kind: 'admin' },
       { id: 'admin_changelog', label: 'Что нового', kind: 'admin' },
       { id: 'admin_feedback', label: 'Обратная связь', kind: 'admin' },
     ],

@@ -7,6 +7,7 @@ import { COLLECTIONS, readAll } from '../store.js';
 import { requirePermission } from '../middleware/access.js';
 import * as dataMaintenance from '../services/dataMaintenance.js';
 import * as loginAudit from '../services/loginAudit.js';
+import * as documentStatusLog from '../services/documentStatusLog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -178,6 +179,25 @@ router.get('/login-audit', requirePermission('admin_login_audit', 'read'), (req,
     res.status(400).json({ error: e.message || String(e) });
   }
 });
+
+router.get(
+  '/document-status-log',
+  requirePermission('admin_document_status_log', 'read'),
+  (req, res) => {
+    try {
+      const limit = Math.min(500, Math.max(1, Number(req.query.limit) || 300));
+      res.json({
+        items: documentStatusLog.listDocumentStatusLog({
+          limit,
+          documentType: req.query.documentType || undefined,
+          userId: req.query.userId || undefined,
+        }),
+      });
+    } catch (e) {
+      res.status(400).json({ error: e.message || String(e) });
+    }
+  }
+);
 
 router.get('/changelog', requirePermission('admin_changelog', 'read'), (_req, res) => {
   try {

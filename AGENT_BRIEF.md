@@ -37,6 +37,7 @@ backend/
   src/constants/lotCharacteristics.js — системные assay / loss_on_drying
   src/services/characteristics.js — LCH документ, регистры состояния/истории
   src/services/substitutions.js — правила замены материалов (без транзитивности)
+  src/services/documentStatusLog.js — журнал статусов складских документов
   src/services/productionRegister.js — снимок серии при completeOrder
   src/services/customerRecipes.js — загрузка рецептур ВИЛАР из customer_recipes.json
   src/services/documents.js  — складские документы, проведение, повторное проведение, нумерация
