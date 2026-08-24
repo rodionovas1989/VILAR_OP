@@ -540,6 +540,53 @@ button.linkish {
   padding: 9px 12px;
   border-radius: 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-type-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  opacity: 0.78;
+  color: #b8d0de;
+}
+
+.nav-item.active .nav-type-icon,
+.nav-item:hover .nav-type-icon {
+  opacity: 1;
+  color: #e8f1f7;
+}
+
+.nav-type-icon--register_history {
+  opacity: 0.9;
+}
+
+.nav-type-icon svg {
+  display: block;
+}
+
+.page-title-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.page-title-type-icon {
+  color: var(--accent, #1a7a62);
+  opacity: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.page-title-type-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .nav-item:hover,

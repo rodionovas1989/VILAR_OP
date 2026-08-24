@@ -37,28 +37,28 @@ export const PLANNING_OBJECTS: SystemObject[] = [
 
 export const STOCK_OBJECTS: SystemObject[] = [
   { id: 'stock', label: 'Запасы' },
-  { id: 'active_reservations', label: 'Регистр резервов' },
-  { id: 'reservation_history', label: 'История резервов' },
-  { id: 'material_movements', label: 'Движение материалов' },
+  { id: 'active_reservations', label: 'Резервы' },
+  { id: 'reservation_history', label: 'Резервы (ист)' },
+  { id: 'material_movements', label: 'Запасы (ист)' },
   { id: 'production_register', label: 'Аналитика производства' },
 ];
 
 export const QUALITY_OBJECTS: SystemObject[] = [
   { id: 'lot_qualities', label: 'Качества партий' },
   { id: 'quality_documents', label: 'Управление качеством' },
-  { id: 'quality_register', label: 'Качества партий (состояние)' },
-  { id: 'quality_history', label: 'Качества партий (история)' },
+  { id: 'quality_register', label: 'Качества партий' },
+  { id: 'quality_history', label: 'Качества партий (ист)' },
   { id: 'quality_scenarios', label: 'Сценарии' },
   { id: 'lot_characteristics', label: 'Характеристики партий' },
   { id: 'characteristic_documents', label: 'Управление характеристиками' },
-  { id: 'characteristic_register', label: 'Характеристики партий (состояние)' },
-  { id: 'characteristic_history', label: 'Характеристики партий (история)' },
+  { id: 'characteristic_register', label: 'Характеристики партий' },
+  { id: 'characteristic_history', label: 'Характеристики партий (ист)' },
 ];
 
 export const REPORT_OBJECTS: SystemObject[] = [
   { id: 'report_released_series', label: 'Выпущенные серии продукции' },
   { id: 'report_plan_fact', label: 'План/Факт производства' },
-  { id: 'report_stock', label: 'Запасы' },
+  { id: 'report_stock', label: 'Отчет по запасам' },
   { id: 'report_quality_stock', label: 'Качество запасов' },
   { id: 'report_quality_history', label: 'История качеств' },
 ];

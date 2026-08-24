@@ -1,6 +1,15 @@
+import { NavVisualType, visualTypeForPage } from './navVisualTypes';
+
 export type NavKind = 'desktop' | 'planning' | 'dictionary' | 'document' | 'register' | 'quality' | 'report' | 'admin';
 
-export type NavItem = { id: string; label: string; kind: NavKind };
+export type NavItem = {
+  id: string;
+  label: string;
+  kind: NavKind;
+  /** Пиктотип; если не задан — из PAGE_VISUAL_TYPE */
+  visualType?: NavVisualType;
+};
+
 export type NavGroup = { id: string; label: string; items: NavItem[] };
 
 export const KIND_SECTION_LABELS: Record<NavKind, string> = {
@@ -54,9 +63,9 @@ export const NAV: NavGroup[] = [
     label: 'Запасы',
     items: [
       { id: 'stock', label: 'Запасы', kind: 'register' },
-      { id: 'active_reservations', label: 'Регистр резервов', kind: 'register' },
-      { id: 'reservation_history', label: 'История резервов', kind: 'register' },
-      { id: 'material_movements', label: 'Движение материалов', kind: 'register' },
+      { id: 'material_movements', label: 'Запасы (ист)', kind: 'register' },
+      { id: 'active_reservations', label: 'Резервы', kind: 'register' },
+      { id: 'reservation_history', label: 'Резервы (ист)', kind: 'register' },
       { id: 'production_register', label: 'Аналитика производства', kind: 'register' },
     ],
   },
@@ -80,7 +89,7 @@ export const NAV: NavGroup[] = [
     items: [
       { id: 'report_released_series', label: 'Выпущенные серии продукции', kind: 'report' },
       { id: 'report_plan_fact', label: 'План/Факт производства', kind: 'report' },
-      { id: 'report_stock', label: 'Запасы', kind: 'report' },
+      { id: 'report_stock', label: 'Отчет по запасам', kind: 'report' },
       { id: 'report_quality_stock', label: 'Качество запасов', kind: 'report' },
       { id: 'report_quality_history', label: 'История качеств', kind: 'report' },
     ],
@@ -91,13 +100,13 @@ export const NAV: NavGroup[] = [
     items: [
       { id: 'lot_qualities', label: 'Качества партий', kind: 'quality' },
       { id: 'quality_documents', label: 'Управление качеством', kind: 'quality' },
-      { id: 'quality_register', label: 'Качества партий (состояние)', kind: 'quality' },
-      { id: 'quality_history', label: 'Качества партий (история)', kind: 'quality' },
+      { id: 'quality_register', label: 'Качества партий', kind: 'quality' },
+      { id: 'quality_history', label: 'Качества партий (ист)', kind: 'quality' },
       { id: 'quality_scenarios', label: 'Сценарии', kind: 'quality' },
       { id: 'lot_characteristics', label: 'Характеристики партий', kind: 'quality' },
       { id: 'characteristic_documents', label: 'Управление характеристиками', kind: 'quality' },
-      { id: 'characteristic_register', label: 'Характеристики партий (состояние)', kind: 'quality' },
-      { id: 'characteristic_history', label: 'Характеристики партий (история)', kind: 'quality' },
+      { id: 'characteristic_register', label: 'Характеристики партий', kind: 'quality' },
+      { id: 'characteristic_history', label: 'Характеристики партий (ист)', kind: 'quality' },
     ],
   },
   {
@@ -119,11 +128,15 @@ export const NAV: NavGroup[] = [
   },
 ];
 
-const catalogMap = new Map<string, NavItem & { groupLabel: string }>();
+const catalogMap = new Map<string, NavItem & { groupLabel: string; visualType: NavVisualType }>();
 
 for (const group of NAV) {
   for (const item of group.items) {
-    catalogMap.set(item.id, { ...item, groupLabel: group.label });
+    catalogMap.set(item.id, {
+      ...item,
+      groupLabel: group.label,
+      visualType: item.visualType || visualTypeForPage(item.id),
+    });
   }
 }
 

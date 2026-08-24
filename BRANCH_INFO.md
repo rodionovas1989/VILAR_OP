@@ -3,6 +3,7 @@
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `main` | + INV; импорт Excel остатков; производитель в отчёте Запасы | **эталон** |
+| `feature/nav-type-pictograms` | Пиктотипы объектов + Запасы/Резервы/(ист), Отчет по запасам | **активна** |
 | `feature/stock-report-manufacturer` | Колонка Производитель в отчёте Запасы | **слита** в main |
 | `feature/inventory-plan-fact-diff` | INV: План/Факт/Разница; черновики WOF/PST; без stock на INV | **слита** в main |
 | `feature/prod-analytics-movements-split-badges` | Регистр аналитики = движения PRI/PRR; раздельные бейджи CP/MFR | **слита** в main |

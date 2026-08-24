@@ -58,6 +58,7 @@ import {
 import { StockDocumentType } from './types.documents';
 import { Role } from './constants/systemObjects';
 import { NAV } from './constants/navConfig';
+import NavTypeIcon from './components/NavTypeIcon';
 
 function opt(list: { id: string; name?: string; number?: string }[]) {
   return list.map((x) => ({ value: x.id, label: x.name || x.number || x.id }));
@@ -678,7 +679,7 @@ export default function App() {
       case 'active_reservations':
         return (
           <CrudPage
-            title="Активные резервы (регистр)"
+            title="Резервы"
             collection="active_reservations"
             readOnly
             fields={[
@@ -700,7 +701,7 @@ export default function App() {
       case 'reservation_history':
         return (
           <CrudPage
-            title="История резервирования"
+            title="Резервы (ист)"
             collection="reservation_history"
             readOnly
             fields={[
@@ -726,7 +727,7 @@ export default function App() {
       case 'material_movements':
         return (
           <CrudPage
-            title="Движение материалов"
+            title="Запасы (ист)"
             collection="material_movements"
             readOnly
             fields={[
@@ -875,7 +876,7 @@ export default function App() {
       case 'quality_register':
         return (
           <CrudPage
-            title="Качества партий (состояние)"
+            title="Качества партий"
             collection="quality_register"
             readOnly
             fields={[
@@ -898,7 +899,7 @@ export default function App() {
       case 'quality_history':
         return (
           <CrudPage
-            title="Качества партий (история)"
+            title="Качества партий (ист)"
             collection="quality_history"
             readOnly
             fields={[
@@ -925,7 +926,7 @@ export default function App() {
       case 'characteristic_register':
         return (
           <CrudPage
-            title="Характеристики партий (состояние)"
+            title="Характеристики партий"
             collection="characteristic_register"
             readOnly
             fields={[
@@ -948,7 +949,7 @@ export default function App() {
       case 'characteristic_history':
         return (
           <CrudPage
-            title="Характеристики партий (история)"
+            title="Характеристики партий (ист)"
             collection="characteristic_history"
             readOnly
             fields={[
@@ -1218,7 +1219,8 @@ export default function App() {
                         className={page === item.id ? 'nav-item active' : 'nav-item'}
                         onClick={() => navigateTo(item.id)}
                       >
-                        {item.label}
+                        <NavTypeIcon pageId={item.id} />
+                        <span>{item.label}</span>
                       </button>
                     </li>
                   ))}

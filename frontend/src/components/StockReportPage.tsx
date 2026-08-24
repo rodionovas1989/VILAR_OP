@@ -183,13 +183,13 @@ export default function StockReportPage() {
   };
 
   if (!canView) {
-    return <AccessDenied title="Запасы" />;
+    return <AccessDenied title="Отчет по запасам" />;
   }
 
   return (
     <div className="page report-page">
       <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="Запасы" />
+        <PageTitle pageId={PAGE_ID} title="Отчет по запасам" />
         <div className="toolbar-actions">
           <ListViewSettingsButton
             open={listSettingsOpen}
@@ -234,7 +234,7 @@ export default function StockReportPage() {
 
       {error && <p className="error report-no-print">{error}</p>}
 
-      <h2 className="report-print-title">Запасы</h2>
+      <h2 className="report-print-title">Отчет по запасам</h2>
 
       <div className="table-wrap">
         <table className="data-table report-table report-tree-table">
