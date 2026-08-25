@@ -348,6 +348,11 @@ export default function App() {
             collection="lots"
             fields={[
               { key: 'number', label: 'Номер', required: true },
+              {
+                key: 'identificationNumber',
+                label: 'Идентификационный номер',
+                hint: 'Буквы и цифры; пока только в карточке партии',
+              },
               { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
               {
                 key: 'counterpartyId',
@@ -366,6 +371,11 @@ export default function App() {
             ]}
             columns={[
               { key: 'number', label: 'Номер' },
+              {
+                key: 'identificationNumber',
+                label: 'Ид. номер',
+                render: (r) => String(r.identificationNumber || '—'),
+              },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               {
                 key: 'counterpartyId',
@@ -380,6 +390,10 @@ export default function App() {
               { key: 'productionDate', label: 'Произведено' },
               { key: 'expiryDate', label: 'Годен до' },
             ]}
+            transformOut={(row) => ({
+              ...row,
+              identificationNumber: String(row.identificationNumber || '').trim(),
+            })}
           />
         );
       case 'series':

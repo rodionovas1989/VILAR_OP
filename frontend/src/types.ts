@@ -61,6 +61,8 @@ export interface Manufacturer {
 export interface Lot {
   id: string;
   number: string;
+  /** Внешний/идентификационный номер (буквы и цифры); опционально */
+  identificationNumber?: string;
   materialId: string;
   counterpartyId: string | null;
   manufacturerId: string | null;
