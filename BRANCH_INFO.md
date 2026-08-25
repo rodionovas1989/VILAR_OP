@@ -2,8 +2,9 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `main` | + пиктотипы nav; Запасы/Резервы (ист); Отчет по запасам | **эталон** |
-| `fix/fb-00003-00004-inv-fact-input` | INV факт: 0/мусор не удаляет строку; DecimalInput | **активна** |
+| `main` | + INV факт DecimalInput (FB-00003/00004) | **эталон** |
+| `fix/fb-00006-inv-delta-precision` | INV Разница: roundQty, без float-хвостов (FB-00006) | **активна** |
+| `fix/fb-00003-00004-inv-fact-input` | INV факт: 0/мусор не удаляет строку; DecimalInput | **слита** в main |
 | `feature/nav-type-pictograms` | Пиктотипы объектов + Запасы/Резервы/(ист), Отчет по запасам | **слита** в main |
 | `feature/stock-report-manufacturer` | Колонка Производитель в отчёте Запасы | **слита** в main |
 | `feature/inventory-plan-fact-diff` | INV: План/Факт/Разница; черновики WOF/PST; без stock на INV | **слита** в main |

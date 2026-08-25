@@ -102,6 +102,7 @@ frontend/
   src/components/DocumentTypePage.tsx    — страница одного типа документа (date+time, actions menu, user labels)
   src/components/DecimalInput.tsx        — безопасный ввод чисел (,/.; без type=number)
   src/utils/decimalInput.ts              — разбор черновика десятичного числа
+  src/utils/qty.ts                       — roundQty / formatQty (как backend, 6 знаков)
   src/utils/id.ts                        — newId(): UUID с fallback на http://IP (не secure context)
   src/components/DocumentTracePanel.tsx  — движения и связи
   src/components/DocumentTraceModal.tsx  — отдельное окно по пиктограмме у статуса

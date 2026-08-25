@@ -31,6 +31,7 @@ import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, St
 import { Lot, Material, Warehouse } from '../types';
 import { metaForDocumentType } from '../constants/documentTypes';
 import { newId } from '../utils/id';
+import { formatQty, formatQtyDelta, roundQty } from '../utils/qty';
 
 type Props = {
   documentType: StockDocumentType;
@@ -684,11 +685,12 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
     return editing.lines
       .filter((l) => l.materialId && l.lotId)
       .map((l) => {
-        const book = Number(l.bookQuantity ?? 0);
-        const actual = Number(l.actualQuantity ?? l.quantity ?? 0);
-        return { ...l, book, actual, delta: actual - book };
+        const book = roundQty(Number(l.bookQuantity ?? 0));
+        const actual = roundQty(Number(l.actualQuantity ?? l.quantity ?? 0));
+        const delta = roundQty(actual - book);
+        return { ...l, book, actual, delta };
       })
-      .filter((row) => Math.abs(row.delta) >= 1e-9);
+      .filter((row) => row.delta !== 0);
   }, [editing]);
 
   const invFactRows = useMemo(() => {
@@ -859,10 +861,10 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                   <tr key={row.id || invLineKey(row)}>
                     <td>{matName(row.materialId)}</td>
                     <td>{lotNum(row.lotId)}</td>
-                    <td>{row.book}</td>
-                    <td>{row.actual}</td>
+                    <td>{formatQty(row.book)}</td>
+                    <td>{formatQty(row.actual)}</td>
                     <td className={row.delta > 0 ? 'inv-delta-plus' : 'inv-delta-minus'}>
-                      {row.delta > 0 ? `+${row.delta}` : row.delta}
+                      {formatQtyDelta(row.delta)}
                     </td>
                   </tr>
                 ))}
