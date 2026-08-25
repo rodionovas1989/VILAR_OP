@@ -1,5 +1,5 @@
-﻿## Ветка: fix/changelog-feed-scroll
+﻿## Ветка: main
 
-Скролл у ленты «Что нового» (flex + overflow-y в `.changelog-feed`).
+После fix/changelog-feed-scroll: скролл ленты «Что нового».
 
 Пилот: https://vilar-prod.ru
