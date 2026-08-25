@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ApprovedSupplier, SpecLine } from '../types';
+import { ApprovedSupplier, SpecLine, Substitution } from '../types';
 import SpecLinesEditor from './SpecLinesEditor';
 import SpecSuppliersEditor from './SpecSuppliersEditor';
 import SearchableSelect from './SearchableSelect';
@@ -14,6 +14,7 @@ type Props = {
   counterparties: Opt[];
   manufacturers: Opt[];
   techMaps: Opt[];
+  substitutions?: Substitution[];
   characteristics?: import('../types').LotCharacteristic[];
 };
 
@@ -33,6 +34,7 @@ export default function SpecDetailTabs({
   counterparties,
   manufacturers,
   techMaps,
+  substitutions = [],
   characteristics = [],
 }: Props) {
   const [tab, setTab] = useState<TabId>('general');
@@ -123,6 +125,8 @@ export default function SpecDetailTabs({
           counterparties={counterparties}
           manufacturers={manufacturers}
           materials={materials}
+          substitutions={substitutions}
+          specificationId={editing.id ? String(editing.id) : null}
           onChange={(next) => setEditing({ ...editing, approvedSuppliers: next })}
         />
       )}

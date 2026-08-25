@@ -318,6 +318,7 @@ export default function App() {
                 counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
                 manufacturers={manufacturers.map((m) => ({ id: m.id, name: m.name }))}
                 techMaps={techMaps.map((t) => ({ id: t.id, name: t.name }))}
+                substitutions={substitutions}
                 characteristics={lotCharacteristics}
               />
             )}

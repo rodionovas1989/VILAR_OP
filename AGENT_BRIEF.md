@@ -89,7 +89,7 @@ frontend/
   src/components/AdminExportDictionaries.tsx — экспорт справочников
   src/components/AdminDataMaintenance.tsx — очистка / демо / резервные копии (+ скачать на ПК)
   src/components/AdminLoginAuditPage.tsx — журнал входов
-  src/components/AdminChangelogPage.tsx — что нового (CHANGELOG.md)
+  src/components/AdminChangelogPage.tsx — что нового (лента по датам + типы)
   src/components/HeaderChat.tsx — чат в шапке
   src/components/QualityManagementPage.tsx — единый документ качества
   src/components/QualityScenariosPage.tsx — сценарии: авто-QCM при создании партии
@@ -103,6 +103,8 @@ frontend/
   src/components/DecimalInput.tsx        — безопасный ввод чисел (,/.; без type=number)
   src/utils/decimalInput.ts              — разбор черновика десятичного числа
   src/utils/qty.ts                       — roundQty / formatQty (как backend, 6 знаков)
+  src/utils/substitutions.ts             — аналоги для UI (как backend substitutesFor)
+  src/utils/changelog.ts                 — разбор docs/CHANGELOG.md для «Что нового»
   src/utils/id.ts                        — newId(): UUID с fallback на http://IP (не secure context)
   src/components/DocumentTracePanel.tsx  — движения и связи
   src/components/DocumentTraceModal.tsx  — отдельное окно по пиктограмме у статуса
