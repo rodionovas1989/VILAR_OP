@@ -2069,6 +2069,48 @@ button.danger-outline:hover {
   border-top: 1px solid var(--line);
 }
 
+.modal-footer-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal-save-toast {
+  align-self: flex-end;
+  max-width: min(100%, 28rem);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #f3c1ba;
+  background: #fff4f2;
+  color: #7a271a;
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  box-shadow: 0 6px 18px rgba(122, 39, 26, 0.12);
+  animation: modal-save-toast-in 160ms ease-out;
+}
+
+@keyframes modal-save-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .modal-body {
   padding: 16px;
   overflow: auto;

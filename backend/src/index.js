@@ -112,8 +112,30 @@ function assertTechMap(item) {
   return item;
 }
 
-function normalizeLot(item) {
+function normalizeLot(item, excludeId) {
   if (item && 'paramValues' in item) delete item.paramValues;
+  const number = String(item?.number || '').trim();
+  if (!number) throw new Error('Укажите номер партии');
+  item.number = number;
+
+  const identificationNumber = String(item?.identificationNumber || '').trim();
+  item.identificationNumber = identificationNumber;
+
+  const others = readAll('lots').filter((r) => r.id !== excludeId);
+  const dupNumber = others.find((r) => String(r.number || '').trim() === number);
+  if (dupNumber) {
+    throw new Error(`Партия с номером «${number}» уже есть`);
+  }
+  if (identificationNumber) {
+    const dupIdn = others.find(
+      (r) => String(r.identificationNumber || '').trim() === identificationNumber
+    );
+    if (dupIdn) {
+      throw new Error(
+        `Партия с идентификационным номером «${identificationNumber}» уже есть (номер ${dupIdn.number || dupIdn.id})`
+      );
+    }
+  }
   return item;
 }
 
@@ -307,8 +329,8 @@ for (const name of COLLECTIONS) {
     app.use(
       `/api/${name}`,
       crudRouter(name, {
-        beforeCreate: (item) => normalizeLot(item),
-        beforeUpdate: (merged) => normalizeLot(merged),
+        beforeCreate: (item) => normalizeLot(item, item.id),
+        beforeUpdate: (merged, current) => normalizeLot(merged, current.id),
         afterCreate: (lot, req) => {
           const uid = actorId(req);
           if (!uid) throw new Error('Не авторизован: нет пользователя для сценария качества');

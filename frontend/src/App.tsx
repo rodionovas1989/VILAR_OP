@@ -351,7 +351,7 @@ export default function App() {
               {
                 key: 'identificationNumber',
                 label: 'Идентификационный номер',
-                hint: 'Буквы и цифры; пока только в карточке партии',
+                hint: 'Буквы и цифры; уникален, если заполнен',
               },
               { key: 'materialId', label: 'Материал', type: 'select', required: true, options: opt(materials) },
               {
@@ -392,8 +392,23 @@ export default function App() {
             ]}
             transformOut={(row) => ({
               ...row,
+              number: String(row.number || '').trim(),
               identificationNumber: String(row.identificationNumber || '').trim(),
             })}
+            validate={(row) => {
+              const number = String(row.number || '').trim();
+              if (!number) return 'Укажите номер партии';
+              const idn = String(row.identificationNumber || '').trim();
+              const selfId = String(row.id || '');
+              const others = lots.filter((l) => l.id !== selfId);
+              if (others.some((l) => String(l.number || '').trim() === number)) {
+                return `Партия с номером «${number}» уже есть`;
+              }
+              if (idn && others.some((l) => String(l.identificationNumber || '').trim() === idn)) {
+                return `Партия с идентификационным номером «${idn}» уже есть`;
+              }
+              return null;
+            }}
           />
         );
       case 'series':

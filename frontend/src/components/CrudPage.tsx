@@ -118,6 +118,7 @@ export function CrudPage({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
@@ -171,6 +172,7 @@ export function CrudPage({
     });
     blank.lines = [];
     blank.approvedSuppliers = [];
+    setFormError('');
     setEditing(blank);
   };
 
@@ -184,6 +186,7 @@ export function CrudPage({
     });
     if (!Array.isArray(base.lines)) base.lines = [];
     if (!Array.isArray(base.approvedSuppliers)) base.approvedSuppliers = [];
+    setFormError('');
     setEditing(base);
     if (row.id) {
       remember({
@@ -195,7 +198,10 @@ export function CrudPage({
     }
   };
 
-  const closeForm = () => setEditing(null);
+  const closeForm = () => {
+    setFormError('');
+    setEditing(null);
+  };
 
   const openFromRecent = async (entityId: string, _mode: RecentMode) => {
     let row = rows.find((r) => String(r.id) === entityId);
@@ -229,6 +235,7 @@ export function CrudPage({
     const isNew = !editing.id;
     if (isNew && !canCreate) return;
     if (!isNew && !canModify) return;
+    setFormError('');
     try {
       let body = { ...editing };
       const editingId = editing.id ? String(editing.id) : undefined;
@@ -242,7 +249,7 @@ export function CrudPage({
       if (transformOut) body = transformOut(body);
       const invalid = validate?.(editingId ? { ...body, id: editingId } : body);
       if (invalid) {
-        setError(invalid);
+        setFormError(invalid);
         return;
       }
       if (editingId) {
@@ -264,10 +271,11 @@ export function CrudPage({
           });
         }
       }
+      setFormError('');
       setEditing(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setFormError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -356,7 +364,7 @@ export function CrudPage({
           activeFilterCount={listTable.activeFilterCount}
         />
       )}
-      {error && <div className="alert error alert-multiline">{error}</div>}
+      {error && !editing && <div className="alert error alert-multiline">{error}</div>}
       {loading ? (
         <p>Загрузка…</p>
       ) : (
@@ -427,17 +435,24 @@ export function CrudPage({
       <Modal
         open={!!editing}
         title={editing?.id ? `Редактирование — ${title}` : `Создание — ${title}`}
-        onClose={() => setEditing(null)}
+        onClose={closeForm}
         wide={wideModal}
         footer={
-          <>
-            <button type="button" className="ghost" onClick={() => setEditing(null)}>
-              Отмена
-            </button>
-            <button type="submit" form="crud-form">
-              Сохранить
-            </button>
-          </>
+          <div className="modal-footer-stack">
+            {formError ? (
+              <div className="modal-save-toast" role="alert">
+                {formError}
+              </div>
+            ) : null}
+            <div className="modal-footer-actions">
+              <button type="button" className="ghost" onClick={closeForm}>
+                Отмена
+              </button>
+              <button type="submit" form="crud-form">
+                Сохранить
+              </button>
+            </div>
+          </div>
         }
       >
         <form id="crud-form" onSubmit={onSubmit} className="form-grid">
@@ -452,6 +467,7 @@ export function CrudPage({
               if (f.patchOnChange) {
                 Object.assign(next, f.patchOnChange(String(value), next));
               }
+              if (formError) setFormError('');
               setEditing(next);
             };
             return (
