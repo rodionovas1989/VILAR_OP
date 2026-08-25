@@ -26,6 +26,7 @@ import PageTitle from './PageTitle';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import SearchableSelect from './SearchableSelect';
+import DecimalInput from './DecimalInput';
 import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
 import { Lot, Material, Warehouse } from '../types';
 import { metaForDocumentType } from '../constants/documentTypes';
@@ -692,15 +693,8 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
 
   const invFactRows = useMemo(() => {
     if (!editing || editing.type !== 'inventory') return [];
-    // Факт: все строки, кроме «снятых» с факта (book>0 и actual===0) — они видны в Разнице
-    return editing.lines
-      .map((l, idx) => ({ line: l, idx }))
-      .filter(({ line: l }) => {
-        const book = Number(l.bookQuantity ?? 0);
-        const actual = Number(l.actualQuantity ?? 0);
-        if (book > 0 && actual === 0) return false;
-        return true;
-      });
+    // Факт: все строки документа; fact=0 — валидное значение (недостача = план − 0), строка не скрывается
+    return editing.lines.map((l, idx) => ({ line: l, idx }));
   }, [editing]);
 
   const linesTable = editing ? (
@@ -805,13 +799,11 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                     </td>
                     <td>
                       {canEditFields ? (
-                        <input
-                          type="number"
-                          step="any"
+                        <DecimalInput
+                          className="doc-qty-input"
                           min={0}
-                          value={line.actualQuantity ?? ''}
-                          onChange={(e) => {
-                            const actual = Number(e.target.value);
+                          value={line.actualQuantity ?? 0}
+                          onValueChange={(actual) => {
                             const lines = [...editing.lines];
                             lines[idx] = { ...line, actualQuantity: actual, quantity: actual };
                             setEditing({ ...editing, lines });
@@ -823,24 +815,19 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                     </td>
                     {canEditFields && (
                       <td>
-                        <IconButton
-                          icon="delete"
-                          label="Убрать из факта"
-                          tone="danger"
-                          onClick={() => {
-                            const book = Number(line.bookQuantity ?? 0);
-                            if (book > 0) {
-                              const lines = [...editing.lines];
-                              lines[idx] = { ...line, actualQuantity: 0, quantity: 0 };
-                              setEditing({ ...editing, lines });
-                            } else {
+                        {Number(line.bookQuantity ?? 0) === 0 ? (
+                          <IconButton
+                            icon="delete"
+                            label="Удалить строку"
+                            tone="danger"
+                            onClick={() =>
                               setEditing({
                                 ...editing,
                                 lines: editing.lines.filter((_, i) => i !== idx),
-                              });
+                              })
                             }
-                          }}
-                        />
+                          />
+                        ) : null}
                       </td>
                     )}
                   </tr>

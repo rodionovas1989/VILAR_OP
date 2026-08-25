@@ -100,6 +100,8 @@ frontend/
   src/components/ColumnFilterList.tsx        — чекбоксы отбора (inline)
   src/components/ListViewSettings.tsx        — панель отбора и сортировки списка
   src/components/DocumentTypePage.tsx    — страница одного типа документа (date+time, actions menu, user labels)
+  src/components/DecimalInput.tsx        — безопасный ввод чисел (,/.; без type=number)
+  src/utils/decimalInput.ts              — разбор черновика десятичного числа
   src/utils/id.ts                        — newId(): UUID с fallback на http://IP (не secure context)
   src/components/DocumentTracePanel.tsx  — движения и связи
   src/components/DocumentTraceModal.tsx  — отдельное окно по пиктограмме у статуса
