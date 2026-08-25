@@ -640,7 +640,8 @@ button.linkish {
 }
 
 .page > .table-wrap,
-.page > .user-guide-layout {
+.page > .user-guide-layout,
+.page > .changelog-feed {
   flex: 1;
   min-height: 0;
 }
@@ -3647,6 +3648,10 @@ button.danger-outline:hover {
   flex-direction: column;
   gap: 28px;
   max-width: 52rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+  padding-bottom: 8px;
 }
 
 .changelog-day-title {
