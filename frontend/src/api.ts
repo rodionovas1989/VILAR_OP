@@ -105,8 +105,11 @@ export const api = {
   confirmMaterialsBulk: (items: { orderId: string; picks: unknown[] }[], userId?: string) =>
     request('/planning/confirm-materials-bulk', { method: 'POST', body: JSON.stringify({ items, userId }) }),
   gantt: () => request<{ workCenters: unknown[]; tasks: GanttTask[] }>('/planning/gantt'),
-  lotsAvailable: (materialId: string, algorithm: string) =>
-    request(`/planning/lots-available/${materialId}?algorithm=${algorithm}`),
+  lotsAvailable: (materialId: string, algorithm: string, warehouseId?: string) => {
+    const q = new URLSearchParams({ algorithm });
+    if (warehouseId) q.set('warehouseId', warehouseId);
+    return request(`/planning/lots-available/${materialId}?${q.toString()}`);
+  },
   materialBalanceMatrix: (from?: string, to?: string) => {
     const q = new URLSearchParams();
     if (from) q.set('from', from);
@@ -116,7 +119,7 @@ export const api = {
   },
   completeOrder: (
     id: string,
-    opts?: { userId?: string; warehouseFromId?: string; warehouseToId?: string }
+    opts?: { userId?: string; warehouseToId?: string }
   ) =>
     request(`/planning/complete/${id}`, {
       method: 'POST',
@@ -133,6 +136,7 @@ export const api = {
         specMaterialId?: string | null;
         materialId: string;
         lotId: string;
+        warehouseId?: string | null;
         quantity: number;
         substitutionRuleId?: string | null;
       }[];

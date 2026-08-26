@@ -249,6 +249,58 @@ describe('Резерв и заказ', () => {
     assert.equal(active.length, 1);
     assert.equal(active[0].quantity, 2);
     assert.equal(active[0].documentId, reservationDocument.id);
+    assert.equal(order.lines[0].warehouseId, WH_C);
+    assert.equal(active[0].warehouseId, WH_C);
+  });
+
+  test('мультисклад: N RES и N PRI с разных складов', () => {
+    store.create('materials', { id: 'mat-rm-b', name: 'Сырьё Б', type: 'основной компонент', unit: 'кг' });
+    store.create('lots', {
+      id: 'lot-rm-b',
+      number: 'RM-B-001',
+      materialId: 'mat-rm-b',
+      counterpartyId: 'cp-1',
+      manufacturerId: 'mfr-1',
+      productionDate: isoDays(-20),
+      expiryDate: isoDays(300),
+    });
+    store.update('specifications', 'spec-1', {
+      lines: [
+        { id: 'sl-1', materialId: 'mat-rm', qtyPerUnit: 2 },
+        { id: 'sl-2', materialId: 'mat-rm-b', qtyPerUnit: 1 },
+      ],
+    });
+    postReceipt(50);
+    const pst = documents.createDocument('posting', {
+      createdByUserId: USER,
+      warehouseToId: WH_FG,
+      lines: [{ materialId: 'mat-rm-b', lotId: 'lot-rm-b', quantity: 20 }],
+    });
+    documents.postDocument('posting', pst.id, USER);
+    assert.equal(stockQty('lot-rm-b', WH_FG), 20);
+
+    const { order, reservationDocuments } = planning.confirmMaterialPicks(
+      'ord-1',
+      [
+        { materialId: 'mat-rm', lotId: 'lot-rm', quantity: 2, warehouseId: WH_C },
+        { materialId: 'mat-rm-b', lotId: 'lot-rm-b', quantity: 1, warehouseId: WH_FG },
+      ],
+      USER
+    );
+    assert.equal(order.status, 'спланирован');
+    assert.equal(reservationDocuments.length, 2);
+    assert.equal(store.readAll('active_reservations').filter((r) => r.productionOrderId === 'ord-1').length, 2);
+
+    const result = planning.completeOrder('ord-1', USER);
+    assert.equal(result.order.status, 'завершен');
+    assert.equal(result.documents.productionIssues.length, 2);
+    assert.equal(result.documents.reservations.length, 2);
+    assert.ok(result.documents.reservations.every((r) => r.status === 'fulfilled'));
+    assert.equal(stockQty('lot-rm', WH_C), 48);
+    assert.equal(stockQty('lot-rm-b', WH_FG), 19);
+    const whFrom = new Set(result.documents.productionIssues.map((d) => d.warehouseFromId));
+    assert.ok(whFrom.has(WH_C));
+    assert.ok(whFrom.has(WH_FG));
   });
 
   test('переплан отменяет старый RES и создаёт новый', () => {

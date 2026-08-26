@@ -161,8 +161,11 @@ export interface OrderLine {
   specMaterialId?: string | null;
   materialId: string;
   lotId: string;
+  /** Склад списания/резерва для этой строки */
+  warehouseId?: string | null;
   quantity: number;
   reservationId?: string;
+  reservationDocumentId?: string;
   substitutionRuleId?: string | null;
 }
 
@@ -222,6 +225,9 @@ export interface MaterialPick {
   recalcSnapshot?: { xLabel?: number; assay?: number | null; lossOnDrying?: number | null } | null;
   lotId: string | null;
   lotNumber?: string | null;
+  warehouseId?: string | null;
+  warehouseName?: string | null;
+  warehouseType?: string | null;
   counterpartyId?: string;
   counterpartyName?: string;
   manufacturerId?: string;

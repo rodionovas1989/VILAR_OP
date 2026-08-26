@@ -7,6 +7,12 @@ import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
 import { PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY, computeLineNeed, lotRecalcValue } from '../utils/lotRecalc';
+import {
+  formatLotNumberLabel,
+  lotWhKey,
+  parseLotWhKey,
+  shortWarehouseLabel,
+} from '../utils/lotSelect';
 
 type SuggestResult = {
   orderId: string;
@@ -21,6 +27,9 @@ type AvailableLot = {
   id: string;
   number: string;
   freeQty: number;
+  warehouseId?: string;
+  warehouseName?: string;
+  warehouseType?: string;
   counterpartyId?: string;
   counterparty?: { name: string };
   manufacturerId?: string;
@@ -34,6 +43,14 @@ type AvailableLot = {
   paramValues?: Record<string, number>;
   characteristicValues?: Record<string, number>;
 };
+
+function findLotRow(lots: AvailableLot[], lotId: string | null | undefined, warehouseId?: string | null) {
+  if (!lotId) return undefined;
+  if (warehouseId) {
+    return lots.find((l) => l.id === lotId && l.warehouseId === warehouseId) || lots.find((l) => l.id === lotId);
+  }
+  return lots.find((l) => l.id === lotId);
+}
 
 function applyNeedToPick(pick: MaterialPick, lot: AvailableLot | null | undefined, orderQty: number): MaterialPick {
   const need = computeLineNeed({
@@ -409,13 +426,17 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     }
   };
 
-  const changeLot = async (orderIdx: number, pickIdx: number, lotId: string) => {
+  const changeLot = async (orderIdx: number, pickIdx: number, lotWhValue: string) => {
     const next = [...suggestions];
     const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
-    let pick = { ...next[orderIdx].picks[pickIdx], lotId: lotId || null };
+    const { lotId, warehouseId } = parseLotWhKey(lotWhValue);
+    let pick = { ...next[orderIdx].picks[pickIdx], lotId: lotId || null, warehouseId: warehouseId || null };
     if (!lotId) {
       pick = applyNeedToPick(pick, null, orderQty);
       pick.lotNumber = null;
+      pick.warehouseId = null;
+      pick.warehouseName = null;
+      pick.warehouseType = null;
       pick.freeQty = undefined;
       pick.counterpartyId = undefined;
       pick.counterpartyName = undefined;
@@ -430,9 +451,12 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.ok = false;
     } else {
       const lots = (await api.lotsAvailable(pick.materialId, algorithm)) as AvailableLot[];
-      const lot = lots.find((l) => l.id === lotId);
+      const lot = findLotRow(lots, lotId, warehouseId);
       pick = applyNeedToPick(pick, lot, orderQty);
       pick.lotNumber = lot?.number;
+      pick.warehouseId = lot?.warehouseId || warehouseId || null;
+      pick.warehouseName = lot?.warehouseName || null;
+      pick.warehouseType = lot?.warehouseType || null;
       pick.freeQty = lot?.freeQty;
       pick.counterpartyId = lot?.counterpartyId;
       pick.counterpartyName = lot?.counterparty?.name || '—';
@@ -464,6 +488,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
         substituted: materialId !== specMaterialId,
         lotId: null,
         lotNumber: null,
+        warehouseId: null,
+        warehouseName: null,
+        warehouseType: null,
         freeQty: undefined,
         counterpartyId: undefined,
         counterpartyName: undefined,
@@ -490,6 +517,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           ...suitable.pick,
           lotId: suitable.lot.id,
           lotNumber: suitable.lot.number,
+          warehouseId: suitable.lot.warehouseId || null,
+          warehouseName: suitable.lot.warehouseName || null,
+          warehouseType: suitable.lot.warehouseType || null,
           freeQty: suitable.lot.freeQty,
           counterpartyId: suitable.lot.counterpartyId,
           counterpartyName: suitable.lot.counterparty?.name || '—',
@@ -542,6 +572,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           materialId: p.materialId,
           quantity: p.quantity,
           lotId: p.lotId,
+          warehouseId: p.warehouseId,
         })),
       }));
       await api.confirmMaterialsBulk(items, user?.id);
@@ -714,6 +745,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                       <col className="col-mat" />
                       <col className="col-qty" />
                       <col className="col-lot" />
+                      <col className="col-wh" />
                       <col className="col-cp" />
                       <col className="col-mfr" />
                       <col className="col-exp" />
@@ -725,6 +757,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                         <th>Материал</th>
                         <th className="col-center">Кол-во</th>
                         <th>Партия</th>
+                        <th>Склад</th>
                         <th>Контрагент</th>
                         <th>Производитель</th>
                         <th className="col-center">Срок годности</th>
@@ -749,7 +782,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                             p.materialId,
                             p.manufacturerId
                           )}
-                          onChangeLot={(lotId) => changeLot(oi, pi, lotId)}
+                          onChangeLot={(lotWhValue) => changeLot(oi, pi, lotWhValue)}
                           onChangeMaterial={(materialId) => void changeMaterial(oi, pi, materialId)}
                         />
                       ))}
@@ -1182,28 +1215,15 @@ function PickRow({
   materials: { id: string; name: string }[];
   counterpartyApproved: boolean;
   manufacturerApproved: boolean;
-  onChangeLot: (lotId: string) => void;
+  onChangeLot: (lotWhValue: string) => void;
   onChangeMaterial: (materialId: string) => void;
 }) {
-  const [lots, setLots] = useState<
-    {
-      id: string;
-      number: string;
-      freeQty: number;
-      counterparty?: { name: string };
-      expiryDate?: string;
-      qualityPermission?: string;
-      qualityPermissionLabel?: string;
-      qualityName?: string | null;
-      qualityMessage?: string | null;
-      qualityAllowed?: boolean;
-    }[]
-  >([]);
+  const [lots, setLots] = useState<AvailableLot[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     api.lotsAvailable(pick.materialId, algorithm).then((data) => {
-      if (!cancelled) setLots(data as typeof lots);
+      if (!cancelled) setLots(data as AvailableLot[]);
     });
     return () => {
       cancelled = true;
@@ -1211,7 +1231,7 @@ function PickRow({
   }, [pick.materialId, algorithm]);
 
   const ok = !!pick.ok;
-  const selectedLot = lots.find((l) => l.id === pick.lotId);
+  const selectedLot = findLotRow(lots, pick.lotId, pick.warehouseId);
   const qualityUnfit = selectedLot?.qualityAllowed === false || pick.qualityAllowed === false;
   const qualityConditional =
     !qualityUnfit &&
@@ -1219,6 +1239,7 @@ function PickRow({
   const qualityMessage = selectedLot?.qualityMessage || pick.qualityMessage;
   const allowedIds = pick.allowedMaterialIds?.length ? pick.allowedMaterialIds : [pick.materialId];
   const canSwap = allowedIds.length > 1;
+  const lotSelectValue = pick.lotId ? lotWhKey(pick.lotId, pick.warehouseId || selectedLot?.warehouseId) : '';
 
   return (
     <tr
@@ -1265,16 +1286,31 @@ function PickRow({
           ]
             .filter(Boolean)
             .join(' ')}
-          value={pick.lotId || ''}
+          value={lotSelectValue}
           onChange={onChangeLot}
           emptyLabel="— не выбрана —"
-          options={lots.map((l) => ({
-            value: l.id,
-            label: `${
-              l.qualityAllowed === false ? '⛔ ' : l.qualityPermission === 'conditional' ? '⚠ ' : ''
-            }${l.number} (своб. ${l.freeQty})${l.qualityName ? ` — ${l.qualityName}` : ''}`,
-            className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
-          }))}
+          options={[
+            ...(!selectedLot && pick.lotId
+              ? [
+                  {
+                    value: lotSelectValue,
+                    label: formatLotNumberLabel({
+                      number: pick.lotNumber || pick.lotId,
+                      warehouseType: pick.warehouseType,
+                      warehouseName: pick.warehouseName,
+                    }),
+                  },
+                ]
+              : []),
+            ...lots.map((l) => {
+              const multiWh = lots.filter((x) => x.id === l.id).length > 1;
+              return {
+                value: lotWhKey(l.id, l.warehouseId),
+                label: formatLotNumberLabel(l, multiWh),
+                className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
+              };
+            }),
+          ]}
         />
         {qualityUnfit && (
           <div className="pick-lot-block-reason">
@@ -1293,6 +1329,16 @@ function PickRow({
               : `Недостаточно свободного остатка (нужно ${pick.quantity}, доступно с учётом других заказов)`}
           </div>
         )}
+      </td>
+      <td
+        className="pick-wh-cell"
+        title={pick.warehouseName || selectedLot?.warehouseName || undefined}
+      >
+        {shortWarehouseLabel(
+          pick.warehouseType || selectedLot?.warehouseType,
+          pick.warehouseName || selectedLot?.warehouseName
+        ) ||
+          (pick.warehouseId ? '—' : '—')}
       </td>
       <td>
         {pick.lotId && pick.counterpartyName && pick.counterpartyName !== '—' ? (

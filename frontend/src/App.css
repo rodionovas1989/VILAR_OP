@@ -2441,13 +2441,16 @@ button.danger-outline:hover {
 }
 
 .materials-suggest .col-mat {
-  width: 22%;
+  width: 20%;
 }
 .materials-suggest .col-qty {
-  width: 8%;
+  width: 7%;
 }
 .materials-suggest .col-lot {
-  width: 22%;
+  width: 20%;
+}
+.materials-suggest .col-wh {
+  width: 7%;
 }
 .materials-suggest .col-cp {
   width: 12%;
@@ -2456,13 +2459,13 @@ button.danger-outline:hover {
   width: 12%;
 }
 .materials-suggest .col-exp {
-  width: 10%;
+  width: 9%;
 }
 .materials-suggest .col-free {
-  width: 10%;
+  width: 8%;
 }
 .materials-suggest .col-ok {
-  width: 8%;
+  width: 5%;
 }
 
 .materials-suggest .suggest-table th,
@@ -2920,22 +2923,32 @@ button.danger-outline:hover {
 
 .prod-lines-table th:nth-child(1),
 .prod-lines-table td:nth-child(1) {
-  width: 28%;
+  width: 22%;
 }
 
 .prod-lines-table th:nth-child(2),
 .prod-lines-table td:nth-child(2) {
-  width: 34%;
+  width: 22%;
 }
 
 .prod-lines-table th:nth-child(3),
 .prod-lines-table td:nth-child(3) {
-  width: 22%;
+  width: 10%;
 }
 
 .prod-lines-table th:nth-child(4),
 .prod-lines-table td:nth-child(4) {
-  width: 16%;
+  width: 10%;
+}
+
+.prod-lines-table th:nth-child(5),
+.prod-lines-table td:nth-child(5) {
+  width: 18%;
+}
+
+.prod-lines-table th:nth-child(6),
+.prod-lines-table td:nth-child(6) {
+  width: 18%;
 }
 
 .prod-lot-cell {
@@ -2960,14 +2973,51 @@ button.danger-outline:hover {
   background: rgba(26, 122, 98, 0.04);
 }
 
+.prod-wh-cell,
+.prod-cp-cell {
+  min-width: 0;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prod-free-cell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .prod-lot-quality {
   margin-top: 4px;
   font-size: 12px;
 }
 
+.prod-qty-cell {
+  position: sticky;
+  right: 0;
+  background: var(--panel, #fff);
+  box-shadow: -6px 0 8px -6px rgba(15, 35, 52, 0.12);
+  z-index: 1;
+}
+
+.prod-lines-table th:nth-child(6) {
+  position: sticky;
+  right: 0;
+  background: var(--panel, #f7fafc);
+  z-index: 2;
+}
+
 .prod-qty-cell input {
-  max-width: 120px;
+  max-width: 100%;
+  width: 5.5rem;
   margin-inline: auto;
+  display: block;
+}
+
+.pick-wh-cell {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .production-desktop .col-center {
@@ -3979,7 +4029,7 @@ button.danger-outline:hover {
 .doc-lines-table .searchable-select,
 .series-plan-table .searchable-select,
 .prod-lot-cell .searchable-select {
-  min-width: 140px;
+  min-width: 0;
 }
 
 .form-grid .searchable-select-trigger,

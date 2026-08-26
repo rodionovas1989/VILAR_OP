@@ -2,8 +2,9 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `feature/multi-warehouse-pri-res` | Мультисклад: N RES/PRI, склад в строке факта (D009/D010) | **слита** в main |
 | `docs/llm-wiki` | LLM Wiki: `wiki/` + rules + secrets-guard; entity follow-up | **слита** в main |
-| `main` | + тикеты FB-00002…00007; лента «Что нового»; единый числовой ввод | **эталон** |
+| `main` | + мультисклад PRI/RES; тикеты FB-00002…00007; единый числовой ввод | **эталон** |
 | `fix/unify-decimal-input` | DecimalInput во всех числовых полях (приёмка и др.) | **слита** в main |
 | `fix/changelog-feed-scroll` | Скролл ленты «Что нового» | **слита** в main |
 | `feature/fb-00002-approved-suppliers-analogues` | Поставщики↔аналоги + лента «Что нового» | **слита** в main |

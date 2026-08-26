@@ -9,6 +9,7 @@
 - Подбор сырья выбирает одну партию на материал заказа.
 - Две партии одного материала на заказ зарезервировать нельзя.
 - Смешивание партий в рамках серии ГП **не поддерживается**.
+- Правило про **партию** (`lotId`), не про «одну ячейку склада». Если одна партия разнесена по складам и на одном месте не хватает qty — сейчас нужно **перемещение (TRN)** на склад списания; авто-сплит одной партии по складам отложен ([D010](../decisions/D010-same-lot-multi-warehouse.md)).
 
 **Канон:** [docs/GMP_SERIES_RULES.md](../docs/GMP_SERIES_RULES.md) §3–4  
-**Связано:** [fefo-fifo-picking.md](fefo-fifo-picking.md), [entities/reservation-res.md](../entities/reservation-res.md)
+**Связано:** [fefo-fifo-picking.md](fefo-fifo-picking.md), [entities/reservation-res.md](../entities/reservation-res.md), [D009](../decisions/D009-multi-warehouse-pri.md), [D010](../decisions/D010-same-lot-multi-warehouse.md)
