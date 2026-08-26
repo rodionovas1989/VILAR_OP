@@ -304,6 +304,80 @@ export function suggestPicksBulk(orderIds, algorithm = 'FEFO') {
   return (orderIds || []).map((orderId) => suggestPicksForOrder(orderId, algorithm, { claimed }));
 }
 
+/**
+ * «Хвосты» партий для выбранных заказов: свободный остаток > 0, но меньше потребности
+ * хотя бы одной строки подбора по этому материалу, и партия×склад нигде не выбрана.
+ * Без авто-утилизации — только обзор (см. wiki/analyses/lot-leftover-tails.md).
+ */
+export function leftoverLotTails(orderIds, algorithm = 'FEFO') {
+  const ids = orderIds || [];
+  if (!ids.length) return { algorithm, items: [] };
+
+  const suggestions = suggestPicksBulk(ids, algorithm);
+  const selected = new Set();
+  /** @type {Map<string, { materialId: string, materialName: string, maxNeed: number, minNeed: number }>} */
+  const byMaterial = new Map();
+
+  for (const s of suggestions) {
+    for (const p of s.picks || []) {
+      const materialId = p.materialId || p.specMaterialId;
+      if (!materialId) continue;
+      const need = Number(p.quantity) || 0;
+      const prev = byMaterial.get(materialId);
+      if (!prev) {
+        byMaterial.set(materialId, {
+          materialId,
+          materialName: p.materialName || p.specMaterialName || materialId,
+          maxNeed: need,
+          minNeed: need,
+        });
+      } else {
+        prev.maxNeed = Math.max(prev.maxNeed, need);
+        prev.minNeed = Math.min(prev.minNeed, need);
+      }
+      if (p.lotId) selected.add(claimKey(p.lotId, p.warehouseId));
+    }
+  }
+
+  const items = [];
+  for (const info of byMaterial.values()) {
+    if (!(info.maxNeed > 0)) continue;
+    const lots = availableLotsForMaterial(info.materialId, algorithm);
+    for (const lot of lots) {
+      const free = Number(lot.freeQty) || 0;
+      if (!(free > 0)) continue;
+      if (free >= info.maxNeed) continue;
+      const key = claimKey(lot.id, lot.warehouseId);
+      if (selected.has(key)) continue;
+      items.push({
+        materialId: info.materialId,
+        materialName: info.materialName,
+        lotId: lot.id,
+        lotNumber: lot.number,
+        warehouseId: lot.warehouseId || null,
+        warehouseName: lot.warehouseName || null,
+        warehouseType: lot.warehouseType || null,
+        freeQty: free,
+        maxNeed: info.maxNeed,
+        minNeed: info.minNeed,
+        expiryDate: lot.expiryDate || null,
+        hint:
+          free < info.minNeed
+            ? 'Не набирает ни одну серию в выборке — TRN / утилизация / меньшая серия'
+            : 'Не набирает крупнейшую серию в выборке — проверить объём серии или TRN',
+      });
+    }
+  }
+
+  items.sort((a, b) => {
+    const byMat = String(a.materialName || '').localeCompare(String(b.materialName || ''), 'ru');
+    if (byMat !== 0) return byMat;
+    return Number(a.freeQty) - Number(b.freeQty);
+  });
+
+  return { algorithm, items };
+}
+
 /** Только проверка: заказы остаются «новый» до подтверждения резерва (вкладка 2). */
 export function confirmOrderSelection(orderIds) {
   const selected = [];

@@ -60,6 +60,15 @@ router.post('/suggest-materials-bulk', canPlan, (req, res) => {
   }
 });
 
+router.post('/lot-leftover-tails', canPlan, (req, res) => {
+  try {
+    const { orderIds = [], algorithm = 'FEFO' } = req.body || {};
+    res.json(planning.leftoverLotTails(orderIds, algorithm));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
 router.post('/confirm-materials', canPlan, (req, res) => {
   try {
     const { orderId, picks } = req.body || {};

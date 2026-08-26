@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { api, GanttTask, MaterialBalanceMatrix } from '../api';
+import { api, GanttTask, LotLeftoverTail, MaterialBalanceMatrix } from '../api';
 import { MaterialPick, ProductionOrder } from '../types';
 import CounterpartyBadge from './CounterpartyBadge';
 import GanttChart from './GanttChart';
+import { Modal } from './Modal';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
@@ -118,9 +119,30 @@ export default function PlanningDesktop({ dictionaries }: Props) {
   const [exportBusy, setExportBusy] = useState(false);
   const [productFilterOpen, setProductFilterOpen] = useState(false);
   const [onlyProblems, setOnlyProblems] = useState(false);
+  const [tailsOpen, setTailsOpen] = useState(false);
+  const [tailsBusy, setTailsBusy] = useState(false);
+  const [tails, setTails] = useState<LotLeftoverTail[]>([]);
+  const [tailsError, setTailsError] = useState('');
 
   const orderHasIssues = (s: SuggestResult) =>
     s.picks.some((p) => !p.ok) || (s.warnings?.length ?? 0) > 0;
+
+  const openLotTails = async () => {
+    const ids = suggestions.map((s) => s.orderId);
+    if (!ids.length) return;
+    setTailsOpen(true);
+    setTailsBusy(true);
+    setTailsError('');
+    try {
+      const res = await api.lotLeftoverTails(ids, algorithm);
+      setTails(res.items || []);
+    } catch (e) {
+      setTails([]);
+      setTailsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setTailsBusy(false);
+    }
+  };
 
   const problemOrderIds = useMemo(
     () => suggestions.filter(orderHasIssues).map((s) => s.orderId),
@@ -745,13 +767,22 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                 ? ` (${problemOrderIds.length} из ${suggestions.length})`
                 : ''}
             </label>
+            <button
+              type="button"
+              className="ghost"
+              disabled={!suggestions.length || busy || tailsBusy}
+              onClick={() => void openLotTails()}
+              title="Партии с остатком, который не набирает серию в текущей выборке"
+            >
+              Хвосты партий
+            </button>
           </div>
           <p className="hint">
             GMP: на один компонент в серии — одна партия сырья. Пакетный подбор учитывает уже предложенные
             строки: если партия «съедена» предыдущим заказом, берётся следующая по FEFO/FIFO. Можно вручную
             заменить партию. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема. «Только
             проблемные» оставляет заказы с ✗ или предупреждениями; после исправления заказ исчезает из
-            списка.
+            списка. «Хвосты партий» — обзор мелких остатков (без авто-утилизации).
           </p>
           {visibleSuggestions.map((s) => {
             const order = orders.find((o) => o.id === s.orderId);
@@ -1135,6 +1166,61 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           )}
         </div>
       )}
+
+      <Modal
+        open={tailsOpen}
+        title="Хвосты партий"
+        wide
+        onClose={() => !tailsBusy && setTailsOpen(false)}
+        footer={
+          <button type="button" className="ghost" disabled={tailsBusy} onClick={() => setTailsOpen(false)}>
+            Закрыть
+          </button>
+        }
+      >
+        <p className="hint">
+          Партии с положительным свободным остатком, который меньше потребности хотя бы одной строки текущей
+          выборки и не был выбран в подборе. Без авто-утилизации: TRN, списание или меньшая серия — вручную.
+        </p>
+        {tailsBusy ? (
+          <p className="hint">Считаем…</p>
+        ) : tailsError ? (
+          <p className="error-text">{tailsError}</p>
+        ) : !tails.length ? (
+          <p className="hint">Хвостов по текущей выборке нет.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Материал</th>
+                  <th>Партия</th>
+                  <th>Склад</th>
+                  <th className="num">Свободно</th>
+                  <th className="num">Need (макс)</th>
+                  <th>Срок</th>
+                  <th>Подсказка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tails.map((t) => (
+                  <tr key={`${t.lotId}::${t.warehouseId || ''}`}>
+                    <td>{t.materialName}</td>
+                    <td>{t.lotNumber}</td>
+                    <td title={t.warehouseName || undefined}>
+                      {shortWarehouseLabel(t.warehouseType, t.warehouseName) || '—'}
+                    </td>
+                    <td className="num">{t.freeQty}</td>
+                    <td className="num">{t.maxNeed}</td>
+                    <td>{t.expiryDate ? String(t.expiryDate).slice(0, 10) : '—'}</td>
+                    <td className="muted">{t.hint}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

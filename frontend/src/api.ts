@@ -102,6 +102,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ orderIds, algorithm }),
     }),
+  lotLeftoverTails: (orderIds: string[], algorithm: string) =>
+    request<{ algorithm: string; items: LotLeftoverTail[] }>('/planning/lot-leftover-tails', {
+      method: 'POST',
+      body: JSON.stringify({ orderIds, algorithm }),
+    }),
   confirmMaterialsBulk: (items: { orderId: string; picks: unknown[] }[], userId?: string) =>
     request('/planning/confirm-materials-bulk', { method: 'POST', body: JSON.stringify({ items, userId }) }),
   gantt: () => request<{ workCenters: unknown[]; tasks: GanttTask[] }>('/planning/gantt'),
@@ -454,6 +459,21 @@ export const api = {
       '/chat/messages',
       { method: 'POST', body: JSON.stringify({ text }) }
     ),
+};
+
+export type LotLeftoverTail = {
+  materialId: string;
+  materialName: string;
+  lotId: string;
+  lotNumber: string;
+  warehouseId: string | null;
+  warehouseName: string | null;
+  warehouseType: string | null;
+  freeQty: number;
+  maxNeed: number;
+  minNeed: number;
+  expiryDate: string | null;
+  hint: string;
 };
 
 export type GanttTask = {

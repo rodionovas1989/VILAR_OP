@@ -260,6 +260,18 @@ describe('Резерв и заказ', () => {
     assert.equal(b.picks[0].lotId, 'lot-rm');
   });
 
+  test('хвосты партий: мелкий остаток не набирает need и не выбран', () => {
+    // need = 2 (qtyPerUnit 2 на 1000 уп.); FEFO-хвост 1 кг обходится
+    postReceipt(1, 'lot-rm-2');
+    postReceipt(50, 'lot-rm');
+    const { items } = planning.leftoverLotTails(['ord-1'], 'FEFO');
+    const tail = items.find((x) => x.lotId === 'lot-rm-2');
+    assert.ok(tail, 'ожидался хвост lot-rm-2');
+    assert.equal(tail.freeQty, 1);
+    assert.equal(tail.maxNeed, 2);
+    assert.equal(items.some((x) => x.lotId === 'lot-rm'), false);
+  });
+
   test('подтверждение сырья создаёт RES posted без движения stock', () => {
     postReceipt(50);
     const { order, reservationDocument } = planning.confirmMaterialPicks(

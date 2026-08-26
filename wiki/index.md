@@ -87,4 +87,4 @@
 | [README](analyses/README.md) | Куда класть синтез из query |
 | [lint-2026-08-26](analyses/lint-2026-08-26.md) | Первый полный lint |
 | [karpathy-gist-fit](analyses/karpathy-gist-fit.md) | Сверка с gist / вставка промпта |
-| [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий после FEFO (отложено) |
+| [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |

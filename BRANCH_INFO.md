@@ -2,9 +2,11 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `feature/lot-leftover-tails` | Модалка «хвосты партий» (G9) | **слита** в main |
+| `feature/iterative-pick-bulk` | Пакетный подбор с виртуальным FEFO + фильтр проблемных | **слита** в main |
 | `feature/multi-warehouse-pri-res` | Мультисклад: N RES/PRI, склад в строке факта (D009/D010) | **слита** в main |
 | `docs/llm-wiki` | LLM Wiki: `wiki/` + rules + secrets-guard; entity follow-up | **слита** в main |
-| `main` | + мультисклад PRI/RES; тикеты FB-00002…00007; единый числовой ввод | **эталон** |
+| `main` | + хвосты партий (G9); пакетный подбор/фильтр проблемных; мультисклад | **эталон** |
 | `fix/unify-decimal-input` | DecimalInput во всех числовых полях (приёмка и др.) | **слита** в main |
 | `fix/changelog-feed-scroll` | Скролл ленты «Что нового» | **слита** в main |
 | `feature/fb-00002-approved-suppliers-analogues` | Поставщики↔аналоги + лента «Что нового» | **слита** в main |
