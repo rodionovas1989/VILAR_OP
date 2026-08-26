@@ -13,7 +13,7 @@
 | Безопасность периметра | **пилот ок** | HTTPS, rate limit, AuthGate, SSH key-only |
 | Эксплуатация | **улучшается** | Скачивание бэкапа на ПК; журнал входов; EnvironmentFile |
 | Масштаб 10–15 пользователей | **осторожно да** | SQLite WAL; при росте писателей — Postgres |
-| Документация vs код | **процесс** | sync после main; `docs/CHANGELOG.md`; LLM Wiki `wiki/` (ветка `docs/llm-wiki`) |
+| Документация vs код | **процесс** | sync после main; `docs/CHANGELOG.md`; LLM Wiki `wiki/` (в `main`) |
 
 ---
 

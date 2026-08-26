@@ -44,3 +44,7 @@ Ingest: `ops/security-pilot`, `concepts/legal-pdn` + sources.
 Закрыт хвост lint: `feedback-tickets`, `production-register`, `ops-debug`, `login-audit`, `changelog-feed`.  
 Пункт «Остаётся» из lint-2026-08-26 по этим entity снят.
 
+## [2026-08-26] ingest | Merged docs/llm-wiki → main
+
+Fast-forward в `main`, push `origin/main`. Wiki и rules — эталон на main.
+
