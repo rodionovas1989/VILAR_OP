@@ -48,3 +48,18 @@ Ingest: `ops/security-pilot`, `concepts/legal-pdn` + sources.
 
 Fast-forward в `main`, push `origin/main`. Wiki и rules — эталон на main.
 
+## [2026-08-26] ingest | Multi-warehouse PRI/RES (D009)
+
+Склад списания в строках заказа/факта; N RES при confirm; N PRI при complete; стол производства — колонка склада. Подбор лотов отдаёт пары партия×склад.
+
+## [2026-08-26] decision | D010 same lot / multi-warehouse
+
+Зафиксированы варианты A–D (авто-аллокация, TRN, ручной split, логический склад).  
+**Сейчас:** консолидация остатка партии через **TRN** до резерва; авто-сплит одной партии по складам не делаем.  
+Страницы: `decisions/D010-same-lot-multi-warehouse`, правки `gmp-one-lot-per-component`, ссылка из D009.
+
+## [2026-08-26] ingest | Merged feature/multi-warehouse-pri-res → main
+
+Мультисклад в `main`: UI подбора/факта (номер партии + колонки склад/свободно), N RES/PRI, тест chain, userGuide/CHANGELOG, D009/D010.
+
+

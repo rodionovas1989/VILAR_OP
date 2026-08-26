@@ -1,7 +1,13 @@
 import { randomUUID } from 'crypto';
 import * as store from '../store.js';
 import * as documents from './documents.js';
-import { warehouseByType, stockRowForLot, freeQtyByLot } from './stock.js';
+import {
+  warehouseByType,
+  stockRowForLot,
+  freeQtyByLot,
+  warehousesWithFreeQty,
+  preferWarehouseForNeed,
+} from './stock.js';
 import { resolveLotQuality, assertLotsQualityForUse } from './quality.js';
 import { onLotCreated } from './scenarios.js';
 import {
@@ -13,7 +19,7 @@ import { computeLineNeed } from './lotRecalc.js';
 import { getLotCharacteristicMap, missingRequiredMessages } from './characteristics.js';
 import { recalcMissingMessage } from '../constants/lotCharacteristics.js';
 
-export { warehouseByType, stockRowForLot, freeQtyByLot };
+export { warehouseByType, stockRowForLot, freeQtyByLot, warehousesWithFreeQty, preferWarehouseForNeed };
 
 const ORDER_STATUS = {
   new: 'новый',
@@ -21,6 +27,23 @@ const ORDER_STATUS = {
   done: 'завершен',
   cancelled: 'отменен',
 };
+
+function groupByWarehouseId(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    const wh = row.warehouseId;
+    if (!wh) throw new Error('У строки состава не указан склад');
+    if (!map.has(wh)) map.set(wh, []);
+    map.get(wh).push(row);
+  }
+  return map;
+}
+
+function requireWarehouseId(warehouseId, label = 'Склад') {
+  if (!warehouseId) throw new Error(`${label}: не указан`);
+  if (!store.getById('warehouses', warehouseId)) throw new Error(`${label} не найден`);
+  return warehouseId;
+}
 
 function assertOrderStatus(order, allowed, action) {
   if (!allowed.includes(order.status)) {
@@ -35,35 +58,57 @@ function resolveActorUserId(userId) {
   throw new Error('Не авторизован: нет пользователя для проведения. Войдите в систему.');
 }
 
-export function availableLotsForMaterial(materialId, algorithm = 'FEFO') {
-  const lots = store
-    .readAll('lots')
-    .filter((l) => l.materialId === materialId)
-    .map((l) => {
-      const quality = resolveLotQuality(l.id);
-      return {
-        ...l,
-        freeQty: freeQtyByLot(l.id),
-        counterparty: l.counterpartyId ? store.getById('counterparties', l.counterpartyId) : null,
-        manufacturer: l.manufacturerId ? store.getById('manufacturers', l.manufacturerId) : null,
+/**
+ * Доступные партии материала по складам: одна запись на пару (партия, склад)
+ * с положительным свободным остатком на этом складе.
+ */
+export function availableLotsForMaterial(materialId, algorithm = 'FEFO', opts = {}) {
+  const filterWh = opts.warehouseId || null;
+  const excludeOrderId = opts.excludeProductionOrderId || null;
+  const rows = [];
+
+  for (const lot of store.readAll('lots').filter((l) => l.materialId === materialId)) {
+    if (new Date(lot.expiryDate) < new Date()) continue;
+    const quality = resolveLotQuality(lot.id);
+    const whAvail = warehousesWithFreeQty(lot.id, { excludeProductionOrderId: excludeOrderId }).filter(
+      (w) => !filterWh || w.warehouseId === filterWh
+    );
+    for (const wh of whAvail) {
+      rows.push({
+        ...lot,
+        warehouseId: wh.warehouseId,
+        warehouseName: wh.warehouseName,
+        warehouseType: wh.warehouseType,
+        freeQty: wh.freeQty,
+        counterparty: lot.counterpartyId ? store.getById('counterparties', lot.counterpartyId) : null,
+        manufacturer: lot.manufacturerId ? store.getById('manufacturers', lot.manufacturerId) : null,
         qualityPermission: quality.permission,
         qualityPermissionLabel: quality.permissionLabel,
         qualityName: quality.qualityName,
         qualityMessage: quality.message,
         qualityAllowed: quality.allowed,
         qualityDefaulted: quality.defaulted,
-        characteristicValues: getLotCharacteristicMap(l.id),
-      };
-    })
-    .filter((l) => l.freeQty > 0 && new Date(l.expiryDate) >= new Date());
-
-  lots.sort((a, b) => {
-    if (algorithm === 'FIFO') {
-      return new Date(a.productionDate) - new Date(b.productionDate);
+        characteristicValues: getLotCharacteristicMap(lot.id),
+      });
     }
-    return new Date(a.expiryDate) - new Date(b.expiryDate);
+  }
+
+  rows.sort((a, b) => {
+    if (algorithm === 'FIFO') {
+      const d = new Date(a.productionDate) - new Date(b.productionDate);
+      if (d !== 0) return d;
+    } else {
+      const d = new Date(a.expiryDate) - new Date(b.expiryDate);
+      if (d !== 0) return d;
+    }
+    const comp = warehouseByType('компоненты')?.id;
+    if (comp) {
+      if (a.warehouseId === comp && b.warehouseId !== comp) return -1;
+      if (b.warehouseId === comp && a.warehouseId !== comp) return 1;
+    }
+    return String(a.warehouseName || '').localeCompare(String(b.warehouseName || ''), 'ru');
   });
-  return lots;
+  return rows;
 }
 
 function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialIds, ok) {
@@ -106,6 +151,9 @@ function lotFields(lot) {
   return {
     lotId: lot?.id || null,
     lotNumber: lot?.number || null,
+    warehouseId: lot?.warehouseId || null,
+    warehouseName: lot?.warehouseName || null,
+    warehouseType: lot?.warehouseType || null,
     counterpartyId: lot?.counterpartyId,
     counterpartyName: lot?.counterparty?.name,
     manufacturerId: lot?.manufacturerId,
@@ -282,9 +330,24 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
       throw new Error('GMP: нельзя резервировать две партии одного материала на одну серию');
     }
     byMat.set(actualMaterialId, p.lotId);
-    const free = freeQtyByLot(p.lotId, { excludeProductionOrderId: orderId });
+
+    let warehouseId = p.warehouseId || null;
+    if (!warehouseId) {
+      const preferred = preferWarehouseForNeed(p.lotId, p.quantity, {
+        excludeProductionOrderId: orderId,
+      });
+      warehouseId = preferred?.warehouseId || null;
+    }
+    requireWarehouseId(warehouseId, 'Склад резерва');
+
+    const free = freeQtyByLot(p.lotId, {
+      warehouseId,
+      excludeProductionOrderId: orderId,
+    });
     if (free < Number(p.quantity)) {
-      throw new Error(`Недостаточно свободного остатка по партии ${p.lotId}`);
+      throw new Error(
+        `Недостаточно свободного остатка по партии ${p.lotId} на складе ${warehouseId}`
+      );
     }
     const lot = store.getById('lots', p.lotId);
     if (!lot || lot.materialId !== actualMaterialId) {
@@ -295,6 +358,7 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
       specMaterialId: specLine.materialId,
       materialId: actualMaterialId,
       lotId: p.lotId,
+      warehouseId,
       quantity: Number(p.quantity),
       substitutionRuleId: substitutionRuleId(specLine.materialId, actualMaterialId, spec.id),
     });
@@ -307,33 +371,37 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
 
   closeOpenReservationForOrder(orderId, actorId);
 
-  const whComp = warehouseByType('компоненты')?.id;
-  if (!whComp) throw new Error('Не найден склад компонентов');
+  const byWh = groupByWarehouseId(normalized);
+  const reservationDocuments = [];
+  const resIdByWarehouse = new Map();
 
-  const lines = normalized.map((p) => ({
-    materialId: p.materialId,
-    lotId: p.lotId,
-    quantity: Number(p.quantity),
-  }));
-
-  const draft = documents.createDocumentUnchecked('reservation', {
-    createdByUserId: actorId,
-    warehouseId: whComp,
-    productionOrderId: orderId,
-    seriesId: order.seriesId,
-    lines,
-    comment: `Резерв по заказу ${orderId}`,
-  });
-  const posted = documents.postDocumentUnchecked('reservation', draft.id, actorId);
+  for (const [warehouseId, group] of byWh) {
+    const draft = documents.createDocumentUnchecked('reservation', {
+      createdByUserId: actorId,
+      warehouseId,
+      productionOrderId: orderId,
+      seriesId: order.seriesId,
+      lines: group.map((p) => ({
+        materialId: p.materialId,
+        lotId: p.lotId,
+        quantity: Number(p.quantity),
+      })),
+      comment: `Резерв по заказу ${orderId}`,
+    });
+    const posted = documents.postDocumentUnchecked('reservation', draft.id, actorId);
+    reservationDocuments.push(posted);
+    resIdByWarehouse.set(warehouseId, posted.id);
+  }
 
   const orderLines = normalized.map((l) => ({
     specLineId: l.specLineId,
     specMaterialId: l.specMaterialId,
     materialId: l.materialId,
     lotId: l.lotId,
+    warehouseId: l.warehouseId,
     quantity: l.quantity,
     substitutionRuleId: l.substitutionRuleId,
-    reservationDocumentId: posted.id,
+    reservationDocumentId: resIdByWarehouse.get(l.warehouseId),
   }));
 
   const updated = store.update('production_orders', orderId, {
@@ -345,12 +413,17 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
       specMaterialId: l.specMaterialId,
       materialId: l.materialId,
       lotId: l.lotId,
+      warehouseId: l.warehouseId,
       quantity: Number(l.quantity),
       substitutionRuleId: l.substitutionRuleId || null,
     })),
   });
 
-  return { order: updated, reservationDocument: posted };
+  return {
+    order: updated,
+    reservationDocuments,
+    reservationDocument: reservationDocuments[0] || null,
+  };
 }
 
 export function confirmMaterialPicksBulk(items, userId) {
@@ -373,6 +446,7 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
     if (!Array.isArray(actualLines) || !actualLines.length) {
       throw new Error('Укажите фактический состав компонентов');
     }
+    const normalized = [];
     for (const line of actualLines) {
       if (!line.materialId || !line.lotId) throw new Error('В факте у каждой строки должны быть материал и партия');
       if (!(Number(line.quantity) > 0)) throw new Error('Количество в факте должно быть больше 0');
@@ -386,49 +460,112 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
       if (spec && !isAllowedSubstitute(specMaterialId, line.materialId, spec.id)) {
         throw new Error('Фактический материал не входит в список аналогов для позиции спецификации');
       }
+      let warehouseId = line.warehouseId || null;
+      if (!warehouseId) {
+        const planLine = (order.lines || []).find(
+          (pl) =>
+            (line.specLineId && pl.specLineId === line.specLineId) ||
+            (pl.materialId === line.materialId && pl.lotId === line.lotId)
+        );
+        warehouseId = planLine?.warehouseId || null;
+      }
+      if (!warehouseId) {
+        const preferred = preferWarehouseForNeed(line.lotId, line.quantity, {
+          excludeProductionOrderId: orderId,
+        });
+        warehouseId = preferred?.warehouseId || null;
+      }
+      requireWarehouseId(warehouseId, 'Склад списания в факте');
+      normalized.push({
+        specLineId: line.specLineId || specLine?.id || null,
+        specMaterialId,
+        materialId: line.materialId,
+        lotId: line.lotId,
+        warehouseId,
+        quantity: Number(line.quantity),
+        substitutionRuleId: line.substitutionRuleId || null,
+      });
     }
     assertLotsQualityForUse(
-      actualLines.map((l) => l.lotId),
+      normalized.map((l) => l.lotId),
       'Сохранение факта'
     );
     return store.update('production_orders', orderId, {
       actualQuantity: Number(actualQuantity),
-      actualLines: actualLines.map((l) => ({
-        specLineId: l.specLineId || null,
-        specMaterialId: l.specMaterialId || l.materialId,
-        materialId: l.materialId,
-        lotId: l.lotId,
-        quantity: Number(l.quantity),
-        substitutionRuleId: l.substitutionRuleId || null,
-      })),
+      actualLines: normalized,
     });
   });
 }
 
+function findPostedDocsForOrder(type, orderId) {
+  return documents.listDocuments(type, { productionOrderId: orderId }).filter((d) => d.status === 'posted');
+}
+
 function findPostedDocForOrder(type, orderId) {
-  return documents.listDocuments(type, { productionOrderId: orderId }).find((d) => d.status === 'posted');
+  return findPostedDocsForOrder(type, orderId)[0] || null;
 }
 
-function resolvePostedReservation(order) {
+function findPostedPriForWarehouse(orderId, warehouseFromId) {
+  return findPostedDocsForOrder('production_issue', orderId).find(
+    (d) => d.warehouseFromId === warehouseFromId
+  );
+}
+
+function listPostedReservationsForOrder(order) {
   const orderId = order.id;
-  const byOrder = documents.findReservationDocumentForOrder(orderId, ['posted']);
-  if (byOrder) return byOrder;
-  const fromLine = (order.lines || []).find((l) => l.reservationDocumentId)?.reservationDocumentId;
-  if (fromLine) {
-    const doc = documents.getDocument('reservation', fromLine);
-    if (doc && doc.status === 'posted') return doc;
+  const byOrder = documents
+    .listDocuments('reservation', { productionOrderId: orderId })
+    .filter((d) => d.status === 'posted');
+  if (byOrder.length) return byOrder;
+  const ids = [
+    ...new Set((order.lines || []).map((l) => l.reservationDocumentId).filter(Boolean)),
+  ];
+  const fromLines = [];
+  for (const id of ids) {
+    const doc = documents.getDocument('reservation', id);
+    if (doc && doc.status === 'posted') fromLines.push(doc);
   }
-  return null;
+  return fromLines;
 }
 
-function fulfillReservationForOrder(order, priDoc, actorId, fallbackRes) {
-  const resDoc = resolvePostedReservation(order) || (fallbackRes?.status === 'posted' ? fallbackRes : null);
-  if (!resDoc) {
+function fulfillAllReservationsForOrder(order, priDocs, actorId) {
+  const resDocs = listPostedReservationsForOrder(order);
+  if (!resDocs.length) {
     throw new Error('Нет проведённого резерва для закрытия при завершении заказа');
   }
-  return documents.fulfillDocumentUnchecked('reservation', resDoc.id, actorId, {
-    basisDocumentId: priDoc?.id || null,
-    basisDocumentNumber: priDoc?.number || null,
+  const priByWh = new Map((priDocs || []).map((p) => [p.warehouseFromId, p]));
+  return resDocs.map((resDoc) => {
+    const pri = priByWh.get(resDoc.warehouseId) || priDocs?.[0] || null;
+    return documents.fulfillDocumentUnchecked('reservation', resDoc.id, actorId, {
+      basisDocumentId: pri?.id || null,
+      basisDocumentNumber: pri?.number || null,
+    });
+  });
+}
+
+function normalizeFactLinesWithWarehouse(order, factLines) {
+  return factLines.map((line) => {
+    let warehouseId = line.warehouseId || null;
+    if (!warehouseId) {
+      const planLine = (order.lines || []).find(
+        (pl) =>
+          (line.specLineId && pl.specLineId === line.specLineId) ||
+          (pl.materialId === line.materialId && pl.lotId === line.lotId)
+      );
+      warehouseId = planLine?.warehouseId || null;
+    }
+    if (!warehouseId) {
+      const preferred = preferWarehouseForNeed(line.lotId, line.quantity, {
+        excludeProductionOrderId: order.id,
+      });
+      warehouseId = preferred?.warehouseId || null;
+    }
+    requireWarehouseId(warehouseId, 'Склад списания');
+    return {
+      ...line,
+      warehouseId,
+      quantity: Number(line.quantity),
+    };
   });
 }
 
@@ -459,8 +596,9 @@ export function completeOrder(orderId, userId, opts = {}) {
     const actorId = resolveActorUserId(userId);
 
     const planLines = order.lines || [];
-    const factLines =
+    const rawFact =
       Array.isArray(order.actualLines) && order.actualLines.length > 0 ? order.actualLines : planLines;
+    const factLines = normalizeFactLinesWithWarehouse(order, rawFact);
     const outputQty =
       order.actualQuantity != null && Number(order.actualQuantity) > 0
         ? Number(order.actualQuantity)
@@ -474,47 +612,57 @@ export function completeOrder(orderId, userId, opts = {}) {
       'Завершение производства'
     );
 
-    const whCompDefault = warehouseByType('компоненты')?.id;
     const whFgDefault = warehouseByType('ГП')?.id;
-    const whComp = opts.warehouseFromId || whCompDefault;
     const whFg = opts.warehouseToId || whFgDefault;
-    if (!whComp || !whFg) throw new Error('Не заданы склады компонентов и ГП');
-    if (!store.getById('warehouses', whComp)) throw new Error('Склад списания не найден');
-    if (!store.getById('warehouses', whFg)) throw new Error('Склад выпуска не найден');
+    requireWarehouseId(whFg, 'Склад выпуска');
 
-    let resDoc = resolvePostedReservation(order);
-    if (!resDoc) {
-      const draft = documents.createDocumentUnchecked('reservation', {
-        createdByUserId: actorId,
-        warehouseId: whComp,
-        productionOrderId: orderId,
-        seriesId: order.seriesId,
-        lines: planLines.map((l) => ({
-          materialId: l.materialId,
-          lotId: l.lotId,
-          quantity: Number(l.quantity),
-        })),
-        comment: 'RES создан при завершении (не было проведённого резерва)',
-      });
-      resDoc = documents.postDocumentUnchecked('reservation', draft.id, actorId);
+    let reservationDocuments = listPostedReservationsForOrder(order);
+    if (!reservationDocuments.length) {
+      const byWh = groupByWarehouseId(
+        normalizeFactLinesWithWarehouse(order, planLines.length ? planLines : factLines)
+      );
+      reservationDocuments = [];
+      for (const [warehouseId, group] of byWh) {
+        const draft = documents.createDocumentUnchecked('reservation', {
+          createdByUserId: actorId,
+          warehouseId,
+          productionOrderId: orderId,
+          seriesId: order.seriesId,
+          lines: group.map((l) => ({
+            materialId: l.materialId,
+            lotId: l.lotId,
+            quantity: Number(l.quantity),
+          })),
+          comment: 'RES создан при завершении (не было проведённого резерва)',
+        });
+        reservationDocuments.push(documents.postDocumentUnchecked('reservation', draft.id, actorId));
+      }
     }
 
-    let priDoc = findPostedDocForOrder('production_issue', orderId);
-    if (!priDoc) {
-      const draft = documents.createDocumentUnchecked('production_issue', {
-        createdByUserId: actorId,
-        warehouseFromId: whComp,
-        productionOrderId: orderId,
-        seriesId: order.seriesId,
-        basisDocumentId: resDoc.id,
-        lines: factLines.map((l) => ({
-          materialId: l.materialId,
-          lotId: l.lotId,
-          quantity: Number(l.quantity),
-        })),
-        comment: `Списание в производство по заказу`,
-      });
-      priDoc = documents.postDocumentUnchecked('production_issue', draft.id, actorId);
+    const resByWh = new Map(reservationDocuments.map((d) => [d.warehouseId, d]));
+    const factByWh = groupByWarehouseId(factLines);
+    const productionIssues = [];
+
+    for (const [warehouseFromId, group] of factByWh) {
+      let priDoc = findPostedPriForWarehouse(orderId, warehouseFromId);
+      if (!priDoc) {
+        const basis = resByWh.get(warehouseFromId) || reservationDocuments[0];
+        const draft = documents.createDocumentUnchecked('production_issue', {
+          createdByUserId: actorId,
+          warehouseFromId,
+          productionOrderId: orderId,
+          seriesId: order.seriesId,
+          basisDocumentId: basis?.id || null,
+          lines: group.map((l) => ({
+            materialId: l.materialId,
+            lotId: l.lotId,
+            quantity: Number(l.quantity),
+          })),
+          comment: `Списание в производство по заказу`,
+        });
+        priDoc = documents.postDocumentUnchecked('production_issue', draft.id, actorId);
+      }
+      productionIssues.push(priDoc);
     }
 
     const { gpLot } = ensureGpLot(order, outputQty, whFg, actorId);
@@ -526,7 +674,7 @@ export function completeOrder(orderId, userId, opts = {}) {
         warehouseToId: whFg,
         productionOrderId: orderId,
         seriesId: order.seriesId,
-        basisDocumentId: priDoc.id,
+        basisDocumentId: productionIssues[0]?.id || null,
         lines: [
           {
             materialId: order.materialId,
@@ -539,7 +687,7 @@ export function completeOrder(orderId, userId, opts = {}) {
       prrDoc = documents.postDocumentUnchecked('production_receipt', draft.id, actorId);
     }
 
-    const fulfilledRes = fulfillReservationForOrder(order, priDoc, actorId, resDoc);
+    const fulfilledReservations = fulfillAllReservationsForOrder(order, productionIssues, actorId);
 
     const updated = store.update('production_orders', orderId, {
       status: ORDER_STATUS.done,
@@ -551,8 +699,10 @@ export function completeOrder(orderId, userId, opts = {}) {
     return {
       order: updated,
       documents: {
-        reservation: fulfilledRes,
-        productionIssue: priDoc,
+        reservation: fulfilledReservations[0] || null,
+        reservations: fulfilledReservations,
+        productionIssue: productionIssues[0] || null,
+        productionIssues,
         productionReceipt: prrDoc,
       },
     };

@@ -169,7 +169,12 @@ router.get('/gantt', canReadPlan, (_req, res) => {
 
 router.get('/lots-available/:materialId', canReadPlan, (req, res) => {
   const algorithm = req.query.algorithm || 'FEFO';
-  res.json(planning.availableLotsForMaterial(req.params.materialId, algorithm));
+  const warehouseId = req.query.warehouseId || undefined;
+  res.json(
+    planning.availableLotsForMaterial(req.params.materialId, algorithm, {
+      warehouseId: warehouseId || null,
+    })
+  );
 });
 
 router.get('/material-balance-matrix', canReadPlan, (req, res) => {

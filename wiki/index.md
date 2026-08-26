@@ -57,6 +57,8 @@
 | [D006](decisions/D006-docs-sync-after-main.md) | Sync docs после main |
 | [D007](decisions/D007-llm-wiki.md) | Внедрение LLM Wiki |
 | [D008](decisions/D008-rules-secrets-lifecycle.md) | Rules, секреты, lifecycle wiki |
+| [D009](decisions/D009-multi-warehouse-pri.md) | N RES/PRI по складам; склад в строке факта |
+| [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на нескольких складах: пока TRN; авто-сплит отложен |
 
 ## Ops
 

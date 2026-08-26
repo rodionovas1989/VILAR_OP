@@ -7,6 +7,12 @@ import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
 import { materialHasAssayDryApplication, appliedRecalcTerms, PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY } from '../utils/lotCharacteristics';
+import {
+  formatLotNumberLabel,
+  lotWhKey,
+  parseLotWhKey,
+  shortWarehouseLabel,
+} from '../utils/lotSelect';
 
 type Dicts = {
   materials: { id: string; name: string; type?: string }[];
@@ -36,6 +42,9 @@ type LotOpt = {
   id: string;
   number: string;
   freeQty: number;
+  warehouseId?: string;
+  warehouseName?: string;
+  warehouseType?: string;
   qualityPermission?: string;
   qualityPermissionLabel?: string;
   qualityName?: string | null;
@@ -56,6 +65,7 @@ function scaleFactLines(planLines: OrderLine[], planQty: number, factQty: number
     specMaterialId: l.specMaterialId || l.materialId,
     materialId: l.materialId,
     lotId: l.lotId,
+    warehouseId: l.warehouseId || null,
     quantity,
     substitutionRuleId: l.substitutionRuleId,
   });
@@ -96,16 +106,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   const [actualQuantity, setActualQuantity] = useState(0);
   const [actualLines, setActualLines] = useState<OrderLine[]>([]);
   const [lotOptions, setLotOptions] = useState<Record<string, LotOpt[]>>({});
-  const [warehouseFromId, setWarehouseFromId] = useState('');
   const [warehouseToId, setWarehouseToId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const defaultWhFrom = useMemo(
-    () => dictionaries.warehouses.find((w) => w.type === 'компоненты')?.id || '',
-    [dictionaries.warehouses]
-  );
   const defaultWhTo = useMemo(
     () => dictionaries.warehouses.find((w) => w.type === 'ГП')?.id || '',
     [dictionaries.warehouses]
@@ -132,7 +137,6 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setTab('fact');
     setError('');
     setMessage('');
-    setWarehouseFromId(defaultWhFrom);
     setWarehouseToId(defaultWhTo);
     const planQty = Number(order.quantity) || 0;
     const factQty =
@@ -146,6 +150,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
             specMaterialId: l.specMaterialId || l.materialId,
             materialId: l.materialId,
             lotId: l.lotId,
+            warehouseId: l.warehouseId || null,
             quantity: Number(l.quantity),
             substitutionRuleId: l.substitutionRuleId,
           }))
@@ -164,12 +169,21 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       }
     }
     setLotOptions(opts);
+    // Склад в строке заказа мог отсутствовать (старые данные) — берём из пары партия×склад.
+    setActualLines(
+      factLines.map((l) => {
+        if (l.warehouseId) return l;
+        const hit =
+          (opts[l.materialId] || []).find((o) => o.id === l.lotId && o.warehouseId) ||
+          (opts[l.materialId] || []).find((o) => o.id === l.lotId);
+        return hit?.warehouseId ? { ...l, warehouseId: hit.warehouseId } : l;
+      })
+    );
   };
 
   const onFactQtyChange = (value: number) => {
     if (!selected) return;
     setActualQuantity(value);
-    // пересчёт количеств по плану, партии сохраняем текущие (факт)
     const scaled = scaleFactLines(selected.lines || [], Number(selected.quantity), value);
     setActualLines((prev) =>
       scaled.map((s) => {
@@ -180,6 +194,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           ...s,
           materialId: keep?.materialId || s.materialId,
           lotId: keep?.lotId || s.lotId,
+          warehouseId: keep?.warehouseId || s.warehouseId || null,
           quantity: s.quantity,
         };
       })
@@ -216,8 +231,36 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     return out;
   }, [selected, actualLines, lotOptions, dictionaries.specifications, dictionaries.materials, dictionaries.lots, dictionaries.characteristics]);
 
-  const changeFactLot = (key: string, lotId: string) => {
-    setActualLines((prev) => prev.map((l, idx) => (lineKey(l, idx) === key ? { ...l, lotId } : l)));
+  const changeFactLot = (key: string, lotWhValue: string) => {
+    const { lotId, warehouseId } = parseLotWhKey(lotWhValue);
+    setActualLines((prev) =>
+      prev.map((l, idx) => {
+        if (lineKey(l, idx) !== key) return l;
+        const opts = lotOptions[l.materialId] || [];
+        const row = opts.find((o) => o.id === lotId && (!warehouseId || o.warehouseId === warehouseId));
+        return {
+          ...l,
+          lotId,
+          warehouseId: row?.warehouseId || warehouseId || l.warehouseId || null,
+        };
+      })
+    );
+  };
+
+  const changeFactWarehouse = (key: string, warehouseId: string) => {
+    setActualLines((prev) =>
+      prev.map((l, idx) => {
+        if (lineKey(l, idx) !== key) return l;
+        const opts = lotOptions[l.materialId] || [];
+        const sameLot = opts.find((o) => o.id === l.lotId && o.warehouseId === warehouseId);
+        if (sameLot) return { ...l, warehouseId };
+        const onWh =
+          opts.find((o) => o.warehouseId === warehouseId && o.qualityAllowed !== false && o.freeQty > 0) ||
+          opts.find((o) => o.warehouseId === warehouseId);
+        if (onWh) return { ...l, warehouseId, lotId: onWh.id };
+        return { ...l, warehouseId: warehouseId || null, lotId: '' };
+      })
+    );
   };
 
   const changeFactQty = (key: string, quantity: number) => {
@@ -237,6 +280,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               materialId,
               specMaterialId: l.specMaterialId || specMaterialId,
               lotId: '',
+              warehouseId: null,
               substitutionRuleId: materialId === (l.specMaterialId || specMaterialId) ? null : l.substitutionRuleId,
             }
           : l
@@ -248,7 +292,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       const suitable = lots.find((o) => o.qualityAllowed !== false && o.freeQty > 0) || lots[0];
       if (suitable) {
         setActualLines((prev) =>
-          prev.map((l, idx) => (lineKey(l, idx) === key ? { ...l, lotId: suitable.id } : l))
+          prev.map((l, idx) =>
+            lineKey(l, idx) === key
+              ? { ...l, lotId: suitable.id, warehouseId: suitable.warehouseId || null }
+              : l
+          )
         );
       }
     } catch {
@@ -276,7 +324,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     if (!selected) return;
     const unfit = actualLines
       .map((l) => {
-        const opt = (lotOptions[l.materialId] || []).find((o) => o.id === l.lotId);
+        const opt = (lotOptions[l.materialId] || []).find(
+          (o) => o.id === l.lotId && (!l.warehouseId || o.warehouseId === l.warehouseId)
+        );
         return opt?.qualityAllowed === false
           ? `${nameOf(l.lotId, dictionaries.lots)}: ${opt.qualityMessage || 'Не годен'}`
           : null;
@@ -286,9 +336,15 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       setError(`Нельзя завершить: партии не годны по качеству. ${unfit.join('; ')}`);
       return;
     }
+    if (actualLines.some((l) => !l.warehouseId)) {
+      setError('Укажите склад списания в каждой строке факта');
+      return;
+    }
     const conditional = actualLines
       .map((l) => {
-        const opt = (lotOptions[l.materialId] || []).find((o) => o.id === l.lotId);
+        const opt = (lotOptions[l.materialId] || []).find(
+          (o) => o.id === l.lotId && (!l.warehouseId || o.warehouseId === l.warehouseId)
+        );
         return opt?.qualityPermission === 'conditional'
           ? `${nameOf(l.lotId, dictionaries.lots)}: ${opt.qualityMessage || 'Условно годен'}`
           : null;
@@ -300,7 +356,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
         : '';
     if (
       !confirm(
-        `Завершить производство по фактическим данным? Будут проведены списание в производство (PRI), выпуск ГП (PRR) и выполнен документ резервирования.${warn}`
+        `Завершить производство по фактическим данным? Будут проведены списания в производство (PRI по складам), выпуск ГП (PRR) и выполнены документы резервирования.${warn}`
       )
     ) {
       return;
@@ -312,7 +368,6 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       await api.saveProductionFact(selected.id, { actualQuantity, actualLines });
       await api.completeOrder(selected.id, {
         userId: user?.id,
-        warehouseFromId: warehouseFromId || undefined,
         warehouseToId: warehouseToId || undefined,
       });
       setMessage('Производство завершено: PRI + PRR проведены, резерв выполнен');
@@ -386,19 +441,6 @@ export default function ProductionDesktop({ dictionaries }: Props) {
             />
           </label>
           <label className="prod-head-field">
-            <span className="muted">Склад списания (компоненты)</span>
-            <SearchableSelect
-              value={warehouseFromId}
-              disabled={busy}
-              allowEmpty={false}
-              onChange={setWarehouseFromId}
-              options={dictionaries.warehouses.map((w) => ({
-                value: w.id,
-                label: `${w.name} (${w.type})`,
-              }))}
-            />
-          </label>
-          <label className="prod-head-field">
             <span className="muted">Склад выпуска (ГП)</span>
             <SearchableSelect
               value={warehouseToId}
@@ -414,9 +456,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
         </div>
 
         <p className="hint">
-          При изменении факта выпуска количества компонентов пересчитываются пропорционально плану. Партию в факте
-          можно заменить. Если для позиции заданы аналоги — можно сменить материал из списка. Завершение списывает и
-          приходует по факту.
+          При изменении факта выпуска количества компонентов пересчитываются пропорционально плану. Партию и склад
+          списания задавайте в строке факта (разные компоненты могут списываться с разных складов). Завершение создаёт
+          PRI по каждому складу списания и один PRR на склад выпуска.
         </p>
 
         <div className="tabs spec-inner-tabs">
@@ -467,16 +509,20 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 <tr>
                   <th>Материал</th>
                   <th>Партия</th>
+                  <th>Склад</th>
+                  <th className="col-center">Свободно</th>
                   <th>Контрагент</th>
-                  <th className="col-center">Количество</th>
+                  <th className="col-center">Кол-во</th>
                 </tr>
               </thead>
               <tbody>
                 {actualLines.map((l, idx) => {
                   const key = lineKey(l, idx);
                   const opts = lotOptions[l.materialId] || [];
-                  const hasCurrent = opts.some((o) => o.id === l.lotId);
-                  const selectedOpt = opts.find((o) => o.id === l.lotId);
+                  const selectedOpt =
+                    opts.find((o) => o.id === l.lotId && (!l.warehouseId || o.warehouseId === l.warehouseId)) ||
+                    opts.find((o) => o.id === l.lotId);
+                  const hasCurrent = !!selectedOpt;
                   const unfit = selectedOpt?.qualityAllowed === false;
                   const conditional = selectedOpt?.qualityPermission === 'conditional';
                   const specMat = l.specMaterialId || l.materialId;
@@ -486,6 +532,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                     selected?.specificationId
                   );
                   const canSwap = allowed.length > 1;
+                  const lotSelectValue = l.lotId ? lotWhKey(l.lotId, l.warehouseId || selectedOpt?.warehouseId) : '';
                   return (
                     <tr
                       key={`fact-${key}`}
@@ -519,7 +566,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           ]
                             .filter(Boolean)
                             .join(' ')}
-                          value={l.lotId}
+                          value={lotSelectValue}
                           disabled={busy}
                           allowEmpty={false}
                           onChange={(v) => changeFactLot(key, v)}
@@ -527,21 +574,26 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                             ...(!hasCurrent && l.lotId
                               ? [
                                   {
-                                    value: l.lotId,
-                                    label: `${nameOf(l.lotId, dictionaries.lots)} (текущая)`,
+                                    value: lotWhKey(l.lotId, l.warehouseId),
+                                    label: formatLotNumberLabel({
+                                      number: nameOf(l.lotId, dictionaries.lots),
+                                      warehouseType: dictionaries.warehouses.find(
+                                        (w) => w.id === l.warehouseId
+                                      )?.type,
+                                      warehouseName: dictionaries.warehouses.find(
+                                        (w) => w.id === l.warehouseId
+                                      )?.name,
+                                    }),
                                   },
                                 ]
                               : []),
-                            ...opts.map((o) => ({
-                              value: o.id,
-                              label: `${
-                                o.qualityAllowed === false
-                                  ? '⛔ '
-                                  : o.qualityPermission === 'conditional'
-                                    ? '⚠ '
-                                    : ''
-                              }${o.number}${o.freeQty != null ? ` · своб. ${o.freeQty}` : ''}`,
-                            })),
+                            ...opts.map((o) => {
+                              const multiWh = opts.filter((x) => x.id === o.id).length > 1;
+                              return {
+                                value: lotWhKey(o.id, o.warehouseId),
+                                label: formatLotNumberLabel(o, multiWh),
+                              };
+                            }),
                           ]}
                         />
                         {selectedOpt?.qualityName && !unfit && !conditional && (
@@ -560,7 +612,28 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           </div>
                         )}
                       </td>
-                      <td>{lotCp(l.lotId)}</td>
+                      <td
+                        className="prod-wh-cell"
+                        title={
+                          dictionaries.warehouses.find((x) => x.id === l.warehouseId)?.name || undefined
+                        }
+                      >
+                        <SearchableSelect
+                          allowEmpty={false}
+                          value={l.warehouseId || ''}
+                          disabled={busy}
+                          onChange={(v) => changeFactWarehouse(key, v)}
+                          options={dictionaries.warehouses.map((w) => ({
+                            value: w.id,
+                            label: shortWarehouseLabel(w.type, w.name) || w.name,
+                          }))}
+                          aria-label="Склад списания"
+                        />
+                      </td>
+                      <td className="col-center num prod-free-cell">
+                        {selectedOpt?.freeQty != null ? selectedOpt.freeQty : '—'}
+                      </td>
+                      <td className="prod-cp-cell">{lotCp(l.lotId)}</td>
                       <td className="col-center prod-qty-cell">
                         <DecimalInput
                           min={0}
@@ -574,7 +647,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 })}
                 {!actualLines.length && (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={6} className="muted">
                       Нет фактического состава
                     </td>
                   </tr>
