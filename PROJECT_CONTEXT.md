@@ -1,5 +1,5 @@
-﻿## Ветка: docs/llm-wiki
+﻿## Ветка: main
 
-Добиты entity из lint (feedback, production_register, ops-debug, login-audit, changelog). См. `wiki/index.md`.
+Влита `docs/llm-wiki`: слой LLM Wiki (`wiki/`, `raw/`, Cursor rules, secrets-lint). Знания агента — с `wiki/index.md`.
 
 Пилот: https://vilar-prod.ru
