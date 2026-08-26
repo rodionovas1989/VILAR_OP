@@ -40,14 +40,10 @@ function qualityPrefix(o: LotLabelSource): string {
 
 /**
  * Подпись опции в подборе: только номер (+ иконка качества).
- * Короткий склад — лишь если одна партия на нескольких складах (иначе опции неразличимы).
+ * Склад и свободно — в соседних колонках; не дублировать в label.
  */
-export function formatLotNumberLabel(o: LotLabelSource, disambiguateWarehouse = false): string {
-  const wh =
-    disambiguateWarehouse && (o.warehouseType || o.warehouseName)
-      ? ` · ${shortWarehouseLabel(o.warehouseType, o.warehouseName)}`
-      : '';
-  return `${qualityPrefix(o)}${o.number}${wh}`;
+export function formatLotNumberLabel(o: LotLabelSource, _disambiguateWarehouse = false): string {
+  return `${qualityPrefix(o)}${o.number}`;
 }
 
 /**

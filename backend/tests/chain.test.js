@@ -234,6 +234,32 @@ describe('Приёмка и складские документы', () => {
 });
 
 describe('Резерв и заказ', () => {
+  test('пакетный подбор: вторая серия берёт следующую FEFO-партию', () => {
+    // FEFO: раньше истекает lot-rm-2 (+200), затем lot-rm (+365)
+    postReceipt(2, 'lot-rm-2');
+    postReceipt(50, 'lot-rm');
+    store.create('series', { id: 'ser-2', number: 'S-002', materialId: 'mat-gp' });
+    store.create('production_orders', {
+      id: 'ord-2',
+      materialId: 'mat-gp',
+      seriesId: 'ser-2',
+      specificationId: 'spec-1',
+      workCenterId: 'wc-1',
+      quantity: 1000,
+      status: 'новый',
+      startAt: `${isoDays(0)}T08:00:00.000Z`,
+      endAt: `${isoDays(1)}T08:00:00.000Z`,
+      lines: [],
+      actualLines: [],
+    });
+
+    const [a, b] = planning.suggestPicksBulk(['ord-1', 'ord-2'], 'FEFO');
+    assert.equal(a.picks[0].ok, true);
+    assert.equal(a.picks[0].lotId, 'lot-rm-2');
+    assert.equal(b.picks[0].ok, true);
+    assert.equal(b.picks[0].lotId, 'lot-rm');
+  });
+
   test('подтверждение сырья создаёт RES posted без движения stock', () => {
     postReceipt(50);
     const { order, reservationDocument } = planning.confirmMaterialPicks(

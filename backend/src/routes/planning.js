@@ -53,7 +53,7 @@ router.post('/suggest-materials', canPlan, (req, res) => {
 router.post('/suggest-materials-bulk', canPlan, (req, res) => {
   try {
     const { orderIds = [], algorithm = 'FEFO' } = req.body || {};
-    const result = orderIds.map((orderId) => planning.suggestPicksForOrder(orderId, algorithm));
+    const result = planning.suggestPicksBulk(orderIds, algorithm);
     res.json(result);
   } catch (e) {
     res.status(400).json({ error: e.message });

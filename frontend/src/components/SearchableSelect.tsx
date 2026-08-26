@@ -101,7 +101,13 @@ export default function SearchableSelect({
   const [pos, setPos] = useState<PanelPos | null>(null);
 
   const selected = options.find((o) => o.value === value);
-  const triggerText = selected?.label ?? (value ? value : placeholder || emptyLabel);
+  const looksLikeRawId =
+    !!value &&
+    (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(value) ||
+      value.includes('::'));
+  const triggerText =
+    selected?.label ??
+    (value ? (looksLikeRawId ? 'партия' : value) : placeholder || emptyLabel);
 
   const filtered = useMemo(() => {
     const q = norm(query);

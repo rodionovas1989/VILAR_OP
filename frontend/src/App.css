@@ -1093,6 +1093,17 @@ button.link {
   text-decoration: underline;
 }
 
+.suggest-only-problems {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
 .row-actions {
   display: inline-flex;
   align-items: center;

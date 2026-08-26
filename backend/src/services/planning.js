@@ -169,16 +169,35 @@ function lotFields(lot) {
   };
 }
 
+function claimKey(lotId, warehouseId) {
+  return `${lotId}::${warehouseId || ''}`;
+}
+
+function effectiveFreeQty(lot, claimed) {
+  const base = Number(lot?.freeQty || 0);
+  if (!claimed || !lot?.id) return base;
+  const used = Number(claimed.get(claimKey(lot.id, lot.warehouseId)) || 0);
+  return base - used;
+}
+
+function claimLotQty(claimed, lot, quantity) {
+  if (!claimed || !lot?.id || !(quantity > 0)) return;
+  const key = claimKey(lot.id, lot.warehouseId);
+  claimed.set(key, Number(claimed.get(key) || 0) + Number(quantity));
+}
+
 /**
  * GMP: одна партия на один компонент в рамках серии/заказа.
  * Не дробим потребность по нескольким партиям.
  * Если по материалу спеки нет партии — пробуем аналоги (без транзитивности).
+ * @param {{ claimed?: Map<string, number> }} [opts] — общий «виртуальный» расход по ключу lotId::warehouseId (пакетный подбор).
  */
-export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
+export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
   const order = store.getById('production_orders', orderId);
   if (!order) throw new Error('Заказ не найден');
   const spec = store.getById('specifications', order.specificationId);
   if (!spec) throw new Error('Спецификация не найдена');
+  const claimed = opts.claimed || null;
 
   const picks = [];
   const warnings = [];
@@ -196,7 +215,7 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
       const lots = availableLotsForMaterial(cand.materialId, algorithm);
       const hit = lots.find((l) => {
         const need = computeLineNeed(line, order.quantity, l);
-        return l.freeQty >= need.quantity && l.qualityAllowed !== false;
+        return effectiveFreeQty(l, claimed) >= need.quantity && l.qualityAllowed !== false;
       });
       if (hit) {
         chosenCand = cand;
@@ -212,7 +231,7 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
       const fallbackNeed = computeLineNeed(line, order.quantity, fallback);
       const anyQty = triedLots.find((l) => {
         const need = computeLineNeed(line, order.quantity, l);
-        return l.freeQty >= need.quantity;
+        return effectiveFreeQty(l, claimed) >= need.quantity;
       });
       const analogTried = candidates.length > 1;
       warnings.push({
@@ -266,6 +285,7 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
           message: msg,
         });
       }
+      claimLotQty(claimed, suitable, suitableNeed.quantity);
       picks.push(
         pickPayload(line, specMaterial, chosenCand, suitable, suitableNeed, allowedMaterialIds, true)
       );
@@ -273,6 +293,15 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO') {
   }
 
   return { orderId, algorithm, picks, warnings };
+}
+
+/**
+ * Пакетный подбор: заказы в порядке orderIds делят один виртуальный остаток партия×склад,
+ * поэтому второй заказ получает следующую FEFO/FIFO-партию, а не ту же с ✗.
+ */
+export function suggestPicksBulk(orderIds, algorithm = 'FEFO') {
+  const claimed = new Map();
+  return (orderIds || []).map((orderId) => suggestPicksForOrder(orderId, algorithm, { claimed }));
 }
 
 /** Только проверка: заказы остаются «новый» до подтверждения резерва (вкладка 2). */

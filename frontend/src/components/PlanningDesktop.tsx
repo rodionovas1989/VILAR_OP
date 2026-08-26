@@ -117,6 +117,19 @@ export default function PlanningDesktop({ dictionaries }: Props) {
   const [selectedPlanned, setSelectedPlanned] = useState<Set<string>>(new Set());
   const [exportBusy, setExportBusy] = useState(false);
   const [productFilterOpen, setProductFilterOpen] = useState(false);
+  const [onlyProblems, setOnlyProblems] = useState(false);
+
+  const orderHasIssues = (s: SuggestResult) =>
+    s.picks.some((p) => !p.ok) || (s.warnings?.length ?? 0) > 0;
+
+  const problemOrderIds = useMemo(
+    () => suggestions.filter(orderHasIssues).map((s) => s.orderId),
+    [suggestions]
+  );
+  const visibleSuggestions = useMemo(
+    () => (onlyProblems ? suggestions.filter(orderHasIssues) : suggestions),
+    [suggestions, onlyProblems]
+  );
 
   const nameOf = (id: string, list: { id: string; name?: string; number?: string }[]) =>
     list.find((x) => x.id === id)?.name || list.find((x) => x.id === id)?.number || id;
@@ -426,7 +439,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     }
   };
 
-  const changeLot = async (orderIdx: number, pickIdx: number, lotWhValue: string) => {
+  const changeLot = async (orderId: string, pickIdx: number, lotWhValue: string) => {
+    const orderIdx = suggestions.findIndex((s) => s.orderId === orderId);
+    if (orderIdx < 0) return;
     const next = [...suggestions];
     const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
     const { lotId, warehouseId } = parseLotWhKey(lotWhValue);
@@ -455,9 +470,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       pick.ok = false;
     } else {
       const lots = (await api.lotsAvailable(pick.materialId, algorithm)) as AvailableLot[];
-      const lot = findLotRow(lots, lotId, warehouseId);
-      pick = applyNeedToPick(pick, lot, orderQty);
-      pick.lotNumber = lot?.number;
+      const lot = findLotRow(lots, lotId, warehouseId) || lots.find((l) => l.id === lotId);
+      pick = applyNeedToPick(pick, lot ?? null, orderQty);
+      pick.lotNumber = lot?.number || null;
       pick.warehouseId = lot?.warehouseId || warehouseId || null;
       pick.warehouseName = lot?.warehouseName || null;
       pick.warehouseType = lot?.warehouseType || null;
@@ -478,7 +493,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     setSuggestions(recomputeSuggestionOk(next));
   };
 
-  const changeMaterial = async (orderIdx: number, pickIdx: number, materialId: string) => {
+  const changeMaterial = async (orderId: string, pickIdx: number, materialId: string) => {
+    const orderIdx = suggestions.findIndex((s) => s.orderId === orderId);
+    if (orderIdx < 0) return;
     const next = [...suggestions];
     const prev = next[orderIdx].picks[pickIdx];
     const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
@@ -716,23 +733,46 @@ export default function PlanningDesktop({ dictionaries }: Props) {
             >
               Подтвердить резерв
             </button>
+            <label className="suggest-only-problems">
+              <input
+                type="checkbox"
+                checked={onlyProblems}
+                disabled={!suggestions.length}
+                onChange={(e) => setOnlyProblems(e.target.checked)}
+              />{' '}
+              Только проблемные
+              {suggestions.length
+                ? ` (${problemOrderIds.length} из ${suggestions.length})`
+                : ''}
+            </label>
           </div>
           <p className="hint">
-            GMP: на один компонент в серии — одна партия сырья. Можно вручную заменить партию из списка доступных.
-            Если для материала заданы аналоги, можно сменить материал в строке (сначала позиция спецификации, затем
-            аналоги). Замена записывается в резерв. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема.
-            Контрагент и производитель — в отдельных столбцах: зелёный = одобрен в спецификации, жёлтый = нет
-            (подсветка независимая).
+            GMP: на один компонент в серии — одна партия сырья. Пакетный подбор учитывает уже предложенные
+            строки: если партия «съедена» предыдущим заказом, берётся следующая по FEFO/FIFO. Можно вручную
+            заменить партию. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема. «Только
+            проблемные» оставляет заказы с ✗ или предупреждениями; после исправления заказ исчезает из
+            списка.
           </p>
-          {suggestions.map((s, oi) => {
+          {visibleSuggestions.map((s) => {
             const order = orders.find((o) => o.id === s.orderId);
             const badCount = s.picks.filter((p) => !p.ok).length;
+            const warnCount = s.warnings?.length ?? 0;
             return (
-              <div key={s.orderId} className={`suggest-card${badCount ? ' has-problems' : ''}`}>
+              <div
+                key={s.orderId}
+                id={`suggest-order-${s.orderId}`}
+                className={`suggest-card${badCount || warnCount ? ' has-problems' : ''}`}
+              >
                 <h3>
                   {order ? nameOf(order.materialId, dictionaries.materials) : s.orderId} · серия{' '}
                   {order ? nameOf(order.seriesId, dictionaries.series) : ''}
-                  {badCount ? <span className="suggest-badge-bad"> проблем: {badCount}</span> : null}
+                  {badCount || warnCount ? (
+                    <span className="suggest-badge-bad">
+                      {' '}
+                      проблем: {badCount}
+                      {warnCount ? ` · предупр.: ${warnCount}` : ''}
+                    </span>
+                  ) : null}
                 </h3>
                 {!!s.warnings?.length && (
                   <ul className="warn-list">
@@ -786,8 +826,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                             p.materialId,
                             p.manufacturerId
                           )}
-                          onChangeLot={(lotWhValue) => changeLot(oi, pi, lotWhValue)}
-                          onChangeMaterial={(materialId) => void changeMaterial(oi, pi, materialId)}
+                          onChangeLot={(lotWhValue) => void changeLot(s.orderId, pi, lotWhValue)}
+                          onChangeMaterial={(materialId) => void changeMaterial(s.orderId, pi, materialId)}
                         />
                       ))}
                     </tbody>
@@ -796,6 +836,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
               </div>
             );
           })}
+          {onlyProblems && !visibleSuggestions.length && suggestions.length > 0 && (
+            <p className="hint">Проблемных заказов не осталось — можно подтвердить резерв или снять фильтр.</p>
+          )}
         </div>
       )}
 
@@ -1097,19 +1140,19 @@ export default function PlanningDesktop({ dictionaries }: Props) {
 }
 
 function recomputeSuggestionOk(suggestions: SuggestResult[]): SuggestResult[] {
-  /** Учёт совместного расхода одной партии несколькими заказами в подборе */
-  const usedByLot = new Map<string, number>();
+  /** Учёт совместного расхода одной партии×склад несколькими заказами после ручных правок */
+  const usedByLotWh = new Map<string, number>();
   return suggestions.map((s) => ({
     ...s,
     picks: s.picks.map((p) => {
-      const lotId = p.lotId || '';
+      const key = p.lotId ? lotWhKey(p.lotId, p.warehouseId) : '';
       const baseFree = Number(p.freeQty ?? 0);
-      const already = lotId ? usedByLot.get(lotId) || 0 : 0;
+      const already = key ? usedByLotWh.get(key) || 0 : 0;
       const remain = baseFree - already;
-      const qtyOk = !!lotId && remain + 1e-9 >= Number(p.quantity);
+      const qtyOk = !!p.lotId && remain + 1e-9 >= Number(p.quantity);
       const qualityOk = p.qualityAllowed !== false;
       const ok = qtyOk && qualityOk;
-      if (lotId) usedByLot.set(lotId, already + Number(p.quantity || 0));
+      if (key) usedByLotWh.set(key, already + Number(p.quantity || 0));
       return { ...p, ok };
     }),
   }));
@@ -1243,7 +1286,30 @@ function PickRow({
   const qualityMessage = selectedLot?.qualityMessage || pick.qualityMessage;
   const allowedIds = pick.allowedMaterialIds?.length ? pick.allowedMaterialIds : [pick.materialId];
   const canSwap = allowedIds.length > 1;
-  const lotSelectValue = pick.lotId ? lotWhKey(pick.lotId, pick.warehouseId || selectedLot?.warehouseId) : '';
+  const resolvedWarehouseId = pick.warehouseId || selectedLot?.warehouseId || null;
+  const lotSelectValue = pick.lotId ? lotWhKey(pick.lotId, resolvedWarehouseId) : '';
+  const lotLabelNumber =
+    pick.lotNumber ||
+    selectedLot?.number ||
+    lots.find((l) => l.id === pick.lotId)?.number ||
+    '';
+  const lotSelectOptions = [
+    ...(pick.lotId && !lots.some((l) => lotWhKey(l.id, l.warehouseId) === lotSelectValue)
+      ? [
+          {
+            value: lotSelectValue,
+            // Никогда не показываем сырой UUID — только номер или запасная подпись
+            label: formatLotNumberLabel({ number: lotLabelNumber || 'партия' }),
+          },
+        ]
+      : []),
+    ...lots.map((l) => ({
+      value: lotWhKey(l.id, l.warehouseId),
+      // Только номер: склад и свободно — в соседних колонках
+      label: formatLotNumberLabel(l, false),
+      className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
+    })),
+  ];
 
   return (
     <tr
@@ -1268,54 +1334,6 @@ function PickRow({
         {pick.substituted && pick.specMaterialName ? (
           <div className="muted">вместо {pick.specMaterialName}</div>
         ) : null}
-      </td>
-      <td className="col-center num">
-        {pick.quantity}
-        {pick.recalcApplied ? (
-          <div className="pick-recalc-hint">
-            пересчёт
-            {pick.nominalQuantity != null ? ` (ном. ${pick.nominalQuantity})` : ''}
-          </div>
-        ) : null}
-        {pick.recalcMissing ? (
-          <div className="pick-recalc-warn">нет факта в регистре — расход по эталону спецификации</div>
-        ) : null}
-      </td>
-      <td>
-        <SearchableSelect
-          triggerClassName={[
-            ok && !qualityUnfit ? '' : 'select-bad',
-            qualityUnfit ? 'select-lot-blocked' : '',
-            qualityConditional ? 'select-lot-conditional' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          value={lotSelectValue}
-          onChange={onChangeLot}
-          emptyLabel="— не выбрана —"
-          options={[
-            ...(!selectedLot && pick.lotId
-              ? [
-                  {
-                    value: lotSelectValue,
-                    label: formatLotNumberLabel({
-                      number: pick.lotNumber || pick.lotId,
-                      warehouseType: pick.warehouseType,
-                      warehouseName: pick.warehouseName,
-                    }),
-                  },
-                ]
-              : []),
-            ...lots.map((l) => {
-              const multiWh = lots.filter((x) => x.id === l.id).length > 1;
-              return {
-                value: lotWhKey(l.id, l.warehouseId),
-                label: formatLotNumberLabel(l, multiWh),
-                className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
-              };
-            }),
-          ]}
-        />
         {qualityUnfit && (
           <div className="pick-lot-block-reason">
             {qualityMessage || 'Партия не годна по качеству'}
@@ -1333,6 +1351,33 @@ function PickRow({
               : `Недостаточно свободного остатка (нужно ${pick.quantity}, доступно с учётом других заказов)`}
           </div>
         )}
+      </td>
+      <td className="col-center num">
+        {pick.quantity}
+        {pick.recalcApplied ? (
+          <div className="pick-recalc-hint">
+            пересчёт
+            {pick.nominalQuantity != null ? ` (ном. ${pick.nominalQuantity})` : ''}
+          </div>
+        ) : null}
+        {pick.recalcMissing ? (
+          <div className="pick-recalc-warn">нет факта в регистре — расход по эталону спецификации</div>
+        ) : null}
+      </td>
+      <td className="pick-lot-cell">
+        <SearchableSelect
+          triggerClassName={[
+            ok && !qualityUnfit ? '' : 'select-bad',
+            qualityUnfit ? 'select-lot-blocked' : '',
+            qualityConditional ? 'select-lot-conditional' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          value={lotSelectValue}
+          onChange={onChangeLot}
+          emptyLabel="— не выбрана —"
+          options={lotSelectOptions}
+        />
       </td>
       <td
         className="pick-wh-cell"

@@ -587,13 +587,10 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                                   },
                                 ]
                               : []),
-                            ...opts.map((o) => {
-                              const multiWh = opts.filter((x) => x.id === o.id).length > 1;
-                              return {
+                              ...opts.map((o) => ({
                                 value: lotWhKey(o.id, o.warehouseId),
-                                label: formatLotNumberLabel(o, multiWh),
-                              };
-                            }),
+                                label: formatLotNumberLabel(o, false),
+                              })),
                           ]}
                         />
                         {selectedOpt?.qualityName && !unfit && !conditional && (
