@@ -14,5 +14,9 @@
 | Руководство UI | `frontend/src/content/userGuide.ts` |
 | Тесты цепочки | `backend/tests/chain.test.js` |
 | Секреты lint | `npm run wiki:secrets-lint` |
+| Feedback | `services/feedback.js` |
+| Production register | `services/productionRegister.js` |
+| Ops debug / login audit | `opsDebugLog.js`, `loginAudit.js` |
+| Changelog UI | `docs/CHANGELOG.md` → `utils/changelog.ts` |
 
 Новые фичи — новые ветки. После main — sync docs + wiki.

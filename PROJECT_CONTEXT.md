@@ -1,5 +1,5 @@
 ﻿## Ветка: docs/llm-wiki
 
-Lint wiki (QBL, техкарты); готовность к merge. См. `wiki/log.md`, `wiki/analyses/lint-2026-08-26.md`.
+Добиты entity из lint (feedback, production_register, ops-debug, login-audit, changelog). См. `wiki/index.md`.
 
 Пилот: https://vilar-prod.ru

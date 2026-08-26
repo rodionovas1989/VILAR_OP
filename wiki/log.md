@@ -39,3 +39,8 @@ Ingest: `ops/security-pilot`, `concepts/legal-pdn` + sources.
 Проверка списка правил из Cursor Settings; анализ соответствия gist.  
 Страница: `analyses/karpathy-gist-fit.md`. User rule docs sync — OK. Дубль блока LLM Wiki в UI = project rule (один файл); не копировать gist в User rules.
 
+## [2026-08-26] ingest | Lint follow-up entities
+
+Закрыт хвост lint: `feedback-tickets`, `production-register`, `ops-debug`, `login-audit`, `changelog-feed`.  
+Пункт «Остаётся» из lint-2026-08-26 по этим entity снят.
+

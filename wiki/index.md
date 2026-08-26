@@ -39,6 +39,11 @@
 | [decimal-input](entities/decimal-input.md) | Единый числовой ввод |
 | [rbac-objects](entities/rbac-objects.md) | Права и objectId |
 | [code-map](entities/code-map.md) | Якоря по коду (brief тонкий) |
+| [feedback-tickets](entities/feedback-tickets.md) | Обращения FB-… |
+| [production-register](entities/production-register.md) | Аналитика PRI/PRR |
+| [ops-debug](entities/ops-debug.md) | ops_debug.jsonl |
+| [login-audit](entities/login-audit.md) | Журнал входов + status log |
+| [changelog-feed](entities/changelog-feed.md) | CHANGELOG → «Что нового» |
 
 ## Decisions
 
