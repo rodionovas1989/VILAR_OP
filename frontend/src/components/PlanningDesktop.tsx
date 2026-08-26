@@ -430,7 +430,11 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     const next = [...suggestions];
     const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
     const { lotId, warehouseId } = parseLotWhKey(lotWhValue);
-    let pick = { ...next[orderIdx].picks[pickIdx], lotId: lotId || null, warehouseId: warehouseId || null };
+    let pick: MaterialPick = {
+      ...next[orderIdx].picks[pickIdx],
+      lotId: lotId || null,
+      warehouseId: warehouseId || null,
+    };
     if (!lotId) {
       pick = applyNeedToPick(pick, null, orderQty);
       pick.lotNumber = null;
