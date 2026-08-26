@@ -21,4 +21,6 @@ alwaysApply: true
 
 ## Документы проекта
 
-После изменений обновлять: `README`, `PROJECT_CONTEXT`, `DEPLOYMENT`, `AGENT_BRIEF`, `BRANCH_INFO` (по правилам пользователя).
+После изменений обновлять по смыслу: `README`, `PROJECT_CONTEXT`, `DEPLOYMENT`, `AGENT_BRIEF`, `BRANCH_INFO`, и **wiki** (`wiki/` + `wiki/log.md`) — см. `docs-sync-after-main.mdc` и `wiki/SCHEMA.md`.
+
+Не коммитить секреты и `local/` (см. `wiki/ops/secrets-and-local.md`).

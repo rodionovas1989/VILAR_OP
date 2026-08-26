@@ -1,0 +1,42 @@
+---
+description: LLM Wiki — читать index, ingest/query/lint; не править raw; секреты вне wiki
+alwaysApply: true
+---
+
+# LLM Wiki (Vilar OP)
+
+Полная схема: `wiki/SCHEMA.md`. Паттерн: persistent wiki между сырыми docs и ответами агента.
+
+## Перед нетривиальной задачей
+
+1. Прочитать `wiki/index.md`.
+2. Открыть 1–3 релевантные страницы из `wiki/concepts|entities|decisions|ops/`.
+3. При необходимости — канон в `docs/` (raw), не пересказывать вики вместо кода.
+
+## Ingest / sync (самоактуализация по триггерам)
+
+- Новые материалы — в `raw/` или уже существующие `docs/*` (их **не** переписывать как «улучшение»).
+- После значимого решения или merge в `main`: обновить затронутые страницы wiki + `wiki/index.md` + append в `wiki/log.md`.
+- Смена поведения продукта, новый ADR, полезный синтез из ответа — тоже в wiki (см. таблицу триггеров в SCHEMA).
+- Не раздувать `AGENT_BRIEF.md`: карта файлов и домен — в wiki; brief — навигация.
+
+## Секреты
+
+- Правило: `.cursor/rules/secrets-guard.mdc` (профилактика до записи).
+- Не писать в wiki/raw значения паролей, ключей, токенов, SSH, содержимое `local/`.
+- Перед commit wiki: `npm run wiki:secrets-lint`.
+- Подробности: `wiki/ops/secrets-and-local.md`.
+
+## Query
+
+Ответы со ссылками на wiki/raw. Синтез, который стоит сохранить → страница в wiki + log.
+
+## Lint
+
+По просьбе пользователя — health-check вики (противоречия, stale, сироты, утечки секретов).
+
+## Не делать
+
+- Не удалять и не «улучшать» методики в `docs/GMP_*`, `LOT_RECALC`, `ORDER_STATUS_GUARDS`, `STOCK_DOCUMENTS_SPEC` без явной задачи.
+- Не писать в wiki текущие SHA / «количество веток» — ссылаться на `BRANCH_INFO.md` / git.
+- Не коммитить `local/`, `*.sqlite`, `auth_secret`, `.env`.

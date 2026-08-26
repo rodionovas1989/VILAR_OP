@@ -73,14 +73,17 @@ npm test
 
 ## Документация
 
+- **`wiki/index.md`** — скомпилированная база знаний для агентов (LLM Wiki); схемы и ingest — `wiki/SCHEMA.md`
+- `raw/` — новые исходники для ingest (методики в `docs/` тоже raw-by-convention)
+- Секреты: не в wiki; проверка `npm run wiki:secrets-lint`; правило `.cursor/rules/secrets-guard.mdc`
 - В системе: **Администрирование → Руководство пользователя** (инструкция и вопросы-ответы)
 - `docs/GMP_SERIES_RULES.md` — правила серий/партий
 - `docs/ORDER_STATUS_GUARDS.md` — переходы статусов заказа
 - `docs/PRE_PRODUCTION.md` — чеклист перед площадкой
 - `docs/SECURITY_PUBLIC_VM.md` — риски открытой ВМ и план усиления
 - `docs/HTTPS_SETUP.md` — домен, DNS, nginx, Let’s Encrypt на пилотной ВМ
-- `docs/ROADMAP.md` — дорожная карта (актуализация 2026-08-15)
+- `docs/ROADMAP.md` — дорожная карта
 - `PROJECT_CONTEXT.md` — контекст ветки
 - `DEPLOYMENT.md` — запуск
-- `AGENT_BRIEF.md` — карта проекта для агентов
+- `AGENT_BRIEF.md` — карта файлов/API для агентов
 - `BRANCH_INFO.md` — ветки

@@ -16,6 +16,7 @@ alwaysApply: true
 - `README.md` / `DEPLOYMENT.md` / `AGENT_BRIEF.md` — если менялись стек, запуск, карта файлов
 - `docs/SECURITY_PUBLIC_VM.md` — если менялась ИБ пилота
 - **`frontend/src/content/userGuide.ts`** — если менялось поведение для пользователей (разделы, документы, качество, ограничения удаления и т.п.). Не оставлять в руководстве «заглушка / не влияет», если фича уже работает в `main`.
+- **`wiki/`** — затронутые concepts/entities/decisions/ops + `wiki/index.md`; append в `wiki/log.md` (`## [YYYY-MM-DD] ingest | …`). Методики в `docs/` (GMP, LOT_RECALC, guards, stock spec) не переписывать без задачи — это raw. Схема: `wiki/SCHEMA.md`.
 
 Не оставлять в ROADMAP пункты «в работе», если фича уже в `main`.
 

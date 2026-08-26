@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `docs/llm-wiki` | LLM Wiki: `wiki/` + `raw/`, schema/rules, bootstrap из docs | **активна** |
 | `main` | + тикеты FB-00002…00007; лента «Что нового»; единый числовой ввод | **эталон** |
 | `fix/unify-decimal-input` | DecimalInput во всех числовых полях (приёмка и др.) | **слита** в main |
 | `fix/changelog-feed-scroll` | Скролл ленты «Что нового» | **слита** в main |
