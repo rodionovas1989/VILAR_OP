@@ -1,4 +1,5 @@
 import { SubstitutionLine } from '../types';
+import DecimalInput from './DecimalInput';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
 
@@ -113,11 +114,12 @@ export default function SubstitutionForm({ editing, setEditing, materials, speci
                     />
                   </td>
                   <td>
-                    <input
-                      type="number"
+                    <DecimalInput
                       min={1}
                       value={line.priority ?? idx + 1}
-                      onChange={(e) => updateLine(idx, { priority: Number(e.target.value) })}
+                      onValueChange={(value) =>
+                        updateLine(idx, { priority: Math.max(1, Math.round(value ?? idx + 1)) })
+                      }
                     />
                   </td>
                   <td>

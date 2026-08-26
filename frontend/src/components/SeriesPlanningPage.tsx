@@ -4,6 +4,7 @@ import { canCreateObject, canModifyObject, canViewObject } from '../auth/permiss
 import { useAuth } from '../auth/AuthContext';
 import { Material, PlannedSeriesVolume, ProductionOrder, Series, Specification, TechMap, WorkCenter } from '../types';
 import AccessDenied from './AccessDenied';
+import DecimalInput from './DecimalInput';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
 
@@ -357,13 +358,13 @@ export default function SeriesPlanningPage({
                     />
                   </td>
                   <td>
-                    <input
-                      type="number"
+                    <DecimalInput
                       min={1}
-                      step={1}
-                      value={line.quantity}
+                      value={line.quantity === '' ? null : Number(line.quantity)}
                       disabled={!canRun || busy}
-                      onChange={(e) => updateLine(line.key, { quantity: e.target.value })}
+                      onValueChange={(value) =>
+                        updateLine(line.key, { quantity: String(Math.max(1, Math.round(value ?? 1))) })
+                      }
                     />
                   </td>
                   <td>

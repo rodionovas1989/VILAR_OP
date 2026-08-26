@@ -174,3 +174,4 @@ frontend/
 ## Правила кода
 - Новые фичи — только в новых ветках
 - После изменений обновлять README, PROJECT_CONTEXT, DEPLOYMENT, AGENT_BRIEF, BRANCH_INFO
+- Для числовых полей в `frontend/src/**/*.tsx` использовать `DecimalInput`; не возвращать `input type="number"` в формах документов/CRUD.

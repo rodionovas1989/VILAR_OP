@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { OrderLine, ProductionOrder, Warehouse, LotCharacteristic } from '../types';
+import DecimalInput from './DecimalInput';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
@@ -377,13 +378,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           </div>
           <label className="prod-head-field">
             <span className="muted">Факт выпуска</span>
-            <input
-              type="number"
+            <DecimalInput
               min={0}
-              step="any"
               value={actualQuantity}
               disabled={busy}
-              onChange={(e) => onFactQtyChange(Number(e.target.value))}
+              onValueChange={(value) => onFactQtyChange(value ?? 0)}
             />
           </label>
           <label className="prod-head-field">
@@ -563,13 +562,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       </td>
                       <td>{lotCp(l.lotId)}</td>
                       <td className="col-center prod-qty-cell">
-                        <input
-                          type="number"
+                        <DecimalInput
                           min={0}
-                          step="any"
                           value={l.quantity}
                           disabled={busy}
-                          onChange={(e) => changeFactQty(key, Number(e.target.value))}
+                          onValueChange={(value) => changeFactQty(key, value ?? 0)}
                         />
                       </td>
                     </tr>

@@ -32,6 +32,7 @@ import { Modal } from './Modal';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
+import DecimalInput from './DecimalInput';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 
@@ -688,13 +689,11 @@ export default function ProductionOrderPage({
               <label>
                 Количество (план)
                 {canEditFields ? (
-                  <input
-                    type="number"
-                    step="any"
+                  <DecimalInput
                     min={0}
-                    value={editing.quantity || ''}
-                    onChange={(e) => setEditing({ ...editing, quantity: Number(e.target.value) })}
                     required
+                    value={editing.quantity ?? 0}
+                    onValueChange={(quantity) => setEditing({ ...editing, quantity: quantity ?? 0 })}
                   />
                 ) : (
                   <span className="readonly-field">{editing.quantity}</span>

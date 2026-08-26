@@ -807,7 +807,8 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                           value={line.actualQuantity ?? 0}
                           onValueChange={(actual) => {
                             const lines = [...editing.lines];
-                            lines[idx] = { ...line, actualQuantity: actual, quantity: actual };
+                            const safeActual = actual ?? 0;
+                            lines[idx] = { ...line, actualQuantity: safeActual, quantity: safeActual };
                             setEditing({ ...editing, lines });
                           }}
                         />
@@ -942,14 +943,13 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                 </td>
                 <td>
                   {canEditFields ? (
-                    <input
-                      type="number"
-                      step="any"
+                    <DecimalInput
+                      className="doc-qty-input"
                       min={0}
-                      value={line.quantity || ''}
-                      onChange={(e) => {
+                      value={line.quantity ?? 0}
+                      onValueChange={(quantity) => {
                         const lines = [...editing.lines];
-                        lines[idx] = { ...line, quantity: Number(e.target.value) };
+                        lines[idx] = { ...line, quantity: quantity ?? 0 };
                         setEditing({ ...editing, lines });
                       }}
                     />

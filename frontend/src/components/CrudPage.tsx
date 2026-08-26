@@ -17,6 +17,7 @@ import RefreshButton from './RefreshButton';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { Modal } from './Modal';
 import SearchableSelect from './SearchableSelect';
+import DecimalInput from './DecimalInput';
 
 export type FieldDef = {
   key: string;
@@ -494,6 +495,18 @@ export function CrudPage({
                     value={String(editing?.[f.key] ?? '')}
                     onChange={(e) => setField(e.target.value)}
                     placeholder={f.defaultValue as string | undefined}
+                  />
+                ) : f.type === 'number' ? (
+                  <DecimalInput
+                    required={f.required}
+                    min={null}
+                    value={(() => {
+                      const raw = editing?.[f.key];
+                      if (raw == null || raw === '') return null;
+                      const parsed = Number(raw);
+                      return Number.isFinite(parsed) ? parsed : null;
+                    })()}
+                    onValueChange={(v) => setField(v ?? 0)}
                   />
                 ) : (
                   <input

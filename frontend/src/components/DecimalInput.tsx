@@ -5,11 +5,13 @@ import {
   parseDecimalDraft,
 } from '../utils/decimalInput';
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange'> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange' | 'min'> & {
   value: number | null | undefined;
-  onValueChange: (value: number) => void;
+  onValueChange: (value: number | null) => void;
   /** min ≥ 0 по умолчанию для количеств; null — без нижней границы */
   min?: number | null;
+  /** Разрешить пустое значение (null) */
+  allowEmpty?: boolean;
   onReject?: (message: string) => void;
 };
 
@@ -23,6 +25,7 @@ export default function DecimalInput({
   value,
   onValueChange,
   min = 0,
+  allowEmpty = false,
   onReject,
   className,
   onBlur,
@@ -57,7 +60,19 @@ export default function DecimalInput({
 
   const commitText = (raw: string) => {
     const parsed = parseDecimalDraft(raw);
-    let next = parsed == null ? 0 : parsed;
+    if (parsed == null) {
+      if (allowEmpty) {
+        onValueChange(null);
+        setText('');
+        return;
+      }
+      let fallback = 0;
+      if (min != null && fallback < min) fallback = min;
+      onValueChange(fallback);
+      setText(formatDecimalDisplay(fallback));
+      return;
+    }
+    let next = parsed;
     if (min != null && next < min) next = min;
     onValueChange(next);
     setText(formatDecimalDisplay(next));
@@ -84,7 +99,10 @@ export default function DecimalInput({
           }
           setText(raw);
           const parsed = parseDecimalDraft(raw);
-          if (parsed == null) return;
+          if (parsed == null) {
+            if (allowEmpty && raw.trim() === '') onValueChange(null);
+            return;
+          }
           if (min != null && parsed < min) {
             flashReject(`Значение не меньше ${formatDecimalDisplay(min)}`);
             return;

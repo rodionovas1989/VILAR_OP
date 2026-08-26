@@ -1,6 +1,7 @@
 import { SpecLine, LotCharacteristic } from '../types';
 import { characteristicApplies, materialHasAssayDryApplication, RECALC_METHOD_LABEL, RECALC_METHOD_SHORT } from '../utils/lotCharacteristics';
 import { newId } from '../utils/id';
+import DecimalInput from './DecimalInput';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
 
@@ -105,12 +106,10 @@ export default function SpecLinesEditor({
                   />
                 </td>
                 <td>
-                  <input
-                    type="number"
-                    step="any"
+                  <DecimalInput
                     min={0}
                     value={line.qtyPerUnit ?? 0}
-                    onChange={(e) => update(idx, { qtyPerUnit: Number(e.target.value) })}
+                    onValueChange={(value) => update(idx, { qtyPerUnit: value ?? 0 })}
                   />
                 </td>
                 <td className="spec-recalc-cell">
@@ -135,17 +134,12 @@ export default function SpecLinesEditor({
                   ) : null}
                 </td>
                 <td className="spec-xlabel-cell">
-                  <input
-                    type="number"
-                    step="any"
+                  <DecimalInput
                     min={0}
+                    allowEmpty
                     disabled={(line.recalcMethod || 'none') !== 'assay_and_dry' || !canRecalc}
-                    value={line.recalcXLabel ?? ''}
-                    onChange={(e) =>
-                      update(idx, {
-                        recalcXLabel: e.target.value === '' ? null : Number(e.target.value),
-                      })
-                    }
+                    value={line.recalcXLabel ?? null}
+                    onValueChange={(value) => update(idx, { recalcXLabel: value })}
                   />
                 </td>
                 <td>

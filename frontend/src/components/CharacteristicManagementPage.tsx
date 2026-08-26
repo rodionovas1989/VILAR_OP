@@ -20,6 +20,7 @@ import { Modal } from './Modal';
 import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
+import DecimalInput from './DecimalInput';
 import {
   CharacteristicDocument,
   CharacteristicDocumentLine,
@@ -323,13 +324,13 @@ export default function CharacteristicManagementPage({ materials, lots }: Props)
     setEditing({ ...editing, lines });
   };
 
-  const setValue = (lineIdx: number, characteristicId: string, raw: string) => {
+  const setValue = (lineIdx: number, characteristicId: string, value: number | null) => {
     if (!editing) return;
     const lines = [...(editing.lines || [])];
     const line = lines[lineIdx];
     const values = (line.values || []).map((v) =>
       v.characteristicId === characteristicId
-        ? { ...v, value: raw === '' ? null : Number(raw) }
+        ? { ...v, value }
         : v
     );
     lines[lineIdx] = { ...line, values };
@@ -520,12 +521,12 @@ export default function CharacteristicManagementPage({ materials, lots }: Props)
                       <label key={v.characteristicId}>
                         {v.name || v.code}
                         {v.unit ? `, ${v.unit}` : ''}
-                        <input
-                          type="number"
-                          step="any"
+                        <DecimalInput
+                          min={null}
+                          allowEmpty
                           disabled={!canEditFields}
-                          value={v.value ?? ''}
-                          onChange={(e) => setValue(idx, v.characteristicId, e.target.value)}
+                          value={v.value ?? null}
+                          onValueChange={(value) => setValue(idx, v.characteristicId, value)}
                         />
                       </label>
                     ))}
