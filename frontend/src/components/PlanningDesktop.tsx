@@ -1197,25 +1197,28 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                   <th>Партия</th>
                   <th>Склад</th>
                   <th className="num">Свободно</th>
-                  <th className="num">Need (макс)</th>
+                  <th className="num">Требуется</th>
+                  <th className="num">Не хватает</th>
                   <th>Срок</th>
-                  <th>Подсказка</th>
                 </tr>
               </thead>
               <tbody>
-                {tails.map((t) => (
-                  <tr key={`${t.lotId}::${t.warehouseId || ''}`}>
-                    <td>{t.materialName}</td>
-                    <td>{t.lotNumber}</td>
-                    <td title={t.warehouseName || undefined}>
-                      {shortWarehouseLabel(t.warehouseType, t.warehouseName) || '—'}
-                    </td>
-                    <td className="num">{t.freeQty}</td>
-                    <td className="num">{t.maxNeed}</td>
-                    <td>{t.expiryDate ? String(t.expiryDate).slice(0, 10) : '—'}</td>
-                    <td className="muted">{t.hint}</td>
-                  </tr>
-                ))}
+                {tails.map((t) => {
+                  const shortfall = Math.max(0, Number(t.maxNeed) - Number(t.freeQty));
+                  return (
+                    <tr key={`${t.lotId}::${t.warehouseId || ''}`}>
+                      <td>{t.materialName}</td>
+                      <td>{t.lotNumber}</td>
+                      <td title={t.warehouseName || undefined}>
+                        {shortWarehouseLabel(t.warehouseType, t.warehouseName) || '—'}
+                      </td>
+                      <td className="num">{t.freeQty}</td>
+                      <td className="num">{t.maxNeed}</td>
+                      <td className="num">{shortfall}</td>
+                      <td>{t.expiryDate ? String(t.expiryDate).slice(0, 10) : '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
