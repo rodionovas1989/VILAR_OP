@@ -78,6 +78,11 @@ Fast-forward в `main`, push `origin/main`. Wiki и rules — эталон на 
 
 Поиск только по label: короткий запрос — prefix; mid-includes с 3 символов; UUID value не участвует.
 
+## [2026-08-27] ingest | Modal scroll + Clinical Ops UI kit
+
+Скролл LCH/QCM: `.doc-form-scroll`; CSS fallback без scroll-child; wiki `concepts/ui-scroll-layout`.  
+UI kit: токены `--radius-*` / `--ctrl-*` / denser tables, `.ctrl` + `ctrl-like` Select, wiki `concepts/ui-kit`.
+
 ## [2026-08-27] fix | Quality desktop UX + ToggleSwitch
 
 Отборы производитель/даты; ТЧ партий — только номер; инфо «?» с реквизитами/значениями/историей; оба режима тогла — ввод LCH; фикс сброса черновика; компонент `ToggleSwitch` для настроек.

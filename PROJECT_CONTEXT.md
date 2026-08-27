@@ -1,5 +1,5 @@
-﻿## Ветка: main
+﻿## Ветка: fix/ui-scroll-and-kit
 
-Влита `fix/quality-desktop-ux`: отборы/инфо на столе качества, ввод LCH в обоих режимах тогла, ToggleSwitch, фикс сброса черновика.
+Скролл modal-doc для LCH/QCM + Clinical Ops tokens/ctrl/table baseline. После merge — main.
 
 Пилот: https://vilar-prod.ru

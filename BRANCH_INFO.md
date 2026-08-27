@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `fix/ui-scroll-and-kit` | Скролл LCH/QCM + Clinical Ops UI kit | в работе |
 | `fix/quality-desktop-ux` | UX стола качества + ToggleSwitch | **слита** в main |
 | `feature/fb-20260827-00002-quality-desktop` | Рабочий стол качества / LCH (FB-2026-08-27-00002) | **слита** в main |
 | `fix/fb-20260827-00001-lot-search` | Поиск Select: label/prefix, не UUID (FB-2026-08-27-00001) | **слита** в main |

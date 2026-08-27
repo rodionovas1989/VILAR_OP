@@ -438,117 +438,119 @@ export default function CharacteristicManagementPage({ materials, lots }: Props)
               if (canEditFields) save();
             }}
           >
-            {error && <p className="error">{error}</p>}
-            <div className="form-grid">
-              <label>
-                Номер
-                <input value={editing.number} readOnly />
-              </label>
-              <label>
-                Дата
-                <input
-                  type="date"
-                  value={editing.date}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, date: e.target.value })}
-                />
-              </label>
-              <label>
-                Время
-                <input
-                  type="time"
-                  step={1}
-                  value={(editing.time || nowTime()).slice(0, 8)}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, time: e.target.value })}
-                />
-              </label>
-              <label className="span-2">
-                Комментарий
-                <input
-                  value={editing.comment || ''}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, comment: e.target.value })}
-                />
-              </label>
-            </div>
+            <div className="doc-form-scroll">
+              {error && <p className="error">{error}</p>}
+              <div className="form-grid">
+                <label>
+                  Номер
+                  <input value={editing.number} readOnly />
+                </label>
+                <label>
+                  Дата
+                  <input
+                    type="date"
+                    value={editing.date}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, date: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Время
+                  <input
+                    type="time"
+                    step={1}
+                    value={(editing.time || nowTime()).slice(0, 8)}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, time: e.target.value })}
+                  />
+                </label>
+                <label className="span-2">
+                  Комментарий
+                  <input
+                    value={editing.comment || ''}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, comment: e.target.value })}
+                  />
+                </label>
+              </div>
 
-            <h3>Строки</h3>
-            {(editing.lines || []).map((line, idx) => (
-              <div key={line.id || idx} className="char-doc-line">
-                <div className="form-grid">
-                  <label>
-                    Материал
-                    <SearchableSelect
-                      value={line.materialId || ''}
-                      disabled={!canEditFields}
-                      onChange={(v) => void updateLine(idx, { materialId: v })}
-                      options={materials.map((m) => ({ value: m.id, label: m.name }))}
-                    />
-                  </label>
-                  <label>
-                    Партия
-                    <SearchableSelect
-                      value={line.lotId || ''}
-                      disabled={!canEditFields || !line.materialId}
-                      onChange={(v) => void updateLine(idx, { lotId: v })}
-                      options={lotsForMaterial(lots, line.materialId || '').map((l) => ({
-                        value: l.id,
-                        label: l.number,
-                      }))}
-                    />
-                  </label>
-                  {canEditFields && (
-                    <div>
-                      <button
-                        type="button"
-                        className="ghost"
-                        onClick={() =>
-                          setEditing({
-                            ...editing,
-                            lines: (editing.lines || []).filter((_, i) => i !== idx),
-                          })
-                        }
-                      >
-                        Удалить строку
-                      </button>
+              <h3>Строки</h3>
+              {(editing.lines || []).map((line, idx) => (
+                <div key={line.id || idx} className="char-doc-line">
+                  <div className="form-grid">
+                    <label>
+                      Материал
+                      <SearchableSelect
+                        value={line.materialId || ''}
+                        disabled={!canEditFields}
+                        onChange={(v) => void updateLine(idx, { materialId: v })}
+                        options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                      />
+                    </label>
+                    <label>
+                      Партия
+                      <SearchableSelect
+                        value={line.lotId || ''}
+                        disabled={!canEditFields || !line.materialId}
+                        onChange={(v) => void updateLine(idx, { lotId: v })}
+                        options={lotsForMaterial(lots, line.materialId || '').map((l) => ({
+                          value: l.id,
+                          label: l.number,
+                        }))}
+                      />
+                    </label>
+                    {canEditFields && (
+                      <div>
+                        <button
+                          type="button"
+                          className="ghost"
+                          onClick={() =>
+                            setEditing({
+                              ...editing,
+                              lines: (editing.lines || []).filter((_, i) => i !== idx),
+                            })
+                          }
+                        >
+                          Удалить строку
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {(line.values || []).length ? (
+                    <div className="form-grid">
+                      {(line.values || []).map((v) => (
+                        <label key={v.characteristicId}>
+                          {v.name || v.code}
+                          {v.unit ? `, ${v.unit}` : ''}
+                          <DecimalInput
+                            min={null}
+                            allowEmpty
+                            disabled={!canEditFields}
+                            value={v.value ?? null}
+                            onValueChange={(value) => setValue(idx, v.characteristicId, value)}
+                          />
+                        </label>
+                      ))}
                     </div>
+                  ) : (
+                    <p className="muted">
+                      {line.materialId
+                        ? 'Для материала нет характеристик в применении — назначьте их в справочнике «Характеристики партий»'
+                        : 'Выберите материал — появятся поля по правилам применения'}
+                    </p>
                   )}
                 </div>
-                {(line.values || []).length ? (
-                  <div className="form-grid">
-                    {(line.values || []).map((v) => (
-                      <label key={v.characteristicId}>
-                        {v.name || v.code}
-                        {v.unit ? `, ${v.unit}` : ''}
-                        <DecimalInput
-                          min={null}
-                          allowEmpty
-                          disabled={!canEditFields}
-                          value={v.value ?? null}
-                          onValueChange={(value) => setValue(idx, v.characteristicId, value)}
-                        />
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="muted">
-                    {line.materialId
-                      ? 'Для материала нет характеристик в применении — назначьте их в справочнике «Характеристики партий»'
-                      : 'Выберите материал — появятся поля по правилам применения'}
-                  </p>
-                )}
-              </div>
-            ))}
-            {canEditFields && (
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setEditing({ ...editing, lines: [...(editing.lines || []), emptyLine()] })}
-              >
-                + Строка
-              </button>
-            )}
+              ))}
+              {canEditFields && (
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setEditing({ ...editing, lines: [...(editing.lines || []), emptyLine()] })}
+                >
+                  + Строка
+                </button>
+              )}
+            </div>
           </form>
         </Modal>
       )}
