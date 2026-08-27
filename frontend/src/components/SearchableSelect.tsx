@@ -8,6 +8,8 @@ export type SearchableOption = {
   className?: string;
 };
 
+export type SearchMatchMode = 'label' | 'label-prefix';
+
 type Props = {
   value: string;
   onChange: (value: string) => void;
@@ -16,6 +18,12 @@ type Props = {
   emptyLabel?: string;
   /** Показывать пункт очистки (value ""). По умолчанию true */
   allowEmpty?: boolean;
+  /**
+   * Поиск только по label (не по value/UUID).
+   * `label` — короткий запрос (1–2) только prefix; с 3 символов ещё mid-includes.
+   * `label-prefix` — всегда только начало подписи.
+   */
+  matchMode?: SearchMatchMode;
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
@@ -46,6 +54,22 @@ function measureContentWidth(labels: string[], font: string): number {
 
 function norm(s: string) {
   return s.trim().toLowerCase();
+}
+
+/** Совпадение по подписи; value (UUID) не участвует — иначе «рандом» на 1–2 цифрах. */
+export function optionMatchesQuery(
+  option: SearchableOption,
+  rawQuery: string,
+  mode: SearchMatchMode = 'label'
+): boolean {
+  const q = norm(rawQuery);
+  if (!q) return true;
+  const label = norm(option.label);
+  if (mode === 'label-prefix') return label.startsWith(q);
+  if (label.startsWith(q)) return true;
+  // Короткие запросы — только prefix (цифры часто встречаются в середине номера)
+  if (q.length < 3) return false;
+  return label.includes(q);
 }
 
 /** Ширина панели ≥ триггера и под длинные подписи (как у системного select), без горизонтального скролла. */
@@ -83,6 +107,7 @@ export default function SearchableSelect({
   options,
   emptyLabel = '—',
   allowEmpty = true,
+  matchMode = 'label',
   placeholder,
   disabled = false,
   required = false,
@@ -112,8 +137,8 @@ export default function SearchableSelect({
   const filtered = useMemo(() => {
     const q = norm(query);
     if (!q) return options;
-    return options.filter((o) => norm(o.label).includes(q) || norm(o.value).includes(q));
-  }, [options, query]);
+    return options.filter((o) => optionMatchesQuery(o, query, matchMode));
+  }, [options, query, matchMode]);
 
   const showEmpty =
     allowEmpty && (!query.trim() || norm(emptyLabel).includes(norm(query)) || norm(query) === '—');
