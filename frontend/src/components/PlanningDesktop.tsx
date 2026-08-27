@@ -6,6 +6,7 @@ import GanttChart from './GanttChart';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
+import ToggleSwitch from './ToggleSwitch';
 import { useAuth } from '../auth/AuthContext';
 import { PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY, computeLineNeed, lotRecalcValue } from '../utils/lotRecalc';
 import {
@@ -755,18 +756,16 @@ export default function PlanningDesktop({ dictionaries }: Props) {
             >
               Подтвердить резерв
             </button>
-            <label className="suggest-only-problems">
-              <input
-                type="checkbox"
-                checked={onlyProblems}
-                disabled={!suggestions.length}
-                onChange={(e) => setOnlyProblems(e.target.checked)}
-              />{' '}
-              Только проблемные
-              {suggestions.length
-                ? ` (${problemOrderIds.length} из ${suggestions.length})`
-                : ''}
-            </label>
+            <ToggleSwitch
+              checked={onlyProblems}
+              disabled={!suggestions.length}
+              onCheckedChange={setOnlyProblems}
+              label={
+                suggestions.length
+                  ? `Только проблемные (${problemOrderIds.length} из ${suggestions.length})`
+                  : 'Только проблемные'
+              }
+            />
             <button
               type="button"
               className="ghost"

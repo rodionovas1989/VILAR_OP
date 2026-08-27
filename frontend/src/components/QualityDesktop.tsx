@@ -2,15 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { canCreateObject, canViewObject } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
-import { Counterparty, Lot, LotCharacteristic, Material } from '../types';
+import { Counterparty, Lot, LotCharacteristic, Manufacturer, Material } from '../types';
 import { characteristicApplies } from '../utils/lotCharacteristics';
 import { newId } from '../utils/id';
 import { nowTime } from '../utils/docDateTime';
 import AccessDenied from './AccessDenied';
 import DecimalInput from './DecimalInput';
+import IconButton from './IconButton';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
+import ToggleSwitch from './ToggleSwitch';
 
 type RegisterRow = {
   id: string;
@@ -44,6 +46,7 @@ type Props = {
   lots: Lot[];
   characteristics: LotCharacteristic[];
   counterparties: Counterparty[];
+  manufacturers: Manufacturer[];
 };
 
 function hasRegisterValue(row: RegisterRow | undefined): boolean {
@@ -73,11 +76,30 @@ function applicableDefsForMaterial(
   return defs.filter((d) => characteristicApplies(d, material));
 }
 
+function draftFromRegister(
+  lotId: string,
+  defs: LotCharacteristic[],
+  byLotChar: Map<string, RegisterRow>
+): Record<string, number | null> {
+  const next: Record<string, number | null> = {};
+  for (const d of defs) {
+    const row = byLotChar.get(`${lotId}::${d.id}`);
+    if (row?.value != null && String(row.value).trim() !== '') {
+      const n = Number(row.value);
+      next[d.id] = Number.isFinite(n) ? n : null;
+    } else {
+      next[d.id] = null;
+    }
+  }
+  return next;
+}
+
 export default function QualityDesktop({
   materials,
   lots,
   characteristics,
   counterparties,
+  manufacturers,
 }: Props) {
   const { user, openLogin } = useAuth();
   const objectId = 'quality_desktop';
@@ -91,12 +113,17 @@ export default function QualityDesktop({
   const [filterMaterialId, setFilterMaterialId] = useState('');
   const [filterLotQuery, setFilterLotQuery] = useState('');
   const [filterCounterpartyId, setFilterCounterpartyId] = useState('');
+  const [filterManufacturerId, setFilterManufacturerId] = useState('');
+  const [filterProdFrom, setFilterProdFrom] = useState('');
+  const [filterProdTo, setFilterProdTo] = useState('');
+  const [filterExpiryFrom, setFilterExpiryFrom] = useState('');
+  const [filterExpiryTo, setFilterExpiryTo] = useState('');
   const [selectedMaterialId, setSelectedMaterialId] = useState('');
   const [selectedLotId, setSelectedLotId] = useState('');
   const [draftValues, setDraftValues] = useState<Record<string, number | null>>({});
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const [infoLotId, setInfoLotId] = useState('');
   const [historyRows, setHistoryRows] = useState<HistoryRow[]>([]);
-  const [historyBusy, setHistoryBusy] = useState(false);
+  const [infoBusy, setInfoBusy] = useState(false);
 
   const loadRegister = useCallback(async () => {
     const rows = await api.list<RegisterRow>('characteristic_register');
@@ -121,15 +148,29 @@ export default function QualityDesktop({
     (lot: Lot) => {
       if (filterMaterialId && lot.materialId !== filterMaterialId) return false;
       if (filterCounterpartyId && lot.counterpartyId !== filterCounterpartyId) return false;
+      if (filterManufacturerId && lot.manufacturerId !== filterManufacturerId) return false;
+      if (filterProdFrom && String(lot.productionDate || '').slice(0, 10) < filterProdFrom) return false;
+      if (filterProdTo && String(lot.productionDate || '').slice(0, 10) > filterProdTo) return false;
+      if (filterExpiryFrom && String(lot.expiryDate || '').slice(0, 10) < filterExpiryFrom) return false;
+      if (filterExpiryTo && String(lot.expiryDate || '').slice(0, 10) > filterExpiryTo) return false;
       const q = filterLotQuery.trim().toLowerCase();
       if (q) {
         const number = String(lot.number || '').toLowerCase();
         const idn = String(lot.identificationNumber || '').toLowerCase();
-        if (!number.includes(q) && !idn.includes(q) && !number.startsWith(q)) return false;
+        if (!number.includes(q) && !idn.includes(q)) return false;
       }
       return true;
     },
-    [filterMaterialId, filterCounterpartyId, filterLotQuery]
+    [
+      filterMaterialId,
+      filterCounterpartyId,
+      filterManufacturerId,
+      filterLotQuery,
+      filterProdFrom,
+      filterProdTo,
+      filterExpiryFrom,
+      filterExpiryTo,
+    ]
   );
 
   const candidateLots = useMemo(() => {
@@ -176,25 +217,22 @@ export default function QualityDesktop({
   const selectedLot = lots.find((l) => l.id === selectedLotId);
   const selectedMaterial =
     materialById.get(selectedLot?.materialId || selectedMaterialId || '') || undefined;
-  const formDefs = applicableDefsForMaterial(selectedMaterial, characteristics);
+  const formDefs = useMemo(
+    () => applicableDefsForMaterial(selectedMaterial, characteristics),
+    [selectedMaterial, characteristics]
+  );
 
+  // Черновик подтягиваем из регистра только при смене партии (не при каждом рендере / вводе).
   useEffect(() => {
-    if (!selectedLotId || !formDefs.length) {
+    if (!selectedLotId) {
       setDraftValues({});
       return;
     }
-    const next: Record<string, number | null> = {};
-    for (const d of formDefs) {
-      const row = byLotChar.get(`${selectedLotId}::${d.id}`);
-      if (row?.value != null && String(row.value).trim() !== '') {
-        const n = Number(row.value);
-        next[d.id] = Number.isFinite(n) ? n : null;
-      } else {
-        next[d.id] = null;
-      }
-    }
-    setDraftValues(next);
-  }, [selectedLotId, formDefs, byLotChar]);
+    const mat = materialById.get(lots.find((l) => l.id === selectedLotId)?.materialId || '');
+    const defs = applicableDefsForMaterial(mat, characteristics);
+    setDraftValues(draftFromRegister(selectedLotId, defs, byLotChar));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- только смена партии
+  }, [selectedLotId]);
 
   const selectMaterial = (id: string) => {
     setSelectedMaterialId(id);
@@ -207,9 +245,9 @@ export default function QualityDesktop({
     setSelectedLotId(lot.id);
   };
 
-  const openHistory = async (lotId: string) => {
-    setHistoryOpen(true);
-    setHistoryBusy(true);
+  const openInfo = async (lotId: string) => {
+    setInfoLotId(lotId);
+    setInfoBusy(true);
     try {
       const rows = await api.list<HistoryRow>('characteristic_history');
       setHistoryRows(
@@ -221,11 +259,11 @@ export default function QualityDesktop({
       setHistoryRows([]);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setHistoryBusy(false);
+      setInfoBusy(false);
     }
   };
 
-  const confirmPrimary = async () => {
+  const confirmEntry = async () => {
     if (!loggedIn) {
       openLogin();
       return;
@@ -243,7 +281,7 @@ export default function QualityDesktop({
         characteristicId: d.id,
         value: draftValues[d.id],
       }))
-      .filter((v) => v.value != null && Number.isFinite(v.value));
+      .filter((v) => v.value != null && Number.isFinite(v.value as number));
     if (!values.length) {
       setError('Укажите хотя бы одно значение характеристики');
       return;
@@ -254,7 +292,9 @@ export default function QualityDesktop({
       const created = await api.createCharacteristicDocument({
         date: new Date().toISOString().slice(0, 10),
         time: nowTime(),
-        comment: 'Первичный ввод с рабочего стола качества',
+        comment: primaryEntry
+          ? 'Первичный ввод с рабочего стола качества'
+          : 'Ввод характеристик с рабочего стола качества',
         createdByUserId: user?.id,
         lines: [
           {
@@ -282,36 +322,39 @@ export default function QualityDesktop({
 
   const cpName = (id?: string | null) =>
     id ? counterparties.find((c) => c.id === id)?.name || id : '—';
+  const mfrName = (id?: string | null) =>
+    id ? manufacturers.find((m) => m.id === id)?.name || id : '—';
+
+  const infoLot = lots.find((l) => l.id === infoLotId);
+  const infoMaterial = infoLot ? materialById.get(infoLot.materialId) : undefined;
+  const infoDefs = applicableDefsForMaterial(infoMaterial, characteristics);
 
   return (
     <div className="quality-desktop">
       <PageTitle pageId={objectId} title="Рабочий стол качества" />
       <div className="page-toolbar quality-desktop-toolbar">
-        <label className="suggest-only-problems">
-          <input
-            type="checkbox"
-            checked={primaryEntry}
-            onChange={(e) => {
-              setPrimaryEntry(e.target.checked);
-              setSelectedLotId('');
-              setDraftValues({});
-            }}
-          />{' '}
-          Первичный ввод характеристик
-        </label>
+        <ToggleSwitch
+          checked={primaryEntry}
+          onCheckedChange={(v) => {
+            setPrimaryEntry(v);
+            setSelectedLotId('');
+            setDraftValues({});
+          }}
+          label="Первичный ввод характеристик"
+        />
         <button type="button" className="ghost" disabled={busy} onClick={() => void loadRegister()}>
           Обновить
         </button>
       </div>
       <p className="hint">
         {primaryEntry
-          ? 'Показаны материалы и партии, у которых ещё нет ни одного значения по применимым характеристикам. Подтверждение создаёт и проводит документ LCH.'
-          : 'Все партии по отборам (с применимыми характеристиками). Актуальные значения — из регистра; история — по кнопке «i».'}
+          ? 'Список: партии без значений по применимым характеристикам. Справа — ввод; подтверждение создаёт и проводит LCH.'
+          : 'Список: все партии по отборам. Справа — ввод новых значений (поверх текущего регистра); подтверждение создаёт и проводит LCH. Подробности партии — кнопка «?».'}
       </p>
 
       <div className="quality-desktop-filters">
         <label>
-          Материал{' '}
+          Материал
           <SearchableSelect
             value={filterMaterialId}
             onChange={(v) => {
@@ -325,7 +368,7 @@ export default function QualityDesktop({
           />
         </label>
         <label>
-          Партия{' '}
+          Партия
           <input
             type="search"
             value={filterLotQuery}
@@ -334,13 +377,42 @@ export default function QualityDesktop({
           />
         </label>
         <label>
-          Контрагент{' '}
+          Контрагент
           <SearchableSelect
             value={filterCounterpartyId}
             onChange={setFilterCounterpartyId}
             emptyLabel="— все —"
             options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
           />
+        </label>
+        <label>
+          Производитель
+          <SearchableSelect
+            value={filterManufacturerId}
+            onChange={setFilterManufacturerId}
+            emptyLabel="— все —"
+            options={manufacturers.map((m) => ({ value: m.id, label: m.name }))}
+          />
+        </label>
+        <label>
+          Произведено с
+          <input type="date" value={filterProdFrom} onChange={(e) => setFilterProdFrom(e.target.value)} />
+        </label>
+        <label>
+          Произведено по
+          <input type="date" value={filterProdTo} onChange={(e) => setFilterProdTo(e.target.value)} />
+        </label>
+        <label>
+          Годен с
+          <input
+            type="date"
+            value={filterExpiryFrom}
+            onChange={(e) => setFilterExpiryFrom(e.target.value)}
+          />
+        </label>
+        <label>
+          Годен по
+          <input type="date" value={filterExpiryTo} onChange={(e) => setFilterExpiryTo(e.target.value)} />
         </label>
       </div>
 
@@ -387,8 +459,7 @@ export default function QualityDesktop({
                 <thead>
                   <tr>
                     <th>Номер</th>
-                    <th>Контрагент</th>
-                    {!primaryEntry ? <th></th> : null}
+                    <th className="col-center" style={{ width: 48 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -399,30 +470,18 @@ export default function QualityDesktop({
                       onClick={() => selectLot(lot)}
                     >
                       <td>{lot.number}</td>
-                      <td className="muted">{cpName(lot.counterpartyId)}</td>
-                      {!primaryEntry ? (
-                        <td className="col-center">
-                          <button
-                            type="button"
-                            className="icon-square-btn"
-                            title="История характеристик"
-                            aria-label="История характеристик"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void openHistory(lot.id);
-                            }}
-                          >
-                            <span className="icon-square-btn-glyph" aria-hidden>
-                              i
-                            </span>
-                          </button>
-                        </td>
-                      ) : null}
+                      <td className="col-center" onClick={(e) => e.stopPropagation()}>
+                        <IconButton
+                          icon="help"
+                          label="Информация о партии"
+                          onClick={() => void openInfo(lot.id)}
+                        />
+                      </td>
                     </tr>
                   ))}
                   {!lotsForSelectedMaterial.length && (
                     <tr>
-                      <td colSpan={primaryEntry ? 2 : 3} className="muted">
+                      <td colSpan={2} className="muted">
                         Нет партий по отбору
                       </td>
                     </tr>
@@ -434,7 +493,7 @@ export default function QualityDesktop({
         </div>
 
         <div className="quality-desktop-form quality-desktop-panel">
-          <h3>{primaryEntry ? 'Ввод характеристик' : 'Текущие значения'}</h3>
+          <h3>Ввод характеристик</h3>
           {!selectedLot ? (
             <p className="hint">Выберите партию слева</p>
           ) : (
@@ -447,14 +506,18 @@ export default function QualityDesktop({
                 <p className="hint">Для материала нет применимых характеристик</p>
               ) : (
                 <div className="quality-desktop-fields">
-                  {formDefs.map((d) => (
-                    <label key={d.id} className="quality-desktop-field">
-                      <span>
-                        {d.name}
-                        {d.unit ? ` (${d.unit})` : ''}
-                        {d.required ? ' *' : ''}
-                      </span>
-                      {primaryEntry ? (
+                  {formDefs.map((d) => {
+                    const current = byLotChar.get(`${selectedLot.id}::${d.id}`);
+                    return (
+                      <label key={d.id} className="quality-desktop-field">
+                        <span>
+                          {d.name}
+                          {d.unit ? ` (${d.unit})` : ''}
+                          {d.required ? ' *' : ''}
+                          {!primaryEntry && hasRegisterValue(current) ? (
+                            <span className="muted"> · сейчас {String(current?.value)}</span>
+                          ) : null}
+                        </span>
                         <DecimalInput
                           min={null}
                           allowEmpty
@@ -463,71 +526,140 @@ export default function QualityDesktop({
                             setDraftValues((prev) => ({ ...prev, [d.id]: value }))
                           }
                         />
-                      ) : (
-                        <span className="quality-desktop-readonly">
-                          {draftValues[d.id] != null ? String(draftValues[d.id]) : '—'}
-                        </span>
-                      )}
-                    </label>
-                  ))}
+                      </label>
+                    );
+                  })}
                 </div>
               )}
-              {primaryEntry ? (
-                <div className="quality-desktop-actions">
-                  <button type="button" disabled={busy || !formDefs.length} onClick={() => void confirmPrimary()}>
-                    Подтвердить и провести LCH
-                  </button>
-                </div>
-              ) : (
-                <p className="hint">
-                  Изменение значений — через документ «Управление характеристиками». История — кнопка «i» у партии.
-                </p>
-              )}
+              <div className="quality-desktop-actions">
+                <button type="button" disabled={busy || !formDefs.length} onClick={() => void confirmEntry()}>
+                  Подтвердить и провести LCH
+                </button>
+              </div>
             </>
           )}
         </div>
       </div>
 
       <Modal
-        open={historyOpen}
-        title="История характеристик"
+        open={Boolean(infoLotId)}
+        title={infoLot ? `Партия ${infoLot.number}` : 'Партия'}
         wide
-        onClose={() => setHistoryOpen(false)}
+        onClose={() => setInfoLotId('')}
         footer={
-          <button type="button" className="ghost" onClick={() => setHistoryOpen(false)}>
+          <button type="button" className="ghost" onClick={() => setInfoLotId('')}>
             Закрыть
           </button>
         }
       >
-        {historyBusy ? (
-          <p className="hint">Загрузка…</p>
-        ) : !historyRows.length ? (
-          <p className="hint">Записей нет</p>
+        {!infoLot ? (
+          <p className="hint">Партия не найдена</p>
         ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Когда</th>
-                  <th>Действие</th>
-                  <th>Характеристика</th>
-                  <th className="num">Значение</th>
-                  <th>Документ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historyRows.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.at ? String(r.at).replace('T', ' ').slice(0, 19) : '—'}</td>
-                    <td>{r.action || '—'}</td>
-                    <td>{r.name || r.code || r.characteristicId}</td>
-                    <td className="num">{r.value != null ? String(r.value) : '—'}</td>
-                    <td>{r.documentNumber || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <h4 className="quality-info-section">Реквизиты</h4>
+            <dl className="quality-info-dl">
+              <div>
+                <dt>Номер</dt>
+                <dd>{infoLot.number}</dd>
+              </div>
+              <div>
+                <dt>Ид. номер</dt>
+                <dd>{infoLot.identificationNumber || '—'}</dd>
+              </div>
+              <div>
+                <dt>Материал</dt>
+                <dd>{infoMaterial?.name || infoLot.materialId}</dd>
+              </div>
+              <div>
+                <dt>Контрагент</dt>
+                <dd>{cpName(infoLot.counterpartyId)}</dd>
+              </div>
+              <div>
+                <dt>Производитель</dt>
+                <dd>{mfrName(infoLot.manufacturerId)}</dd>
+              </div>
+              <div>
+                <dt>Дата производства</dt>
+                <dd>{String(infoLot.productionDate || '').slice(0, 10) || '—'}</dd>
+              </div>
+              <div>
+                <dt>Срок годности</dt>
+                <dd>{String(infoLot.expiryDate || '').slice(0, 10) || '—'}</dd>
+              </div>
+            </dl>
+
+            <h4 className="quality-info-section">Текущие значения характеристик</h4>
+            {infoBusy ? (
+              <p className="hint">Загрузка…</p>
+            ) : !infoDefs.length ? (
+              <p className="hint">Нет применимых характеристик</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Характеристика</th>
+                      <th className="num">Значение</th>
+                      <th>Документ</th>
+                      <th>Обновлено</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {infoDefs.map((d) => {
+                      const row = byLotChar.get(`${infoLot.id}::${d.id}`);
+                      return (
+                        <tr key={d.id}>
+                          <td>
+                            {d.name}
+                            {d.unit ? ` (${d.unit})` : ''}
+                          </td>
+                          <td className="num">
+                            {hasRegisterValue(row) ? String(row?.value) : '—'}
+                          </td>
+                          <td>{row?.documentNumber || '—'}</td>
+                          <td>
+                            {row?.updatedAt
+                              ? String(row.updatedAt).replace('T', ' ').slice(0, 19)
+                              : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <h4 className="quality-info-section">История</h4>
+            {!historyRows.length ? (
+              <p className="hint">Записей нет</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Когда</th>
+                      <th>Действие</th>
+                      <th>Характеристика</th>
+                      <th className="num">Значение</th>
+                      <th>Документ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyRows.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.at ? String(r.at).replace('T', ' ').slice(0, 19) : '—'}</td>
+                        <td>{r.action || '—'}</td>
+                        <td>{r.name || r.code || r.characteristicId}</td>
+                        <td className="num">{r.value != null ? String(r.value) : '—'}</td>
+                        <td>{r.documentNumber || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </Modal>
     </div>

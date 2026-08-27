@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LotCharacteristic } from '../types';
 import { MATERIAL_TYPES } from '../utils/lotCharacteristics';
 import SearchableSelect from './SearchableSelect';
+import ToggleSwitch from './ToggleSwitch';
 
 type Props = {
   editing: Record<string, unknown>;
@@ -78,22 +79,16 @@ export default function CharacteristicForm({ editing, setEditing, materials }: P
             />
             {isSystem ? <span className="muted">Системную единицу нельзя изменить</span> : null}
           </label>
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={editing.required === true}
-              onChange={(e) => setField('required', e.target.checked)}
-            />
-            <span>Обязательная (предупреждение, не запрет)</span>
-          </label>
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={editing.active !== false}
-              onChange={(e) => setField('active', e.target.checked)}
-            />
-            <span>Действует</span>
-          </label>
+          <ToggleSwitch
+            checked={editing.required === true}
+            onCheckedChange={(v) => setField('required', v)}
+            label="Обязательная (предупреждение, не запрет)"
+          />
+          <ToggleSwitch
+            checked={editing.active !== false}
+            onCheckedChange={(v) => setField('active', v)}
+            label="Действует"
+          />
           <label className="span-2">
             <span>Комментарий</span>
             <textarea
@@ -115,14 +110,13 @@ export default function CharacteristicForm({ editing, setEditing, materials }: P
             <div>
               <strong>Типы материалов</strong>
               {MATERIAL_TYPES.map((type) => (
-                <label key={type} className="checkbox-row">
-                  <input
-                    type="checkbox"
-                    checked={materialTypes.includes(type)}
-                    onChange={() => toggleType(type)}
-                  />
-                  <span>{type}</span>
-                </label>
+                <ToggleSwitch
+                  key={type}
+                  className="checkbox-row"
+                  checked={materialTypes.includes(type)}
+                  onCheckedChange={() => toggleType(type)}
+                  label={type}
+                />
               ))}
             </div>
             <div>

@@ -78,8 +78,8 @@ Fast-forward в `main`, push `origin/main`. Wiki и rules — эталон на 
 
 Поиск только по label: короткий запрос — prefix; mid-includes с 3 символов; UUID value не участвует.
 
-## [2026-08-27] ingest | Quality desktop LCH (FB-2026-08-27-00002)
+## [2026-08-27] fix | Quality desktop UX + ToggleSwitch
 
-`quality_desktop`: тогл первичного ввода, материалы/партии без LCH, confirm→create+post документа характеристик; обзор + история.
+Отборы производитель/даты; ТЧ партий — только номер; инфо «?» с реквизитами/значениями/историей; оба режима тогла — ввод LCH; фикс сброса черновика; компонент `ToggleSwitch` для настроек.
 
 

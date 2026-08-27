@@ -1174,6 +1174,7 @@ export default function App() {
             lots={lots}
             characteristics={lotCharacteristics}
             counterparties={counterparties}
+            manufacturers={manufacturers}
           />
         );
       case 'planning_desktop':

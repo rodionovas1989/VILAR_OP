@@ -11,6 +11,7 @@ import ListTableHeader from './ListTableHeader';
 import { Modal } from './Modal';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
+import ToggleSwitch from './ToggleSwitch';
 
 const PAGE_ID = 'quality_scenarios';
 const TYPE_LOT_REGISTERED = 'lot_registered';
@@ -308,14 +309,11 @@ export default function QualityScenariosPage() {
             />
           </label>
 
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={form.enabled}
-              onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-            />
-            Включён
-          </label>
+          <ToggleSwitch
+            checked={form.enabled}
+            onCheckedChange={(v) => setForm({ ...form, enabled: v })}
+            label="Включён"
+          />
 
           <label>
             Качество (подставится в документ)
@@ -421,14 +419,11 @@ export default function QualityScenariosPage() {
             )}
           </fieldset>
 
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={form.autoPost}
-              onChange={(e) => setForm({ ...form, autoPost: e.target.checked })}
-            />
-            Сразу провести документ управления качеством
-          </label>
+          <ToggleSwitch
+            checked={form.autoPost}
+            onCheckedChange={(v) => setForm({ ...form, autoPost: v })}
+            label="Сразу провести документ управления качеством"
+          />
 
           <label className="full-width">
             Комментарий к документу
