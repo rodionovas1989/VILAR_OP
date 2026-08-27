@@ -1,5 +1,5 @@
 ﻿## Ветка: main
 
-Влита `fix/quality-desktop-ux`: отборы/инфо на столе качества, ввод LCH в обоих режимах тогла, ToggleSwitch, фикс сброса черновика.
+Влиты `fix/quality-desktop-ux` и `fix/ui-scroll-and-kit`: стол качества UX, скролл LCH/QCM, Clinical Ops tokens/ctrl/table.
 
 Пилот: https://vilar-prod.ru

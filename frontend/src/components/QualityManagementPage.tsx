@@ -405,121 +405,123 @@ export default function QualityManagementPage({ materials, lots, lotQualities }:
               if (canEditFields) save();
             }}
           >
-            {error && <p className="error">{error}</p>}
-            <div className="form-grid">
-              <label>
-                Номер
-                <input value={editing.number} readOnly />
-              </label>
-              <label>
-                Дата
-                <input
-                  type="date"
-                  value={editing.date}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, date: e.target.value })}
-                />
-              </label>
-              <label>
-                Время
-                <input
-                  type="time"
-                  step={1}
-                  value={(editing.time || nowTime()).slice(0, 8)}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, time: e.target.value })}
-                />
-              </label>
-              <label>
-                Статус
-                <input value={STATUS_LABEL[editing.status] || editing.status} readOnly />
-              </label>
-              <label className="span-2">
-                Комментарий
-                <input
-                  value={editing.comment || ''}
-                  disabled={!canEditFields}
-                  onChange={(e) => setEditing({ ...editing, comment: e.target.value })}
-                />
-              </label>
-            </div>
+            <div className="doc-form-scroll">
+              {error && <p className="error">{error}</p>}
+              <div className="form-grid">
+                <label>
+                  Номер
+                  <input value={editing.number} readOnly />
+                </label>
+                <label>
+                  Дата
+                  <input
+                    type="date"
+                    value={editing.date}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, date: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Время
+                  <input
+                    type="time"
+                    step={1}
+                    value={(editing.time || nowTime()).slice(0, 8)}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, time: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Статус
+                  <input value={STATUS_LABEL[editing.status] || editing.status} readOnly />
+                </label>
+                <label className="span-2">
+                  Комментарий
+                  <input
+                    value={editing.comment || ''}
+                    disabled={!canEditFields}
+                    onChange={(e) => setEditing({ ...editing, comment: e.target.value })}
+                  />
+                </label>
+              </div>
 
-            <h3>Строки</h3>
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Материал</th>
-                    <th>Партия</th>
-                    <th>Качество</th>
-                    <th>Разрешение</th>
-                    {canEditFields && <th />}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(editing.lines || []).map((line, idx) => {
-                    const q = lotQualities.find((x) => x.id === line.qualityId);
-                    return (
-                      <tr key={line.id || idx}>
-                        <td>
-                          <SearchableSelect
-                            value={line.materialId || ''}
-                            disabled={!canEditFields}
-                            onChange={(v) => updateLine(idx, { materialId: v })}
-                            options={materials.map((m) => ({ value: m.id, label: m.name }))}
-                          />
-                        </td>
-                        <td>
-                          <SearchableSelect
-                            value={line.lotId || ''}
-                            disabled={!canEditFields || !line.materialId}
-                            onChange={(v) => updateLine(idx, { lotId: v })}
-                            options={lotsForMaterial(lots, line.materialId || '').map((l) => ({
-                              value: l.id,
-                              label: l.number,
-                            }))}
-                          />
-                        </td>
-                        <td>
-                          <SearchableSelect
-                            value={line.qualityId || ''}
-                            disabled={!canEditFields}
-                            onChange={(v) => updateLine(idx, { qualityId: v })}
-                            options={activeQualities.map((qq) => ({ value: qq.id, label: qq.name }))}
-                          />
-                        </td>
-                        <td>{q ? PERMISSION_LABEL[q.permission] || q.permission : '—'}</td>
-                        {canEditFields && (
+              <h3>Строки</h3>
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Материал</th>
+                      <th>Партия</th>
+                      <th>Качество</th>
+                      <th>Разрешение</th>
+                      {canEditFields && <th />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(editing.lines || []).map((line, idx) => {
+                      const q = lotQualities.find((x) => x.id === line.qualityId);
+                      return (
+                        <tr key={line.id || idx}>
                           <td>
-                            <button
-                              type="button"
-                              className="ghost"
-                              onClick={() =>
-                                setEditing({
-                                  ...editing,
-                                  lines: (editing.lines || []).filter((_, i) => i !== idx),
-                                })
-                              }
-                            >
-                              ×
-                            </button>
+                            <SearchableSelect
+                              value={line.materialId || ''}
+                              disabled={!canEditFields}
+                              onChange={(v) => updateLine(idx, { materialId: v })}
+                              options={materials.map((m) => ({ value: m.id, label: m.name }))}
+                            />
                           </td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <td>
+                            <SearchableSelect
+                              value={line.lotId || ''}
+                              disabled={!canEditFields || !line.materialId}
+                              onChange={(v) => updateLine(idx, { lotId: v })}
+                              options={lotsForMaterial(lots, line.materialId || '').map((l) => ({
+                                value: l.id,
+                                label: l.number,
+                              }))}
+                            />
+                          </td>
+                          <td>
+                            <SearchableSelect
+                              value={line.qualityId || ''}
+                              disabled={!canEditFields}
+                              onChange={(v) => updateLine(idx, { qualityId: v })}
+                              options={activeQualities.map((qq) => ({ value: qq.id, label: qq.name }))}
+                            />
+                          </td>
+                          <td>{q ? PERMISSION_LABEL[q.permission] || q.permission : '—'}</td>
+                          {canEditFields && (
+                            <td>
+                              <button
+                                type="button"
+                                className="ghost"
+                                onClick={() =>
+                                  setEditing({
+                                    ...editing,
+                                    lines: (editing.lines || []).filter((_, i) => i !== idx),
+                                  })
+                                }
+                              >
+                                ×
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {canEditFields && (
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setEditing({ ...editing, lines: [...(editing.lines || []), emptyLine()] })}
+                >
+                  + Строка
+                </button>
+              )}
             </div>
-            {canEditFields && (
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => setEditing({ ...editing, lines: [...(editing.lines || []), emptyLine()] })}
-              >
-                + Строка
-              </button>
-            )}
           </form>
         </Modal>
       )}

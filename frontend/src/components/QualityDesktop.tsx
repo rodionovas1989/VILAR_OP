@@ -356,6 +356,7 @@ export default function QualityDesktop({
         <label>
           Материал
           <SearchableSelect
+            className="ctrl-like"
             value={filterMaterialId}
             onChange={(v) => {
               setFilterMaterialId(v);
@@ -370,6 +371,7 @@ export default function QualityDesktop({
         <label>
           Партия
           <input
+            className="ctrl"
             type="search"
             value={filterLotQuery}
             placeholder="Номер / ид. номер"
@@ -379,6 +381,7 @@ export default function QualityDesktop({
         <label>
           Контрагент
           <SearchableSelect
+            className="ctrl-like"
             value={filterCounterpartyId}
             onChange={setFilterCounterpartyId}
             emptyLabel="— все —"
@@ -388,6 +391,7 @@ export default function QualityDesktop({
         <label>
           Производитель
           <SearchableSelect
+            className="ctrl-like"
             value={filterManufacturerId}
             onChange={setFilterManufacturerId}
             emptyLabel="— все —"
@@ -396,15 +400,26 @@ export default function QualityDesktop({
         </label>
         <label>
           Произведено с
-          <input type="date" value={filterProdFrom} onChange={(e) => setFilterProdFrom(e.target.value)} />
+          <input
+            className="ctrl"
+            type="date"
+            value={filterProdFrom}
+            onChange={(e) => setFilterProdFrom(e.target.value)}
+          />
         </label>
         <label>
           Произведено по
-          <input type="date" value={filterProdTo} onChange={(e) => setFilterProdTo(e.target.value)} />
+          <input
+            className="ctrl"
+            type="date"
+            value={filterProdTo}
+            onChange={(e) => setFilterProdTo(e.target.value)}
+          />
         </label>
         <label>
           Годен с
           <input
+            className="ctrl"
             type="date"
             value={filterExpiryFrom}
             onChange={(e) => setFilterExpiryFrom(e.target.value)}
@@ -412,7 +427,12 @@ export default function QualityDesktop({
         </label>
         <label>
           Годен по
-          <input type="date" value={filterExpiryTo} onChange={(e) => setFilterExpiryTo(e.target.value)} />
+          <input
+            className="ctrl"
+            type="date"
+            value={filterExpiryTo}
+            onChange={(e) => setFilterExpiryTo(e.target.value)}
+          />
         </label>
       </div>
 
