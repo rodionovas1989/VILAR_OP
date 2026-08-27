@@ -98,6 +98,7 @@ export const NAV: NavGroup[] = [
     id: 'quality',
     label: 'Качество',
     items: [
+      { id: 'quality_desktop', label: 'Рабочий стол качества', kind: 'desktop' },
       { id: 'lot_qualities', label: 'Качества партий', kind: 'quality' },
       { id: 'quality_documents', label: 'Управление качеством', kind: 'quality' },
       { id: 'quality_register', label: 'Качества партий', kind: 'quality' },

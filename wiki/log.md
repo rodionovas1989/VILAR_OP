@@ -74,4 +74,12 @@ Fast-forward в `main`, push `origin/main`. Wiki и rules — эталон на 
 
 Модалка «Хвосты партий» + `POST /planning/lot-leftover-tails`; ROADMAP G9 → готово; analysis обновлён.
 
+## [2026-08-27] fix | SearchableSelect label match (FB-2026-08-27-00001)
+
+Поиск только по label: короткий запрос — prefix; mid-includes с 3 символов; UUID value не участвует.
+
+## [2026-08-27] ingest | Quality desktop LCH (FB-2026-08-27-00002)
+
+`quality_desktop`: тогл первичного ввода, материалы/партии без LCH, confirm→create+post документа характеристик; обзор + история.
+
 

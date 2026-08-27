@@ -61,6 +61,7 @@ export const PAGE_VISUAL_TYPE: Record<string, NavVisualType> = {
 
   planning_desktop: 'desktop',
   production_desktop: 'desktop',
+  quality_desktop: 'desktop',
 
   production_orders: 'other',
   series_planning: 'other',

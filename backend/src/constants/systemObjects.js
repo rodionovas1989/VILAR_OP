@@ -42,6 +42,7 @@ export const STOCK_OBJECTS = [
 ];
 
 export const QUALITY_OBJECTS = [
+  { id: 'quality_desktop', label: 'Рабочий стол качества' },
   { id: 'lot_qualities', label: 'Качества партий' },
   { id: 'quality_documents', label: 'Управление качеством' },
   { id: 'quality_register', label: 'Качества партий' },

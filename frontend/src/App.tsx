@@ -39,6 +39,7 @@ import SpecDetailTabs from './components/SpecDetailTabs';
 import SubstitutionForm from './components/SubstitutionForm';
 import CharacteristicForm from './components/CharacteristicForm';
 import CharacteristicManagementPage from './components/CharacteristicManagementPage';
+import QualityDesktop from './components/QualityDesktop';
 import {
   ApprovedSupplier,
   Counterparty,
@@ -1164,6 +1165,15 @@ export default function App() {
               })),
               characteristics: lotCharacteristics,
             }}
+          />
+        );
+      case 'quality_desktop':
+        return (
+          <QualityDesktop
+            materials={materials}
+            lots={lots}
+            characteristics={lotCharacteristics}
+            counterparties={counterparties}
           />
         );
       case 'planning_desktop':
