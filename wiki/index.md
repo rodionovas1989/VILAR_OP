@@ -35,7 +35,7 @@
 | [pri-prr-complete](entities/pri-prr-complete.md) | Complete: PRI+PRR |
 | [stock-registers](entities/stock-registers.md) | Регистры read-mostly |
 | [qcm-quality](entities/qcm-quality.md) | Документ качества / сценарии |
-| [lch-characteristics](entities/lch-characteristics.md) | LCH и регистр характеристик |
+| [lch-characteristics](entities/lch-characteristics.md) | LCH, регистр, рабочий стол качества |
 | [decimal-input](entities/decimal-input.md) | Единый числовой ввод |
 | [rbac-objects](entities/rbac-objects.md) | Права и objectId |
 | [code-map](entities/code-map.md) | Якоря по коду (brief тонкий) |
