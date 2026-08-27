@@ -1,5 +1,5 @@
-﻿## Ветка: fix/ui-scroll-and-kit
+﻿## Ветка: main
 
-Скролл modal-doc для LCH/QCM + Clinical Ops tokens/ctrl/table baseline. После merge — main.
+Влиты `fix/quality-desktop-ux` и `fix/ui-scroll-and-kit`: стол качества UX, скролл LCH/QCM, Clinical Ops tokens/ctrl/table.
 
 Пилот: https://vilar-prod.ru
