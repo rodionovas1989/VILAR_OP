@@ -2,6 +2,7 @@ import { SubstitutionLine } from '../types';
 import DecimalInput from './DecimalInput';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
+import ToggleSwitch from './ToggleSwitch';
 
 type MaterialOpt = { id: string; name: string };
 
@@ -54,22 +55,16 @@ export default function SubstitutionForm({ editing, setEditing, materials, speci
             options={specifications.map((s) => ({ value: s.id, label: s.name }))}
           />
         </label>
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={editing.bidirectional !== false}
-            onChange={(e) => setField('bidirectional', e.target.checked)}
-          />
-          <span>Двусторонняя замена (аналог ↔ базовый)</span>
-        </label>
-        <label className="checkbox-row">
-          <input
-            type="checkbox"
-            checked={editing.active !== false}
-            onChange={(e) => setField('active', e.target.checked)}
-          />
-          <span>Действует</span>
-        </label>
+        <ToggleSwitch
+          checked={editing.bidirectional !== false}
+          onCheckedChange={(v) => setField('bidirectional', v)}
+          label="Двусторонняя замена (аналог ↔ базовый)"
+        />
+        <ToggleSwitch
+          checked={editing.active !== false}
+          onCheckedChange={(v) => setField('active', v)}
+          label="Действует"
+        />
       </div>
       <p className="hint">
         В шапке — материал из спецификации. В таблице — чем его можно заменить (пока 1:1, без пересчёта
