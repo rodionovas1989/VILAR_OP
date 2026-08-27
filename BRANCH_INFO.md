@@ -2,13 +2,14 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `fix/quality-desktop-ux` | UX стола качества + ToggleSwitch | **слита** в main |
 | `feature/fb-20260827-00002-quality-desktop` | Рабочий стол качества / LCH (FB-2026-08-27-00002) | **слита** в main |
 | `fix/fb-20260827-00001-lot-search` | Поиск Select: label/prefix, не UUID (FB-2026-08-27-00001) | **слита** в main |
 | `feature/lot-leftover-tails` | Модалка «хвосты партий» (G9) | **слита** в main |
 | `feature/iterative-pick-bulk` | Пакетный подбор с виртуальным FEFO + фильтр проблемных | **слита** в main |
 | `feature/multi-warehouse-pri-res` | Мультисклад: N RES/PRI, склад в строке факта (D009/D010) | **слита** в main |
 | `docs/llm-wiki` | LLM Wiki: `wiki/` + rules + secrets-guard; entity follow-up | **слита** в main |
-| `main` | + стол качества LCH; фикс поиска Select; хвосты партий | **эталон** |
+| `main` | + UX стола качества; LCH desktop; поиск Select | **эталон** |
 | `fix/unify-decimal-input` | DecimalInput во всех числовых полях (приёмка и др.) | **слита** в main |
 | `fix/changelog-feed-scroll` | Скролл ленты «Что нового» | **слита** в main |
 | `feature/fb-00002-approved-suppliers-analogues` | Поставщики↔аналоги + лента «Что нового» | **слита** в main |
