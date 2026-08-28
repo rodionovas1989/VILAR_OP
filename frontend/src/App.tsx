@@ -32,7 +32,7 @@ import QualityHistoryReportPage from './components/QualityHistoryReportPage';
 import QualityScenariosPage from './components/QualityScenariosPage';
 import FeedbackPage from './components/FeedbackPage';
 import UserGuidePage from './components/UserGuidePage';
-import { ADMIN_USERS_PDN_HINT, SYSTEM_DISCLAIMER } from './content/legal';
+import { ADMIN_USERS_PDN_HINT } from './content/legal';
 import RolesPage from './components/RolesPage';
 import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
@@ -1273,7 +1273,6 @@ export default function App() {
       </aside>
       <main ref={contentRef} className="content">
         {content}
-        <p className="app-legal-footer">{SYSTEM_DISCLAIMER}</p>
       </main>
       </div>
     </div>

@@ -332,108 +332,109 @@ export default function QualityDesktop({
   return (
     <div className="page quality-desktop">
       <PageTitle pageId={objectId} title="Рабочий стол качества" />
-      <div className="page-toolbar quality-desktop-toolbar">
-        <ToggleSwitch
-          checked={primaryEntry}
-          onCheckedChange={(v) => {
-            setPrimaryEntry(v);
-            setSelectedLotId('');
-            setDraftValues({});
-          }}
-          label="Первичный ввод характеристик"
-        />
-        <button type="button" className="ghost" disabled={busy} onClick={() => void loadRegister()}>
-          Обновить
-        </button>
-      </div>
-      <p className="hint">
-        {primaryEntry
-          ? 'Список: партии без значений по применимым характеристикам. Справа — ввод; подтверждение создаёт и проводит LCH.'
-          : 'Список: все партии по отборам. Справа — ввод новых значений (поверх текущего регистра); подтверждение создаёт и проводит LCH. Подробности партии — кнопка «?».'}
-      </p>
 
-      <div className="quality-desktop-filters">
-        <label>
-          Материал
-          <SearchableSelect
-            className="ctrl-like"
-            value={filterMaterialId}
-            onChange={(v) => {
-              setFilterMaterialId(v);
-              if (v) setSelectedMaterialId(v);
+      <div className="quality-desktop-controls">
+        <div className="quality-desktop-filters-row">
+          <label>
+            Материал
+            <SearchableSelect
+              className="ctrl-like"
+              value={filterMaterialId}
+              onChange={(v) => {
+                setFilterMaterialId(v);
+                if (v) setSelectedMaterialId(v);
+              }}
+              emptyLabel="— все —"
+              options={materials
+                .filter((m) => applicableDefsForMaterial(m, characteristics).length > 0)
+                .map((m) => ({ value: m.id, label: m.name }))}
+            />
+          </label>
+          <label>
+            Партия
+            <input
+              className="ctrl"
+              type="search"
+              value={filterLotQuery}
+              placeholder="Номер / ид. номер"
+              onChange={(e) => setFilterLotQuery(e.target.value)}
+            />
+          </label>
+          <label>
+            Контрагент
+            <SearchableSelect
+              className="ctrl-like"
+              value={filterCounterpartyId}
+              onChange={setFilterCounterpartyId}
+              emptyLabel="— все —"
+              options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
+            />
+          </label>
+          <label>
+            Производитель
+            <SearchableSelect
+              className="ctrl-like"
+              value={filterManufacturerId}
+              onChange={setFilterManufacturerId}
+              emptyLabel="— все —"
+              options={manufacturers.map((m) => ({ value: m.id, label: m.name }))}
+            />
+          </label>
+        </div>
+        <div className="quality-desktop-controls-side">
+          <ToggleSwitch
+            checked={primaryEntry}
+            onCheckedChange={(v) => {
+              setPrimaryEntry(v);
+              setSelectedLotId('');
+              setDraftValues({});
             }}
-            emptyLabel="— все —"
-            options={materials
-              .filter((m) => applicableDefsForMaterial(m, characteristics).length > 0)
-              .map((m) => ({ value: m.id, label: m.name }))}
+            label="Первичный ввод характеристик"
           />
-        </label>
-        <label>
-          Партия
-          <input
-            className="ctrl"
-            type="search"
-            value={filterLotQuery}
-            placeholder="Номер / ид. номер"
-            onChange={(e) => setFilterLotQuery(e.target.value)}
-          />
-        </label>
-        <label>
-          Контрагент
-          <SearchableSelect
-            className="ctrl-like"
-            value={filterCounterpartyId}
-            onChange={setFilterCounterpartyId}
-            emptyLabel="— все —"
-            options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
-          />
-        </label>
-        <label>
-          Производитель
-          <SearchableSelect
-            className="ctrl-like"
-            value={filterManufacturerId}
-            onChange={setFilterManufacturerId}
-            emptyLabel="— все —"
-            options={manufacturers.map((m) => ({ value: m.id, label: m.name }))}
-          />
-        </label>
-        <label>
-          Произведено с
-          <input
-            className="ctrl"
-            type="date"
-            value={filterProdFrom}
-            onChange={(e) => setFilterProdFrom(e.target.value)}
-          />
-        </label>
-        <label>
-          Произведено по
-          <input
-            className="ctrl"
-            type="date"
-            value={filterProdTo}
-            onChange={(e) => setFilterProdTo(e.target.value)}
-          />
-        </label>
-        <label>
-          Годен с
-          <input
-            className="ctrl"
-            type="date"
-            value={filterExpiryFrom}
-            onChange={(e) => setFilterExpiryFrom(e.target.value)}
-          />
-        </label>
-        <label>
-          Годен по
-          <input
-            className="ctrl"
-            type="date"
-            value={filterExpiryTo}
-            onChange={(e) => setFilterExpiryTo(e.target.value)}
-          />
-        </label>
+        </div>
+        <div className="quality-desktop-filters-row">
+          <label>
+            Произведено с
+            <input
+              className="ctrl"
+              type="date"
+              value={filterProdFrom}
+              onChange={(e) => setFilterProdFrom(e.target.value)}
+            />
+          </label>
+          <label>
+            Произведено по
+            <input
+              className="ctrl"
+              type="date"
+              value={filterProdTo}
+              onChange={(e) => setFilterProdTo(e.target.value)}
+            />
+          </label>
+          <label>
+            Годен с
+            <input
+              className="ctrl"
+              type="date"
+              value={filterExpiryFrom}
+              onChange={(e) => setFilterExpiryFrom(e.target.value)}
+            />
+          </label>
+          <label>
+            Годен по
+            <input
+              className="ctrl"
+              type="date"
+              value={filterExpiryTo}
+              onChange={(e) => setFilterExpiryTo(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="quality-desktop-controls-side quality-desktop-controls-side-bottom">
+          <button type="button" className="ghost" disabled={busy} onClick={() => void loadRegister()}>
+            Обновить
+          </button>
+        </div>
       </div>
 
       {error ? <p className="alert error">{error}</p> : null}
