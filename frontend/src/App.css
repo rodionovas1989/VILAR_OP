@@ -4133,6 +4133,7 @@ button.danger-outline:hover {
   gap: 12px 16px;
   margin: 12px 0 16px;
   align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .quality-desktop-filters label {
@@ -4153,26 +4154,39 @@ button.danger-outline:hover {
 
 .quality-desktop-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 @media (max-width: 1100px) {
   .quality-desktop-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .quality-desktop-lists {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
+  min-height: 0;
+  min-width: 0;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1100px) {
   .quality-desktop-lists {
-    grid-template-columns: 1fr;
+    max-height: min(42vh, 380px);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .quality-desktop-lists {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: min(48vh, 420px);
   }
 }
 
@@ -4181,16 +4195,28 @@ button.danger-outline:hover {
   border-radius: 8px;
   padding: 10px 12px 12px;
   background: var(--panel, #fff);
-  min-height: 200px;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .quality-desktop-panel h3 {
   margin: 0 0 8px;
   font-size: 15px;
+  flex-shrink: 0;
 }
 
 .quality-desktop-panel .table-wrap {
-  max-height: 420px;
+  flex: 1 1 auto;
+  min-height: 120px;
+  max-height: min(420px, 50vh);
+  overflow: auto;
+}
+
+.quality-desktop-form {
+  min-height: 0;
+  min-width: 0;
   overflow: auto;
 }
 

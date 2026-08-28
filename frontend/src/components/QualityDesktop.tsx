@@ -330,7 +330,7 @@ export default function QualityDesktop({
   const infoDefs = applicableDefsForMaterial(infoMaterial, characteristics);
 
   return (
-    <div className="quality-desktop">
+    <div className="page quality-desktop">
       <PageTitle pageId={objectId} title="Рабочий стол качества" />
       <div className="page-toolbar quality-desktop-toolbar">
         <ToggleSwitch
