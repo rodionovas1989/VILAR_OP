@@ -10,3 +10,5 @@
 **API:** `/api/feedback`  
 **Код:** `backend/src/services/feedback.js`, UI `FeedbackPage`  
 **Не путать** с `docs/CHANGELOG.md` / «Что нового».
+
+**Обработанные (код в main, закрытие в UI вручную):** FB-2026-09-01-00001 (отчёт запасов: IDN в иерархии), FB-2026-09-07-00001 (dual select номер/IDN в подборе и факте).

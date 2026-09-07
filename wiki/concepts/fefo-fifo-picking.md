@@ -12,6 +12,7 @@
 - Approved suppliers: мягкий бейдж (зелёный/жёлтый), не жёсткий запрет — [soft-vs-hard-supplier-approval.md](soft-vs-hard-supplier-approval.md).
 - Аналоги: прямой заменитель без транзитивности — [substitutions-no-transitivity.md](substitutions-no-transitivity.md).
 - Мелкие «хвосты» партий (остаток не набирает need серии): модалка на вкладке подбора — [lot-leftover-tails.md](../analyses/lot-leftover-tails.md).
+- В UI подбора/факта партия выбирается по **номеру производителя** или по **идентификатору** (два sync-select на один `lotId`×склад).
 
-**Канон:** [docs/GMP_SERIES_RULES.md](../docs/GMP_SERIES_RULES.md) §5  
-**Код:** `backend/src/services/planning.js` (`suggestPicksForOrder`, `suggestPicksBulk`), `stock.js`
+**Канон:** [docs/GMP_SERIES_RULES.md](../../docs/GMP_SERIES_RULES.md) §5  
+**Код:** `backend/src/services/planning.js` (`suggestPicksForOrder`, `suggestPicksBulk`), UI `PlanningDesktop` / `ProductionDesktop`, `stock.js`
