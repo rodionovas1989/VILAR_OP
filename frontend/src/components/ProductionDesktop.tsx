@@ -65,6 +65,48 @@ function nameOf(id: string, list: { id: string; name?: string; number?: string }
   return list.find((x) => x.id === id)?.name || list.find((x) => x.id === id)?.number || id;
 }
 
+/** Optional columns on production fact/plan — hide does not remove required inputs. */
+type OptionalProdCol = 'idn' | 'free' | 'cp';
+
+const OPTIONAL_PROD_COLS: { id: OptionalProdCol; label: string; tabs: Array<'plan' | 'fact'> }[] = [
+  { id: 'idn', label: 'Идентификатор партии', tabs: ['plan', 'fact'] },
+  { id: 'free', label: 'Свободно', tabs: ['fact'] },
+  { id: 'cp', label: 'Контрагент', tabs: ['plan', 'fact'] },
+];
+
+const DEFAULT_HIDDEN_COLS: OptionalProdCol[] = [];
+
+function prodColsStorageKey(userId: string) {
+  return `vilar.prodDesktop.cols.${userId}`;
+}
+
+function loadHiddenCols(userId?: string | null): Set<OptionalProdCol> {
+  if (!userId) return new Set(DEFAULT_HIDDEN_COLS);
+  try {
+    const raw = localStorage.getItem(prodColsStorageKey(userId));
+    if (!raw) return new Set(DEFAULT_HIDDEN_COLS);
+    const parsed = JSON.parse(raw) as { hidden?: string[] };
+    const allowed = new Set(OPTIONAL_PROD_COLS.map((c) => c.id));
+    return new Set(
+      (parsed.hidden || []).filter((id): id is OptionalProdCol => allowed.has(id as OptionalProdCol))
+    );
+  } catch {
+    return new Set(DEFAULT_HIDDEN_COLS);
+  }
+}
+
+function persistHiddenCols(userId: string | null | undefined, hidden: Set<OptionalProdCol>) {
+  if (!userId) return;
+  try {
+    localStorage.setItem(
+      prodColsStorageKey(userId),
+      JSON.stringify({ hidden: [...hidden] })
+    );
+  } catch {
+    /* ignore quota */
+  }
+}
+
 function scaleFactLines(planLines: OrderLine[], planQty: number, factQty: number): OrderLine[] {
   const p = Number(planQty) || 0;
   const f = Number(factQty) || 0;
@@ -118,6 +160,27 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [hiddenCols, setHiddenCols] = useState<Set<OptionalProdCol>>(() => loadHiddenCols(user?.id));
+
+  useEffect(() => {
+    setHiddenCols(loadHiddenCols(user?.id));
+  }, [user?.id]);
+
+  const showCol = (id: OptionalProdCol) => !hiddenCols.has(id);
+
+  const toggleCol = (id: OptionalProdCol) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      persistHiddenCols(user?.id, next);
+      return next;
+    });
+  };
+
+  const factColSpan =
+    4 + (showCol('idn') ? 1 : 0) + (showCol('free') ? 1 : 0) + (showCol('cp') ? 1 : 0);
+  const planColSpan = 3 + (showCol('idn') ? 1 : 0) + (showCol('cp') ? 1 : 0);
 
   const defaultWhTo = useMemo(
     () => dictionaries.warehouses.find((w) => w.type === 'ГП')?.id || '',
@@ -478,35 +541,62 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           </button>
         </div>
 
+        <div className="prod-col-settings" role="group" aria-label="Видимость колонок">
+          <span className="prod-col-settings-label">Колонки</span>
+          {OPTIONAL_PROD_COLS.filter((c) => c.tabs.includes(tab)).map((c) => (
+            <label key={c.id}>
+              <input type="checkbox" checked={showCol(c.id)} onChange={() => toggleCol(c.id)} />
+              {c.label}
+            </label>
+          ))}
+        </div>
+
         {tab === 'plan' && (
           <div className="table-wrap">
             <table className="data-table doc-lines-table prod-plan-lines-table">
               <thead>
                 <tr>
-                  <th>Материал</th>
-                  <th>Партия производителя</th>
-                  <th>Идентификатор партии</th>
-                  <th>Контрагент</th>
-                  <th className="col-center">Количество</th>
+                  <th className="col-mat">Материал</th>
+                  <th className="col-lot">Партия производителя</th>
+                  {showCol('idn') && <th className="col-idn">Идентификатор партии</th>}
+                  {showCol('cp') && <th className="col-cp">Контрагент</th>}
+                  <th className="col-qty col-center">Количество</th>
                 </tr>
               </thead>
               <tbody>
-                {planLines.map((l) => (
-                  <tr key={`plan-${l.materialId}-${l.lotId}`}>
-                    <td>{nameOf(l.materialId, dictionaries.materials)}</td>
-                    <td>{nameOf(l.lotId, dictionaries.lots)}</td>
-                    <td>
-                      {String(
-                        dictionaries.lots.find((x) => x.id === l.lotId)?.identificationNumber || ''
-                      ).trim() || '—'}
-                    </td>
-                    <td>{lotCp(l.lotId)}</td>
-                    <td className="col-center">{l.quantity}</td>
-                  </tr>
-                ))}
+                {planLines.map((l) => {
+                  const mat = nameOf(l.materialId, dictionaries.materials);
+                  const lot = nameOf(l.lotId, dictionaries.lots);
+                  const idn =
+                    String(
+                      dictionaries.lots.find((x) => x.id === l.lotId)?.identificationNumber || ''
+                    ).trim() || '—';
+                  const cp = lotCp(l.lotId);
+                  return (
+                    <tr key={`plan-${l.materialId}-${l.lotId}`}>
+                      <td className="td-clip col-mat" title={mat}>
+                        <span className="td-clip-text">{mat}</span>
+                      </td>
+                      <td className="td-clip col-lot" title={lot}>
+                        <span className="td-clip-text">{lot}</span>
+                      </td>
+                      {showCol('idn') && (
+                        <td className="td-clip col-idn" title={idn}>
+                          <span className="td-clip-text">{idn}</span>
+                        </td>
+                      )}
+                      {showCol('cp') && (
+                        <td className="td-clip col-cp prod-cp-cell" title={cp}>
+                          <span className="td-clip-text">{cp}</span>
+                        </td>
+                      )}
+                      <td className="td-num col-qty">{l.quantity}</td>
+                    </tr>
+                  );
+                })}
                 {!planLines.length && (
                   <tr>
-                    <td colSpan={5} className="muted">
+                    <td colSpan={planColSpan} className="muted">
                       Нет планового состава
                     </td>
                   </tr>
@@ -521,13 +611,13 @@ export default function ProductionDesktop({ dictionaries }: Props) {
             <table className="data-table doc-lines-table prod-lines-table">
               <thead>
                 <tr>
-                  <th>Материал</th>
-                  <th>Партия производителя</th>
-                  <th>Идентификатор партии</th>
-                  <th>Склад</th>
-                  <th className="col-center">Свободно</th>
-                  <th>Контрагент</th>
-                  <th className="col-center">Кол-во</th>
+                  <th className="col-mat">Материал</th>
+                  <th className="col-lot">Партия производителя</th>
+                  {showCol('idn') && <th className="col-idn">Идентификатор партии</th>}
+                  <th className="col-wh">Склад</th>
+                  {showCol('free') && <th className="col-free col-center">Свободно</th>}
+                  {showCol('cp') && <th className="col-cp">Контрагент</th>}
+                  <th className="col-qty col-center td-sticky-end">Кол-во</th>
                 </tr>
               </thead>
               <tbody>
@@ -592,12 +682,14 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       label: formatLotIdnLabel(o, false),
                     })),
                   ];
+                  const matName = nameOf(l.materialId, dictionaries.materials);
+                  const cp = lotCp(l.lotId);
                   return (
                     <tr
                       key={`fact-${key}`}
                       className={unfit ? 'pick-lot-blocked' : conditional ? 'pick-lot-conditional' : undefined}
                     >
-                      <td>
+                      <td className={`col-mat ${canSwap ? 'td-ctrl' : 'td-clip'}`} title={canSwap ? undefined : matName}>
                         {canSwap ? (
                           <SearchableSelect
                             allowEmpty={false}
@@ -611,13 +703,13 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                             }))}
                           />
                         ) : (
-                          nameOf(l.materialId, dictionaries.materials)
+                          <span className="td-clip-text">{matName}</span>
                         )}
                         {l.materialId !== specMat ? (
                           <div className="muted">вместо {nameOf(specMat, dictionaries.materials)}</div>
                         ) : null}
                       </td>
-                      <td className="prod-lot-cell">
+                      <td className="prod-lot-cell td-ctrl col-lot">
                         <SearchableSelect
                           triggerClassName={lotTriggerClass}
                           value={lotSelectValue}
@@ -643,19 +735,21 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           </div>
                         )}
                       </td>
-                      <td className="prod-lot-cell">
-                        <SearchableSelect
-                          triggerClassName={lotTriggerClass}
-                          value={lotSelectValue}
-                          disabled={busy}
-                          allowEmpty={false}
-                          onChange={(v) => changeFactLot(key, v)}
-                          options={idnOptions}
-                          aria-label="Идентификатор партии"
-                        />
-                      </td>
+                      {showCol('idn') && (
+                        <td className="prod-lot-cell td-ctrl col-idn">
+                          <SearchableSelect
+                            triggerClassName={lotTriggerClass}
+                            value={lotSelectValue}
+                            disabled={busy}
+                            allowEmpty={false}
+                            onChange={(v) => changeFactLot(key, v)}
+                            options={idnOptions}
+                            aria-label="Идентификатор партии"
+                          />
+                        </td>
+                      )}
                       <td
-                        className="prod-wh-cell"
+                        className="prod-wh-cell td-ctrl col-wh"
                         title={
                           dictionaries.warehouses.find((x) => x.id === l.warehouseId)?.name || undefined
                         }
@@ -672,11 +766,17 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           aria-label="Склад списания"
                         />
                       </td>
-                      <td className="col-center num prod-free-cell">
-                        {selectedOpt?.freeQty != null ? selectedOpt.freeQty : '—'}
-                      </td>
-                      <td className="prod-cp-cell">{lotCp(l.lotId)}</td>
-                      <td className="col-center prod-qty-cell">
+                      {showCol('free') && (
+                        <td className="td-num col-free prod-free-cell">
+                          {selectedOpt?.freeQty != null ? selectedOpt.freeQty : '—'}
+                        </td>
+                      )}
+                      {showCol('cp') && (
+                        <td className="td-clip col-cp prod-cp-cell" title={cp}>
+                          <span className="td-clip-text">{cp}</span>
+                        </td>
+                      )}
+                      <td className="td-num col-qty prod-qty-cell td-sticky-end">
                         <DecimalInput
                           min={0}
                           value={l.quantity}
@@ -689,7 +789,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 })}
                 {!actualLines.length && (
                   <tr>
-                    <td colSpan={7} className="muted">
+                    <td colSpan={factColSpan} className="muted">
                       Нет фактического состава
                     </td>
                   </tr>
@@ -731,7 +831,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           <tbody>
             {planned.map((o) => (
               <tr key={o.id}>
-                <td>{nameOf(o.materialId, dictionaries.materials)}</td>
+                <td className="td-clip" title={nameOf(o.materialId, dictionaries.materials)}>
+                  <span className="td-clip-text">{nameOf(o.materialId, dictionaries.materials)}</span>
+                </td>
                 <td>{nameOf(o.seriesId, dictionaries.series)}</td>
                 <td>{nameOf(o.workCenterId, dictionaries.workCenters)}</td>
                 <td>{new Date(o.startAt).toLocaleString('ru-RU')}</td>

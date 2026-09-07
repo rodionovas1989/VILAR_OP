@@ -98,3 +98,8 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 Выкат `main`@9a4d817 на пилот; оба FB закрыты в sqlite.  
 Процесс: после деплоя закрываем тикеты вместе с выкатом (wiki `feedback-tickets`).
 
+## [2026-09-07] feature | Table cell contract + prod column visibility
+
+Роли `.td-clip` / `.td-ctrl` / `.td-num` / `.td-sticky-end` (без horiz scroll).  
+Прототип скрытия колонок на исполнении заказа (IDN / свободно / контрагент) + localStorage.
+

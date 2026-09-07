@@ -2569,6 +2569,12 @@ button.danger-outline:hover {
   text-align: center;
 }
 
+.materials-suggest .suggest-table td.td-clip,
+.materials-suggest .suggest-table .col-mat {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .materials-suggest select,
 .materials-suggest .toolbar-actions select {
   width: 100%;
@@ -3005,43 +3011,84 @@ button.danger-outline:hover {
 }
 
 .prod-plan-lines-table {
-  table-layout: auto;
+  table-layout: fixed;
   width: 100%;
 }
 
-/* Факт: Материал | Партия произв. | IDN | Склад | Свободно | Контрагент | Кол-во */
-.prod-lines-table th:nth-child(1),
-.prod-lines-table td:nth-child(1) {
-  width: 16%;
+/* --- Table cell contract (UI kit): clip without horizontal scroll --- */
+.td-clip {
+  min-width: 0;
+  overflow: hidden;
+  vertical-align: middle;
 }
 
-.prod-lines-table th:nth-child(2),
-.prod-lines-table td:nth-child(2) {
+.td-clip > .td-clip-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-ctrl {
+  min-width: 0;
+  vertical-align: top;
+}
+
+.td-ctrl .searchable-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.td-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.td-sticky-end {
+  position: sticky;
+  right: 0;
+  background: var(--panel, #fff);
+  box-shadow: -6px 0 8px -6px rgba(15, 35, 52, 0.12);
+  z-index: 1;
+}
+
+th.td-sticky-end {
+  background: var(--panel, #f7fafc);
+  z-index: 2;
+}
+
+/* Prod fact: fixed widths on secondary cols; материал забирает остаток */
+.prod-lines-table .col-lot {
+  width: 15%;
+}
+.prod-lines-table .col-idn {
   width: 14%;
 }
-
-.prod-lines-table th:nth-child(3),
-.prod-lines-table td:nth-child(3) {
-  width: 14%;
+.prod-lines-table .col-wh {
+  width: 9%;
 }
-
-.prod-lines-table th:nth-child(4),
-.prod-lines-table td:nth-child(4) {
-  width: 10%;
-}
-
-.prod-lines-table th:nth-child(5),
-.prod-lines-table td:nth-child(5) {
+.prod-lines-table .col-free {
   width: 8%;
 }
-
-.prod-lines-table th:nth-child(6),
-.prod-lines-table td:nth-child(6) {
-  width: 14%;
+.prod-lines-table .col-cp {
+  width: 12%;
+}
+.prod-lines-table .col-qty {
+  width: 9%;
 }
 
-.prod-lines-table th:nth-child(7),
-.prod-lines-table td:nth-child(7) {
+.prod-plan-lines-table .col-lot {
+  width: 18%;
+}
+.prod-plan-lines-table .col-idn {
+  width: 16%;
+}
+.prod-plan-lines-table .col-cp {
+  width: 16%;
+}
+.prod-plan-lines-table .col-qty {
   width: 10%;
 }
 
@@ -3086,26 +3133,45 @@ button.danger-outline:hover {
   font-size: 12px;
 }
 
-.prod-qty-cell {
-  position: sticky;
-  right: 0;
-  background: var(--panel, #fff);
-  box-shadow: -6px 0 8px -6px rgba(15, 35, 52, 0.12);
-  z-index: 1;
-}
-
-.prod-lines-table th:nth-child(7) {
-  position: sticky;
-  right: 0;
-  background: var(--panel, #f7fafc);
-  z-index: 2;
-}
-
 .prod-qty-cell input {
   max-width: 100%;
   width: 5.5rem;
   margin-inline: auto;
   display: block;
+}
+
+.prod-col-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm, 8px);
+  background: #f7fafc;
+  font-size: 13px;
+}
+
+.prod-col-settings-label {
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.prod-col-settings label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.prod-col-settings input {
+  margin: 0;
 }
 
 .pick-wh-cell {

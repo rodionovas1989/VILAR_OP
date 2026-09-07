@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `feature/table-cell-contract-prod-cols` | Table-contract clip + скрытие колонок на исполнении | **активна** |
 | `fix/fb-20260907-00001-lot-idn-pick` | Dual select: партия производителя + IDN (FB-2026-09-07-00001) | **слита** в main |
 | `fix/fb-20260901-00001-stock-lot-idn` | Отчёт запасов: IDN в иерархии (FB-2026-09-01-00001) | **слита** в main |
 | `fix/ui-scroll-and-kit` | Скролл LCH/QCM + Clinical Ops UI kit | **слита** в main |

@@ -20,6 +20,7 @@
 | Button | primary (default), `.ghost` / `.secondary`, `.danger` — padding/radius от токенов |
 | ToggleSwitch | стандарт настроек (тоглы) |
 | Table | `.data-table` + `.table-wrap`; sticky `th`, row hover, denser padding |
+| Table cells (ТЧ) | роли: `.td-clip` (ellipsis + `title`), `.td-ctrl` (select/input), `.td-num`, `.td-sticky-end` — без горизонтального скролла |
 | Modal | единый header/footer spacing; скролл — [ui-scroll-layout](ui-scroll-layout.md) |
 
 ## Чеклист нового экрана
@@ -27,11 +28,16 @@
 1. Цвета только из `:root` (accent/side/panel/line/danger).
 2. Фильтры/поиск: `.ctrl` / `ctrl-like`, высота ≈ `--ctrl-h`.
 3. Списки: `.table-wrap` + sticky thead; не фиксировать высоту без `min-height: 0` / overflow.
-4. `modal-doc`: обязателен `.doc-form-scroll` (см. ui-scroll-layout).
-5. Настройки-флаги: `ToggleSwitch`, не голый checkbox.
-6. Числа: `DecimalInput`.
-7. Не вводить Inter-only hero, purple gradients, cream+terracotta display.
+4. ТЧ с длинными именами: явный `.td-clip` / `.td-ctrl`, не полагаться на `nth-child` ширины.
+5. `modal-doc`: обязателен `.doc-form-scroll` (см. ui-scroll-layout).
+6. Настройки-флаги: `ToggleSwitch`, не голый checkbox.
+7. Числа: `DecimalInput`.
+8. Не вводить Inter-only hero, purple gradients, cream+terracotta display.
+
+## Персонализация колонок (прототип)
+
+На «Производство → Управление заказами → Исполнение»: чекбоксы «Колонки» скрывают информационные/дублирующие колонки (IDN, Свободно, Контрагент). Persist: `localStorage` `vilar.prodDesktop.cols.<userId>`. Обязательные поля ввода (партия производителя, склад, кол-во) не скрываются.
 
 ## Вне scope этого baseline
 
-Полный редизайн каждой страницы, dark mode, смена навигации.
+Полный редизайн каждой страницы, dark mode, смена навигации. Resize ширин / views — позже.

@@ -1438,7 +1438,7 @@ function PickRow({
     <tr
       className={`${ok && !qualityUnfit ? 'pick-ok' : 'pick-bad'}${qualityUnfit ? ' pick-lot-blocked' : ''}${qualityConditional ? ' pick-lot-conditional' : ''}`}
     >
-      <td>
+      <td className={canSwap ? 'td-ctrl col-mat' : 'td-clip col-mat'} title={canSwap ? undefined : pick.materialName || undefined}>
         {canSwap ? (
           <SearchableSelect
             allowEmpty={false}
@@ -1452,7 +1452,7 @@ function PickRow({
             }))}
           />
         ) : (
-          pick.materialName
+          <span className="td-clip-text">{pick.materialName}</span>
         )}
         {pick.substituted && pick.specMaterialName ? (
           <div className="muted">вместо {pick.specMaterialName}</div>
@@ -1487,7 +1487,7 @@ function PickRow({
           <div className="pick-recalc-warn">нет факта в регистре — расход по эталону спецификации</div>
         ) : null}
       </td>
-      <td className="pick-lot-cell">
+      <td className="pick-lot-cell td-ctrl">
         <SearchableSelect
           triggerClassName={lotSelectClassName}
           value={lotSelectValue}
@@ -1497,7 +1497,7 @@ function PickRow({
           aria-label="Партия производителя"
         />
       </td>
-      <td className="pick-lot-cell">
+      <td className="pick-lot-cell td-ctrl">
         <SearchableSelect
           triggerClassName={lotSelectClassName}
           value={lotSelectValue}
