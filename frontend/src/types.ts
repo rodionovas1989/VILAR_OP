@@ -278,6 +278,7 @@ export interface StockReportRow {
   unit: string;
   lotId: string;
   lotNumber: string;
+  identificationNumber: string;
   counterpartyId: string;
   counterpartyName: string;
   manufacturerId: string;

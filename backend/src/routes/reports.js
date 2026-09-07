@@ -147,7 +147,7 @@ router.post('/stock.xlsx', requirePermission('report_stock', 'read'), async (req
     { header: 'Группировка', key: 'label', width: 40 },
     { header: 'Тип', key: 'type', width: 22 },
     { header: 'Ед.', key: 'unit', width: 8 },
-    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Партия производителя', key: 'lotNumber', width: 18 },
     { header: 'Контрагент', key: 'counterpartyName', width: 24 },
     { header: 'Производитель', key: 'manufacturerName', width: 28 },
     { header: 'Дата производства', key: 'productionDate', width: 18 },
@@ -192,7 +192,7 @@ router.post('/stock.xlsx', requirePermission('report_stock', 'read'), async (req
       for (const lot of mat.lots) {
         addTreeRow(
           {
-            label: `    ${lot.lotNumber}`,
+            label: `    ${lot.identificationNumber || '—'}`,
             type: lot.materialType,
             unit: lot.unit,
             lotNumber: lot.lotNumber,
@@ -238,7 +238,8 @@ router.post('/stock.xlsx', requirePermission('report_stock', 'read'), async (req
     { header: 'Материал', key: 'materialName', width: 36 },
     { header: 'Тип материала', key: 'materialType', width: 24 },
     { header: 'Ед.', key: 'unit', width: 8 },
-    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Идентификатор партии', key: 'identificationNumber', width: 20 },
+    { header: 'Партия производителя', key: 'lotNumber', width: 18 },
     { header: 'Контрагент', key: 'counterpartyName', width: 24 },
     { header: 'Производитель', key: 'manufacturerName', width: 28 },
     { header: 'Дата производства', key: 'productionDate', width: 18 },

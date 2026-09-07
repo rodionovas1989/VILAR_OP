@@ -274,6 +274,7 @@ export function stockReport() {
       unit: material?.unit || '',
       lotId: s.lotId || '',
       lotNumber: lot?.number || s.lotId || '—',
+      identificationNumber: String(lot?.identificationNumber || '').trim() || '—',
       counterpartyId: lot?.counterpartyId || '',
       counterpartyName: cp?.name || '—',
       manufacturerId: lot?.manufacturerId || '',

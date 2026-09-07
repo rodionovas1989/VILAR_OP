@@ -100,7 +100,12 @@ export default function StockReportPage() {
       { key: 'warehouseType', label: 'Тип склада', getValue: (r) => r.warehouseType },
       { key: 'materialName', label: 'Материал', getValue: (r) => r.materialName },
       { key: 'materialType', label: 'Тип материала', getValue: (r) => r.materialType },
-      { key: 'lotNumber', label: 'Партия', getValue: (r) => r.lotNumber },
+      {
+        key: 'identificationNumber',
+        label: 'Идентификатор партии',
+        getValue: (r) => r.identificationNumber || '—',
+      },
+      { key: 'lotNumber', label: 'Партия производителя', getValue: (r) => r.lotNumber },
       { key: 'counterpartyName', label: 'Контрагент', getValue: (r) => r.counterpartyName },
       { key: 'manufacturerName', label: 'Производитель', getValue: (r) => r.manufacturerName },
       { key: 'productionDate', label: 'Дата производства', getValue: (r) => r.productionDate },
@@ -229,7 +234,8 @@ export default function StockReportPage() {
       )}
 
       <p className="hint report-no-print">
-        Иерархия Склад → Материал → Партия. На группах — суммы остатка, резерва и свободного количества.
+        Иерархия Склад → Материал → Идентификатор партии. На группах — суммы остатка, резерва и свободного
+        количества. В колонке «Партия производителя» — номер партии у производителя.
       </p>
 
       {error && <p className="error report-no-print">{error}</p>}
@@ -243,7 +249,7 @@ export default function StockReportPage() {
               <th>Группировка</th>
               <th>Тип</th>
               <th>Ед.</th>
-              <th>Партия</th>
+              <th>Партия производителя</th>
               <th>Контрагент</th>
               <th>Производитель</th>
               <th>Дата производства</th>
@@ -308,7 +314,9 @@ export default function StockReportPage() {
                                 className={`report-tree-lot${whOpen && matOpen ? '' : ' report-tree-hidden'}`}
                               >
                                 <td>
-                                  <span className="report-tree-label report-tree-indent-2">{lot.lotNumber}</span>
+                                  <span className="report-tree-label report-tree-indent-2">
+                                    {lot.identificationNumber || '—'}
+                                  </span>
                                 </td>
                                 <td>{lot.materialType}</td>
                                 <td>{lot.unit}</td>
