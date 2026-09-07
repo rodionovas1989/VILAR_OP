@@ -93,3 +93,8 @@ FB-2026-09-01-00001: отчёт запасов — лист дерева = ид�
 FB-2026-09-07-00001: подбор/факт/карточка заказа — dual select номер↔IDN на один lotId.  
 Обновлены userGuide, CHANGELOG, fefo-fifo-picking, feedback-tickets.
 
+## [2026-09-07] ops | Deploy + close FB on VM
+
+Выкат `main`@9a4d817 на пилот; оба FB закрыты в sqlite.  
+Процесс: после деплоя закрываем тикеты вместе с выкатом (wiki `feedback-tickets`).
+
