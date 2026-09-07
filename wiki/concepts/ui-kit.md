@@ -20,7 +20,7 @@
 | Button | primary (default), `.ghost` / `.secondary`, `.danger` — padding/radius от токенов |
 | ToggleSwitch | стандарт настроек (тоглы) |
 | Table | `.data-table` + `.table-wrap`; sticky `th`, row hover, denser padding |
-| Table cells (ТЧ) | роли: `.td-clip` (ellipsis + `title`), `.td-ctrl` (select/input), `.td-num`, `.td-sticky-end` — без горизонтального скролла |
+| Table cells (ТЧ) | **канон при bleed/наезде:** `.td-clip` / `.td-ctrl` / `.td-num` / `.td-sticky-end` — ellipsis + `title`, **без** горизонтального скролла ТЧ |
 | Modal | единый header/footer spacing; скролл — [ui-scroll-layout](ui-scroll-layout.md) |
 
 ## Чеклист нового экрана
@@ -28,16 +28,29 @@
 1. Цвета только из `:root` (accent/side/panel/line/danger).
 2. Фильтры/поиск: `.ctrl` / `ctrl-like`, высота ≈ `--ctrl-h`.
 3. Списки: `.table-wrap` + sticky thead; не фиксировать высоту без `min-height: 0` / overflow.
-4. ТЧ с длинными именами: явный `.td-clip` / `.td-ctrl`, не полагаться на `nth-child` ширины.
+4. ТЧ с длинными именами: явный `.td-clip` / `.td-ctrl`, не полагаться на `nth-child` ширины под N колонок.
 5. `modal-doc`: обязателен `.doc-form-scroll` (см. ui-scroll-layout).
 6. Настройки-флаги: `ToggleSwitch`, не голый checkbox.
 7. Числа: `DecimalInput`.
 8. Не вводить Inter-only hero, purple gradients, cream+terracotta display.
 
-## Персонализация колонок (прототип)
+## Плотные ТЧ: канон (2026-09-07)
 
-На «Производство → Управление заказами → Исполнение»: иконка колонок справа над таблицей открывает меню видимости (IDN, Свободно, Контрагент). Бейдж — число скрытых. Persist: `localStorage` `vilar.prodDesktop.cols.<userId>`. Обязательные поля ввода не скрываются.
+**Проблема:** `table-layout: fixed` + `nowrap` без clip → длинный текст наезжает на соседние колонки.
+
+**Основной подход (не масштабировать превентивно на все экраны — включать при жалобе/bleed):**
+
+1. Роли ячеек `.td-clip` / `.td-ctrl` / `.td-num` / `.td-sticky-end` в `App.css`.
+2. Ширины через именованные `.col-*`, не хрупкий `nth-child` под число колонок.
+3. Опциональная персонализация: иконка `columns` (`IconButton`) справа над таблицей → popover с чекбоксами; скрывать только информационные/дублирующие колонки, не обязательный ввод; persist `localStorage` на `userId`.
+4. Не использовать горизонтальный скролл ТЧ как норму UX.
+
+**Эталон:** «Производство → Управление заказами → Исполнение» (`ProductionDesktop`). Подбор сырья частично получил clip. Остальные экраны — по необходимости.
+
+## Персонализация колонок (эталон)
+
+Иконка колонок справа над таблицей; бейдж = число скрытых; «Показать все». Ключ: `vilar.prodDesktop.cols.<userId>`. Скрываемые на эталоне: IDN, Свободно, Контрагент.
 
 ## Вне scope этого baseline
 
-Полный редизайн каждой страницы, dark mode, смена навигации. Resize ширин / views — позже.
+Полный редизайн каждой страницы, dark mode, смена навигации. Resize ширин / именованные views — позже. Массовый rollout clip на все ТЧ — не сейчас.

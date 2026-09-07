@@ -101,5 +101,6 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 ## [2026-09-07] feature | Table cell contract + prod column visibility
 
 Роли `.td-clip` / `.td-ctrl` / `.td-num` / `.td-sticky-end` (без horiz scroll).  
-Прототип скрытия колонок на исполнении заказа (IDN / свободно / контрагент) + localStorage.
+Эталон: исполнение заказа — иконка колонок + popover (IDN / свободно / контрагент) + localStorage.  
+**Канон** для будущих bleed: ui-kit «Плотные ТЧ»; массовый rollout на другие экраны — не сейчас.
 
