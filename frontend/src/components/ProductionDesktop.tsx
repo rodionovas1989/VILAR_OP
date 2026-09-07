@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import { OrderLine, ProductionOrder, Warehouse, LotCharacteristic } from '../types';
 import DecimalInput from './DecimalInput';
+import IconButton from './IconButton';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
@@ -161,10 +162,28 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [hiddenCols, setHiddenCols] = useState<Set<OptionalProdCol>>(() => loadHiddenCols(user?.id));
+  const [colsMenuOpen, setColsMenuOpen] = useState(false);
+  const colsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setHiddenCols(loadHiddenCols(user?.id));
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!colsMenuOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!colsMenuRef.current?.contains(e.target as Node)) setColsMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setColsMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [colsMenuOpen]);
 
   const showCol = (id: OptionalProdCol) => !hiddenCols.has(id);
 
@@ -177,6 +196,16 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       return next;
     });
   };
+
+  const showAllCols = () => {
+    setHiddenCols(() => {
+      const next = new Set<OptionalProdCol>();
+      persistHiddenCols(user?.id, next);
+      return next;
+    });
+  };
+
+  const hiddenOnTab = OPTIONAL_PROD_COLS.filter((c) => c.tabs.includes(tab) && hiddenCols.has(c.id)).length;
 
   const factColSpan =
     4 + (showCol('idn') ? 1 : 0) + (showCol('free') ? 1 : 0) + (showCol('cp') ? 1 : 0);
@@ -532,23 +561,66 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           PRI по каждому складу списания и один PRR на склад выпуска.
         </p>
 
-        <div className="tabs spec-inner-tabs">
-          <button type="button" className={tab === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}>
-            План
-          </button>
-          <button type="button" className={tab === 'fact' ? 'active' : ''} onClick={() => setTab('fact')}>
-            Факт
-          </button>
-        </div>
-
-        <div className="prod-col-settings" role="group" aria-label="Видимость колонок">
-          <span className="prod-col-settings-label">Колонки</span>
-          {OPTIONAL_PROD_COLS.filter((c) => c.tabs.includes(tab)).map((c) => (
-            <label key={c.id}>
-              <input type="checkbox" checked={showCol(c.id)} onChange={() => toggleCol(c.id)} />
-              {c.label}
-            </label>
-          ))}
+        <div className="prod-table-toolbar">
+          <div className="tabs spec-inner-tabs">
+            <button
+              type="button"
+              className={tab === 'plan' ? 'active' : ''}
+              onClick={() => {
+                setTab('plan');
+                setColsMenuOpen(false);
+              }}
+            >
+              План
+            </button>
+            <button
+              type="button"
+              className={tab === 'fact' ? 'active' : ''}
+              onClick={() => {
+                setTab('fact');
+                setColsMenuOpen(false);
+              }}
+            >
+              Факт
+            </button>
+          </div>
+          <div className="prod-col-menu" ref={colsMenuRef}>
+            <span className={`prod-col-menu-trigger${hiddenOnTab ? ' has-hidden' : ''}`}>
+              <IconButton
+                icon="columns"
+                label={
+                  hiddenOnTab
+                    ? `Колонки таблицы (скрыто: ${hiddenOnTab})`
+                    : 'Колонки таблицы'
+                }
+                tone={hiddenOnTab ? 'success' : 'muted'}
+                aria-expanded={colsMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setColsMenuOpen((v) => !v)}
+              />
+              {hiddenOnTab > 0 && (
+                <span className="prod-col-menu-badge" aria-hidden>
+                  {hiddenOnTab}
+                </span>
+              )}
+            </span>
+            {colsMenuOpen && (
+              <div className="prod-col-menu-panel" role="menu" aria-label="Видимость колонок">
+                <div className="prod-col-menu-title">Колонки</div>
+                {OPTIONAL_PROD_COLS.filter((c) => c.tabs.includes(tab)).map((c) => (
+                  <label key={c.id} className="prod-col-menu-item">
+                    <input type="checkbox" checked={showCol(c.id)} onChange={() => toggleCol(c.id)} />
+                    {c.label}
+                  </label>
+                ))}
+                {hiddenOnTab > 0 && (
+                  <button type="button" className="ghost prod-col-menu-reset" onClick={showAllCols}>
+                    Показать все
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {tab === 'plan' && (
