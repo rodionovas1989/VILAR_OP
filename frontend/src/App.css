@@ -3004,19 +3004,25 @@ button.danger-outline:hover {
   width: 100%;
 }
 
+.prod-plan-lines-table {
+  table-layout: auto;
+  width: 100%;
+}
+
+/* Факт: Материал | Партия произв. | IDN | Склад | Свободно | Контрагент | Кол-во */
 .prod-lines-table th:nth-child(1),
 .prod-lines-table td:nth-child(1) {
-  width: 22%;
+  width: 16%;
 }
 
 .prod-lines-table th:nth-child(2),
 .prod-lines-table td:nth-child(2) {
-  width: 22%;
+  width: 14%;
 }
 
 .prod-lines-table th:nth-child(3),
 .prod-lines-table td:nth-child(3) {
-  width: 10%;
+  width: 14%;
 }
 
 .prod-lines-table th:nth-child(4),
@@ -3026,12 +3032,17 @@ button.danger-outline:hover {
 
 .prod-lines-table th:nth-child(5),
 .prod-lines-table td:nth-child(5) {
-  width: 18%;
+  width: 8%;
 }
 
 .prod-lines-table th:nth-child(6),
 .prod-lines-table td:nth-child(6) {
-  width: 18%;
+  width: 14%;
+}
+
+.prod-lines-table th:nth-child(7),
+.prod-lines-table td:nth-child(7) {
+  width: 10%;
 }
 
 .prod-lot-cell {
@@ -3083,7 +3094,7 @@ button.danger-outline:hover {
   z-index: 1;
 }
 
-.prod-lines-table th:nth-child(6) {
+.prod-lines-table th:nth-child(7) {
   position: sticky;
   right: 0;
   background: var(--panel, #f7fafc);
