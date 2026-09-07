@@ -480,7 +480,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
         {tab === 'plan' && (
           <div className="table-wrap">
-            <table className="data-table doc-lines-table prod-lines-table">
+            <table className="data-table doc-lines-table prod-plan-lines-table">
               <thead>
                 <tr>
                   <th>Материал</th>
