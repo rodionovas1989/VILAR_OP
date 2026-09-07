@@ -151,6 +151,7 @@ function lotFields(lot) {
   return {
     lotId: lot?.id || null,
     lotNumber: lot?.number || null,
+    identificationNumber: lot?.identificationNumber || null,
     warehouseId: lot?.warehouseId || null,
     warehouseName: lot?.warehouseName || null,
     warehouseType: lot?.warehouseType || null,

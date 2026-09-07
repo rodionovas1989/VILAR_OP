@@ -1141,6 +1141,7 @@ export default function App() {
               lots: lots.map((l) => ({
                 id: l.id,
                 number: l.number,
+                identificationNumber: l.identificationNumber,
                 materialId: l.materialId,
                 counterpartyId: l.counterpartyId,
                 manufacturerId: l.manufacturerId,
@@ -1188,6 +1189,7 @@ export default function App() {
               lots: lots.map((l) => ({
                 id: l.id,
                 number: l.number,
+                identificationNumber: l.identificationNumber,
                 materialId: l.materialId,
                 counterpartyId: l.counterpartyId,
                 manufacturerId: l.manufacturerId,

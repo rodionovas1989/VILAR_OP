@@ -156,6 +156,8 @@ export default function ProductionOrderPage({
   const serNum = (id: string) => series.find((s) => s.id === id)?.number || id;
   const wcName = (id: string) => workCenters.find((w) => w.id === id)?.name || id;
   const lotNum = (id: string) => lots.find((l) => l.id === id)?.number || id;
+  const lotIdn = (id: string) =>
+    String(lots.find((l) => l.id === id)?.identificationNumber || '').trim() || '—';
   const orderLabel = (order: ProductionOrder) =>
     `${matName(order.materialId)} / ${serNum(order.seriesId)}`;
 
@@ -715,7 +717,8 @@ export default function ProductionOrderPage({
                     <thead>
                       <tr>
                         <th>Материал</th>
-                        <th>Партия</th>
+                        <th>Партия производителя</th>
+                        <th>Идентификатор партии</th>
                         <th>Количество</th>
                       </tr>
                     </thead>
@@ -724,6 +727,7 @@ export default function ProductionOrderPage({
                         <tr key={`${line.materialId}-${line.lotId}-${idx}`}>
                           <td>{matName(line.materialId)}</td>
                           <td>{lotNum(line.lotId)}</td>
+                          <td>{lotIdn(line.lotId)}</td>
                           <td>{line.quantity}</td>
                         </tr>
                       ))}

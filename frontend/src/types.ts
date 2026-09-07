@@ -225,6 +225,7 @@ export interface MaterialPick {
   recalcSnapshot?: { xLabel?: number; assay?: number | null; lossOnDrying?: number | null } | null;
   lotId: string | null;
   lotNumber?: string | null;
+  identificationNumber?: string | null;
   warehouseId?: string | null;
   warehouseName?: string | null;
   warehouseType?: string | null;

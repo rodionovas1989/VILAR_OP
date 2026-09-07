@@ -8,6 +8,7 @@ import SearchableSelect from './SearchableSelect';
 import { useAuth } from '../auth/AuthContext';
 import { materialHasAssayDryApplication, appliedRecalcTerms, PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY } from '../utils/lotCharacteristics';
 import {
+  formatLotIdnLabel,
   formatLotNumberLabel,
   lotWhKey,
   parseLotWhKey,
@@ -18,7 +19,13 @@ type Dicts = {
   materials: { id: string; name: string; type?: string }[];
   series: { id: string; number: string }[];
   workCenters: { id: string; name: string }[];
-  lots: { id: string; number: string; materialId: string; counterpartyId?: string | null }[];
+  lots: {
+    id: string;
+    number: string;
+    identificationNumber?: string | null;
+    materialId: string;
+    counterpartyId?: string | null;
+  }[];
   counterparties: { id: string; name: string }[];
   warehouses: Warehouse[];
   substitutions: {
@@ -41,6 +48,7 @@ type Props = { dictionaries: Dicts };
 type LotOpt = {
   id: string;
   number: string;
+  identificationNumber?: string | null;
   freeQty: number;
   warehouseId?: string;
   warehouseName?: string;
@@ -476,7 +484,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               <thead>
                 <tr>
                   <th>Материал</th>
-                  <th>Партия</th>
+                  <th>Партия производителя</th>
+                  <th>Идентификатор партии</th>
                   <th>Контрагент</th>
                   <th className="col-center">Количество</th>
                 </tr>
@@ -486,13 +495,18 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                   <tr key={`plan-${l.materialId}-${l.lotId}`}>
                     <td>{nameOf(l.materialId, dictionaries.materials)}</td>
                     <td>{nameOf(l.lotId, dictionaries.lots)}</td>
+                    <td>
+                      {String(
+                        dictionaries.lots.find((x) => x.id === l.lotId)?.identificationNumber || ''
+                      ).trim() || '—'}
+                    </td>
                     <td>{lotCp(l.lotId)}</td>
                     <td className="col-center">{l.quantity}</td>
                   </tr>
                 ))}
                 {!planLines.length && (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={5} className="muted">
                       Нет планового состава
                     </td>
                   </tr>
@@ -508,7 +522,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               <thead>
                 <tr>
                   <th>Материал</th>
-                  <th>Партия</th>
+                  <th>Партия производителя</th>
+                  <th>Идентификатор партии</th>
                   <th>Склад</th>
                   <th className="col-center">Свободно</th>
                   <th>Контрагент</th>
@@ -533,6 +548,50 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                   );
                   const canSwap = allowed.length > 1;
                   const lotSelectValue = l.lotId ? lotWhKey(l.lotId, l.warehouseId || selectedOpt?.warehouseId) : '';
+                  const fallbackNumber = nameOf(l.lotId, dictionaries.lots);
+                  const fallbackIdn =
+                    String(
+                      dictionaries.lots.find((x) => x.id === l.lotId)?.identificationNumber || ''
+                    ).trim() || '—';
+                  const lotTriggerClass = [
+                    unfit ? 'select-lot-blocked' : '',
+                    conditional ? 'select-lot-conditional' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ');
+                  const fallbackOption =
+                    !hasCurrent && l.lotId
+                      ? [
+                          {
+                            value: lotWhKey(l.lotId, l.warehouseId),
+                            numberLabel: formatLotNumberLabel({
+                              number: fallbackNumber,
+                              warehouseType: dictionaries.warehouses.find((w) => w.id === l.warehouseId)
+                                ?.type,
+                              warehouseName: dictionaries.warehouses.find((w) => w.id === l.warehouseId)
+                                ?.name,
+                            }),
+                            idnLabel: formatLotIdnLabel({
+                              number: fallbackNumber,
+                              identificationNumber: fallbackIdn,
+                            }),
+                          },
+                        ]
+                      : [];
+                  const numberOptions = [
+                    ...fallbackOption.map((o) => ({ value: o.value, label: o.numberLabel })),
+                    ...opts.map((o) => ({
+                      value: lotWhKey(o.id, o.warehouseId),
+                      label: formatLotNumberLabel(o, false),
+                    })),
+                  ];
+                  const idnOptions = [
+                    ...fallbackOption.map((o) => ({ value: o.value, label: o.idnLabel })),
+                    ...opts.map((o) => ({
+                      value: lotWhKey(o.id, o.warehouseId),
+                      label: formatLotIdnLabel(o, false),
+                    })),
+                  ];
                   return (
                     <tr
                       key={`fact-${key}`}
@@ -560,38 +619,13 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       </td>
                       <td className="prod-lot-cell">
                         <SearchableSelect
-                          triggerClassName={[
-                            unfit ? 'select-lot-blocked' : '',
-                            conditional ? 'select-lot-conditional' : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
+                          triggerClassName={lotTriggerClass}
                           value={lotSelectValue}
                           disabled={busy}
                           allowEmpty={false}
                           onChange={(v) => changeFactLot(key, v)}
-                          options={[
-                            ...(!hasCurrent && l.lotId
-                              ? [
-                                  {
-                                    value: lotWhKey(l.lotId, l.warehouseId),
-                                    label: formatLotNumberLabel({
-                                      number: nameOf(l.lotId, dictionaries.lots),
-                                      warehouseType: dictionaries.warehouses.find(
-                                        (w) => w.id === l.warehouseId
-                                      )?.type,
-                                      warehouseName: dictionaries.warehouses.find(
-                                        (w) => w.id === l.warehouseId
-                                      )?.name,
-                                    }),
-                                  },
-                                ]
-                              : []),
-                              ...opts.map((o) => ({
-                                value: lotWhKey(o.id, o.warehouseId),
-                                label: formatLotNumberLabel(o, false),
-                              })),
-                          ]}
+                          options={numberOptions}
+                          aria-label="Партия производителя"
                         />
                         {selectedOpt?.qualityName && !unfit && !conditional && (
                           <div className="prod-lot-quality muted">{selectedOpt.qualityName}</div>
@@ -608,6 +642,17 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                               'Условно годен'}
                           </div>
                         )}
+                      </td>
+                      <td className="prod-lot-cell">
+                        <SearchableSelect
+                          triggerClassName={lotTriggerClass}
+                          value={lotSelectValue}
+                          disabled={busy}
+                          allowEmpty={false}
+                          onChange={(v) => changeFactLot(key, v)}
+                          options={idnOptions}
+                          aria-label="Идентификатор партии"
+                        />
                       </td>
                       <td
                         className="prod-wh-cell"
@@ -644,7 +689,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 })}
                 {!actualLines.length && (
                   <tr>
-                    <td colSpan={6} className="muted">
+                    <td colSpan={7} className="muted">
                       Нет фактического состава
                     </td>
                   </tr>

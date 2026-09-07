@@ -10,6 +10,7 @@ import ToggleSwitch from './ToggleSwitch';
 import { useAuth } from '../auth/AuthContext';
 import { PARAM_ASSAY, PARAM_DRY, LEGACY_PARAM_DRY, computeLineNeed, lotRecalcValue } from '../utils/lotRecalc';
 import {
+  formatLotIdnLabel,
   formatLotNumberLabel,
   lotWhKey,
   parseLotWhKey,
@@ -28,6 +29,7 @@ type TabId = 'orders' | 'materials' | 'gantt' | 'planned' | 'matrix';
 type AvailableLot = {
   id: string;
   number: string;
+  identificationNumber?: string | null;
   freeQty: number;
   warehouseId?: string;
   warehouseName?: string;
@@ -86,6 +88,7 @@ type Props = {
     lots: {
       id: string;
       number: string;
+      identificationNumber?: string | null;
       materialId: string;
       counterpartyId?: string | null;
       manufacturerId?: string | null;
@@ -476,6 +479,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     if (!lotId) {
       pick = applyNeedToPick(pick, null, orderQty);
       pick.lotNumber = null;
+      pick.identificationNumber = null;
       pick.warehouseId = null;
       pick.warehouseName = null;
       pick.warehouseType = null;
@@ -496,6 +500,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       const lot = findLotRow(lots, lotId, warehouseId) || lots.find((l) => l.id === lotId);
       pick = applyNeedToPick(pick, lot ?? null, orderQty);
       pick.lotNumber = lot?.number || null;
+      pick.identificationNumber = lot?.identificationNumber || null;
       pick.warehouseId = lot?.warehouseId || warehouseId || null;
       pick.warehouseName = lot?.warehouseName || null;
       pick.warehouseType = lot?.warehouseType || null;
@@ -532,6 +537,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
         substituted: materialId !== specMaterialId,
         lotId: null,
         lotNumber: null,
+        identificationNumber: null,
         warehouseId: null,
         warehouseName: null,
         warehouseType: null,
@@ -561,6 +567,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
           ...suitable.pick,
           lotId: suitable.lot.id,
           lotNumber: suitable.lot.number,
+          identificationNumber: suitable.lot.identificationNumber || null,
           warehouseId: suitable.lot.warehouseId || null,
           warehouseName: suitable.lot.warehouseName || null,
           warehouseType: suitable.lot.warehouseType || null,
@@ -819,6 +826,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                       <col className="col-mat" />
                       <col className="col-qty" />
                       <col className="col-lot" />
+                      <col className="col-idn" />
                       <col className="col-wh" />
                       <col className="col-cp" />
                       <col className="col-mfr" />
@@ -830,7 +838,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                       <tr>
                         <th>Материал</th>
                         <th className="col-center">Кол-во</th>
-                        <th>Партия</th>
+                        <th>Партия производителя</th>
+                        <th>Идентификатор партии</th>
                         <th>Склад</th>
                         <th>Контрагент</th>
                         <th>Производитель</th>
@@ -1381,23 +1390,49 @@ function PickRow({
     selectedLot?.number ||
     lots.find((l) => l.id === pick.lotId)?.number ||
     '';
-  const lotSelectOptions = [
-    ...(pick.lotId && !lots.some((l) => lotWhKey(l.id, l.warehouseId) === lotSelectValue)
+  const lotLabelIdn =
+    pick.identificationNumber ||
+    selectedLot?.identificationNumber ||
+    lots.find((l) => l.id === pick.lotId)?.identificationNumber ||
+    '';
+  const fallbackLotOption =
+    pick.lotId && !lots.some((l) => lotWhKey(l.id, l.warehouseId) === lotSelectValue)
       ? [
           {
             value: lotSelectValue,
             // Никогда не показываем сырой UUID — только номер или запасная подпись
-            label: formatLotNumberLabel({ number: lotLabelNumber || 'партия' }),
+            numberLabel: formatLotNumberLabel({ number: lotLabelNumber || 'партия' }),
+            idnLabel: formatLotIdnLabel({
+              number: lotLabelNumber || 'партия',
+              identificationNumber: lotLabelIdn,
+            }),
           },
         ]
-      : []),
+      : [];
+  const lotNumberSelectOptions = [
+    ...fallbackLotOption.map((o) => ({ value: o.value, label: o.numberLabel })),
     ...lots.map((l) => ({
       value: lotWhKey(l.id, l.warehouseId),
-      // Только номер: склад и свободно — в соседних колонках
       label: formatLotNumberLabel(l, false),
       className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
     })),
   ];
+  const lotIdnSelectOptions = [
+    ...fallbackLotOption.map((o) => ({ value: o.value, label: o.idnLabel })),
+    ...lots.map((l) => ({
+      value: lotWhKey(l.id, l.warehouseId),
+      label: formatLotIdnLabel(l, false),
+      className: l.qualityAllowed === false ? 'option-lot-blocked' : undefined,
+    })),
+  ];
+
+  const lotSelectClassName = [
+    ok && !qualityUnfit ? '' : 'select-bad',
+    qualityUnfit ? 'select-lot-blocked' : '',
+    qualityConditional ? 'select-lot-conditional' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <tr
@@ -1454,17 +1489,22 @@ function PickRow({
       </td>
       <td className="pick-lot-cell">
         <SearchableSelect
-          triggerClassName={[
-            ok && !qualityUnfit ? '' : 'select-bad',
-            qualityUnfit ? 'select-lot-blocked' : '',
-            qualityConditional ? 'select-lot-conditional' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
+          triggerClassName={lotSelectClassName}
           value={lotSelectValue}
           onChange={onChangeLot}
           emptyLabel="— не выбрана —"
-          options={lotSelectOptions}
+          options={lotNumberSelectOptions}
+          aria-label="Партия производителя"
+        />
+      </td>
+      <td className="pick-lot-cell">
+        <SearchableSelect
+          triggerClassName={lotSelectClassName}
+          value={lotSelectValue}
+          onChange={onChangeLot}
+          emptyLabel="— не выбран —"
+          options={lotIdnSelectOptions}
+          aria-label="Идентификатор партии"
         />
       </td>
       <td

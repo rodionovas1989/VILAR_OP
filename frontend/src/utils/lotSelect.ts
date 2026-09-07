@@ -23,6 +23,7 @@ export function shortWarehouseLabel(type?: string | null, name?: string | null):
 
 type LotLabelSource = {
   number: string;
+  identificationNumber?: string | null;
   freeQty?: number | null;
   warehouseId?: string | null;
   warehouseName?: string | null;
@@ -44,6 +45,12 @@ function qualityPrefix(o: LotLabelSource): string {
  */
 export function formatLotNumberLabel(o: LotLabelSource, _disambiguateWarehouse = false): string {
   return `${qualityPrefix(o)}${o.number}`;
+}
+
+/** Подпись опции по внутреннему идентификатору партии. */
+export function formatLotIdnLabel(o: LotLabelSource, _disambiguateWarehouse = false): string {
+  const idn = String(o.identificationNumber || '').trim() || '—';
+  return `${qualityPrefix(o)}${idn}`;
 }
 
 /**
