@@ -13,6 +13,7 @@ export const COLLECTION_TO_OBJECT = {
   warehouses: 'warehouses',
   planned_series_volumes: 'planned_series_volumes',
   substitutions: 'substitutions',
+  accounting_models: 'accounting_models',
   lot_characteristics: 'lot_characteristics',
   production_orders: 'production_orders',
   stock: 'stock',

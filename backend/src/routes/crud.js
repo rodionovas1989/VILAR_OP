@@ -6,7 +6,7 @@ import { assertCanDelete, isProtectedDictionary } from '../services/referentialI
 
 export function crudRouter(
   collection,
-  { beforeCreate, beforeUpdate, afterCreate, sanitize, readOnly = false } = {}
+  { beforeCreate, beforeUpdate, afterCreate, afterUpdate, sanitize, readOnly = false } = {}
 ) {
   const router = Router();
 
@@ -50,7 +50,9 @@ export function crudRouter(
         const current = store.getById(collection, req.params.id);
         if (!current) return null;
         if (beforeUpdate) patch = beforeUpdate({ ...current, ...patch }, current, req) || patch;
-        return store.update(collection, req.params.id, patch);
+        const updated = store.update(collection, req.params.id, patch);
+        if (updated && afterUpdate) afterUpdate(updated, current, req);
+        return updated;
       });
       if (!row) return res.status(404).json({ error: 'Не найдено' });
       res.json(sanitize ? sanitize(row) : row);

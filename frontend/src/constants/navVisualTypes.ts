@@ -33,6 +33,7 @@ export const PAGE_VISUAL_TYPE: Record<string, NavVisualType> = {
   warehouses: 'dictionary',
   planned_series_volumes: 'dictionary',
   substitutions: 'dictionary',
+  accounting_models: 'dictionary',
   lot_qualities: 'dictionary',
   lot_characteristics: 'dictionary',
 

@@ -17,6 +17,7 @@ import {
   LEGACY_PARAM_DRY,
   CHAR_KIND,
 } from './constants/lotCharacteristics.js';
+import { ensureSeedAccountingModels } from './services/accountingModels.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -36,6 +37,7 @@ const COLLECTIONS = [
   'tech_maps',
   'planned_series_volumes',
   'substitutions',
+  'accounting_models',
   'production_orders',
   'material_movements',
   'users',
@@ -197,6 +199,7 @@ export function ensureCollections() {
   migrateLegacyReservationsToDocuments();
   migrateLotQualitiesDefaults();
   migrateLotCharacteristics();
+  migrateAccountingModels();
 }
 
 /** Пользователь Admin при пустой/миграции БД. Пароль: VILAR_ADMIN_PASSWORD (не светить в UI). */
@@ -658,6 +661,10 @@ function migrateLotCharacteristics() {
     }
   }
   if (seededChanged) writeAll('lot_characteristics', seeded);
+}
+
+function migrateAccountingModels() {
+  ensureSeedAccountingModels();
 }
 
 function nextLocalNumber(code, dateStr) {

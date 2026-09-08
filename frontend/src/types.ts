@@ -11,6 +11,19 @@ export interface Material {
   name: string;
   type: MaterialType;
   unit: string;
+  accountingModelId?: string;
+}
+
+export interface AccountingModel {
+  id: string;
+  name: string;
+  ownProduction?: boolean;
+  parseMode?: 'none' | 'fill' | 'strict';
+  generateOnRelease?: boolean;
+  lotNumberTemplate?: {
+    parseDirection?: 'rtl' | 'ltr';
+    tokens?: unknown[];
+  };
 }
 
 export interface SpecLine {
@@ -68,6 +81,7 @@ export interface Lot {
   manufacturerId: string | null;
   productionDate: string;
   expiryDate: string;
+  productionSequence?: number | null;
   blocked?: boolean;
   blockReason?: string | null;
   blockDocumentId?: string | null;

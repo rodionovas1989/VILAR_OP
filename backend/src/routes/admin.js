@@ -25,6 +25,7 @@ export const DICTIONARY_COLLECTIONS = [
   { id: 'warehouses', label: 'Склады', sheet: 'Склады' },
   { id: 'planned_series_volumes', label: 'Плановые объёмы серий', sheet: 'Плановые_объёмы' },
   { id: 'substitutions', label: 'Аналоги', sheet: 'Аналоги' },
+  { id: 'accounting_models', label: 'Модели учёта', sheet: 'Модели_учёта' },
   { id: 'lot_characteristics', label: 'Характеристики партий', sheet: 'Характеристики_партий' },
 ];
 

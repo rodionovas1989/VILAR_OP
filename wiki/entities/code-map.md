@@ -7,6 +7,7 @@
 | API entry | `backend/src/index.js` |
 | CRUD store | `backend/src/store.js` (SQLite JSON docs) |
 | Планирование / FEFO / complete | `backend/src/services/planning.js` |
+| Модели учёта / шаблон номера | `backend/src/services/accountingModels.js`, `numberTemplates.js` |
 | Документы | `backend/src/services/documents.js` |
 | Типы документов FE↔BE | `documentTypes.js` / `.ts` (оба!) |
 | Auth / RBAC | `auth.js`, `access.js`, `permissions.js` |

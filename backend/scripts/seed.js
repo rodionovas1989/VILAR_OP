@@ -451,6 +451,7 @@ function main() {
   for (const [name, rows] of Object.entries(payload)) {
     writeAll(name, rows);
   }
+  ensureCollections();
 
   console.log('Seed OK');
   console.log({

@@ -14,6 +14,10 @@ export const REFERENCE_OBJECTS = [
   { id: 'substitutions', label: 'Аналоги' },
 ];
 
+export const SETTINGS_OBJECTS = [
+  { id: 'accounting_models', label: 'Модели учёта' },
+];
+
 export const DOCUMENT_OBJECTS = [
   { id: 'doc_receipt', label: 'Приёмка' },
   { id: 'doc_transfer', label: 'Перемещение' },
@@ -84,6 +88,7 @@ export const SYSTEM_OBJECT_GROUPS = [
   { id: 'quality', label: 'Качество', objects: QUALITY_OBJECTS },
   { id: 'reports', label: 'Отчеты', objects: REPORT_OBJECTS },
   { id: 'admin', label: 'Администрирование', objects: ADMIN_OBJECTS },
+  { id: 'settings', label: 'Настройки системы', objects: SETTINGS_OBJECTS },
 ];
 
 export const ALL_SYSTEM_OBJECT_IDS = SYSTEM_OBJECT_GROUPS.flatMap((g) => g.objects.map((o) => o.id));
@@ -109,6 +114,9 @@ export function storekeeperPermissions() {
   for (const id of REFERENCE_OBJECTS.map((o) => o.id)) {
     out[id] = { read: true, create: false, modify: false };
   }
+  for (const id of SETTINGS_OBJECTS.map((o) => o.id)) {
+    out[id] = { read: true, create: false, modify: false };
+  }
   for (const id of DOCUMENT_OBJECTS.map((o) => o.id)) {
     out[id] = { read: true, create: true, modify: false };
   }
@@ -127,6 +135,9 @@ export function storekeeperPermissions() {
 export function plannerPermissions() {
   const out = emptyPermissions();
   for (const id of REFERENCE_OBJECTS.map((o) => o.id)) {
+    out[id] = { read: true, create: false, modify: false };
+  }
+  for (const id of SETTINGS_OBJECTS.map((o) => o.id)) {
     out[id] = { read: true, create: false, modify: false };
   }
   for (const id of DOCUMENT_OBJECTS.map((o) => o.id)) {

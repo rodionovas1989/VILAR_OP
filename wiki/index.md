@@ -14,7 +14,7 @@
 | Страница | Summary |
 |----------|---------|
 | [gmp-one-lot-per-component](concepts/gmp-one-lot-per-component.md) | Одна партия сырья на компонент в серии |
-| [fefo-fifo-picking](concepts/fefo-fifo-picking.md) | FEFO/FIFO, годность, свободный остаток |
+| [fefo-fifo-picking](concepts/fefo-fifo-picking.md) | FEFO/FIFO, годность, свободный остаток, sequence |
 | [order-status-machine](concepts/order-status-machine.md) | новый → спланирован → завершен/отменен |
 | [lot-recalc-assay-dry](concepts/lot-recalc-assay-dry.md) | кг/1000 уп + пересчёт содержания/потери |
 | [soft-vs-hard-supplier-approval](concepts/soft-vs-hard-supplier-approval.md) | Мягкие бейджи поставщиков |
@@ -41,6 +41,7 @@
 | [decimal-input](entities/decimal-input.md) | Единый числовой ввод |
 | [rbac-objects](entities/rbac-objects.md) | Права и objectId |
 | [code-map](entities/code-map.md) | Якоря по коду (brief тонкий) |
+| [accounting-models](entities/accounting-models.md) | Модели учёта, шаблон номера |
 | [feedback-tickets](entities/feedback-tickets.md) | Обращения FB-… |
 | [production-register](entities/production-register.md) | Аналитика PRI/PRR |
 | [ops-debug](entities/ops-debug.md) | ops_debug.jsonl |
@@ -61,6 +62,7 @@
 | [D008](decisions/D008-rules-secrets-lifecycle.md) | Rules, секреты, lifecycle wiki |
 | [D009](decisions/D009-multi-warehouse-pri.md) | N RES/PRI по складам; склад в строке факта |
 | [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на нескольких складах: пока TRN; авто-сплит отложен |
+| [D011](decisions/D011-lot-production-sequence.md) | Sequence партии; маска в модели учёта, не в FEFO |
 
 ## Ops
 
@@ -90,3 +92,4 @@
 | [lint-2026-08-26](analyses/lint-2026-08-26.md) | Первый полный lint |
 | [karpathy-gist-fit](analyses/karpathy-gist-fit.md) | Сверка с gist / вставка промпта |
 | [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |
+| [lot-mixing-policy](analyses/lot-mixing-policy.md) | Смешение партий: политика на модели учёта, N строк в заказе |

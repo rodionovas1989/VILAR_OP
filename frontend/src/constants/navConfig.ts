@@ -1,6 +1,6 @@
 import { NavVisualType, visualTypeForPage } from './navVisualTypes';
 
-export type NavKind = 'desktop' | 'planning' | 'dictionary' | 'document' | 'register' | 'quality' | 'report' | 'admin';
+export type NavKind = 'desktop' | 'planning' | 'dictionary' | 'document' | 'register' | 'quality' | 'report' | 'admin' | 'settings';
 
 export type NavItem = {
   id: string;
@@ -21,6 +21,7 @@ export const KIND_SECTION_LABELS: Record<NavKind, string> = {
   quality: 'Качество',
   report: 'Отчеты',
   admin: 'Администрирование',
+  settings: 'Настройки системы',
 };
 
 const DOCUMENT_NAV: NavItem[] = [
@@ -126,6 +127,11 @@ export const NAV: NavGroup[] = [
       { id: 'admin_changelog', label: 'Что нового', kind: 'admin' },
       { id: 'admin_feedback', label: 'Обратная связь', kind: 'admin' },
     ],
+  },
+  {
+    id: 'settings',
+    label: 'Настройки системы',
+    items: [{ id: 'accounting_models', label: 'Модели учёта', kind: 'settings' }],
   },
 ];
 

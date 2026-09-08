@@ -13,6 +13,7 @@ const COLLECTION_LABELS = {
   specifications: 'Спецификации',
   planned_series_volumes: 'Плановые объёмы серий',
   substitutions: 'Аналоги',
+  accounting_models: 'Модели учёта',
   lot_qualities: 'Качества партий',
   lot_characteristics: 'Характеристики партий',
   production_orders: 'Заказы на производство',
@@ -272,6 +273,10 @@ export function findUsages(collection, id) {
       scanSubstitutions(map, id, 'specifications');
       break;
 
+    case 'accounting_models':
+      scanSimple(map, 'materials', id, ['accountingModelId']);
+      break;
+
     case 'substitutions':
       break;
 
@@ -370,6 +375,7 @@ export function isProtectedDictionary(collection) {
     'work_centers',
     'tech_maps',
     'specifications',
+    'accounting_models',
     'lot_qualities',
     'lot_characteristics',
   ].includes(collection);

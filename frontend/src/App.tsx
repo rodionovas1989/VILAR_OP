@@ -38,6 +38,8 @@ import { dateFromIso, displayTimeFromIso } from './utils/docDateTime';
 import SpecDetailTabs from './components/SpecDetailTabs';
 import SubstitutionForm from './components/SubstitutionForm';
 import CharacteristicForm from './components/CharacteristicForm';
+import AccountingModelForm from './components/AccountingModelForm';
+import { describeNumberTemplate } from './components/NumberTemplateBuilder';
 import CharacteristicManagementPage from './components/CharacteristicManagementPage';
 import QualityDesktop from './components/QualityDesktop';
 import {
@@ -47,6 +49,7 @@ import {
   LotCharacteristic,
   Manufacturer,
   Material,
+  AccountingModel,
   PlannedSeriesVolume,
   Series,
   SpecLine,
@@ -70,6 +73,7 @@ export default function App() {
   const [openGroupId, setOpenGroupId] = useState<string | null>(null);
   const [page, setPage] = useState('home');
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [accountingModels, setAccountingModels] = useState<AccountingModel[]>([]);
   const [counterparties, setCounterparties] = useState<Counterparty[]>([]);
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([]);
   const [lots, setLots] = useState<Lot[]>([]);
@@ -116,7 +120,7 @@ export default function App() {
 
   const reloadDicts = async () => {
     const listOrEmpty = <T,>(name: string) => api.list<T>(name).catch(() => [] as T[]);
-    const [m, c, mf, l, s, w, tm, wh, sp, pv, rl, lq, sub, lp] = await Promise.all([
+    const [m, c, mf, l, s, w, tm, wh, sp, pv, rl, lq, sub, lp, am] = await Promise.all([
       listOrEmpty<Material>('materials'),
       listOrEmpty<Counterparty>('counterparties'),
       listOrEmpty<Manufacturer>('manufacturers'),
@@ -133,8 +137,10 @@ export default function App() {
       ),
       listOrEmpty<Substitution>('substitutions'),
       listOrEmpty<LotCharacteristic>('lot_characteristics'),
+      listOrEmpty<AccountingModel>('accounting_models'),
     ]);
     setMaterials(m);
+    setAccountingModels(am);
     setCounterparties(c);
     setManufacturers(mf);
     setLots(l);
@@ -156,6 +162,7 @@ export default function App() {
   }, [page, user, authLoading]);
 
   const matName = (id: string) => materials.find((m) => m.id === id)?.name || id;
+  const amName = (id: string) => accountingModels.find((m) => m.id === id)?.name || id;
   const lotById = (id: string) => lots.find((l) => l.id === id);
   const lotNum = (id: string) => lotById(id)?.number || id;
   const serNum = (id: string) => series.find((s) => s.id === id)?.number || id;
@@ -187,8 +194,16 @@ export default function App() {
         ],
       },
       { key: 'unit', label: 'Ед. изм.', required: true },
+      {
+        key: 'accountingModelId',
+        label: 'Модель учёта',
+        type: 'select',
+        required: true,
+        defaultValue: 'am-standard',
+        options: opt(accountingModels),
+      },
     ],
-    []
+    [accountingModels]
   );
 
   const pageContent = (() => {
@@ -217,7 +232,54 @@ export default function App() {
               { key: 'name', label: 'Название' },
               { key: 'type', label: 'Тип' },
               { key: 'unit', label: 'Ед.' },
+              {
+                key: 'accountingModelId',
+                label: 'Модель учёта',
+                render: (r) => (r.accountingModelId ? amName(String(r.accountingModelId)) : '—'),
+              },
             ]}
+          />
+        );
+      case 'accounting_models':
+        return (
+          <CrudPage
+            title="Модели учёта"
+            collection="accounting_models"
+            pageId="accounting_models"
+            wideModal
+            fields={[{ key: 'name', label: 'Название', required: true }]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'ownProduction',
+                label: 'Своё пр-во',
+                render: (r) => (r.ownProduction ? 'да' : 'нет'),
+              },
+              {
+                key: 'lotNumberTemplate',
+                label: 'Шаблон',
+                render: (r) =>
+                  describeNumberTemplate(r.lotNumberTemplate as Parameters<typeof describeNumberTemplate>[0]),
+              },
+            ]}
+            transformIn={(row) => ({
+              ...row,
+              ownProduction: Boolean(row.ownProduction),
+              parseMode: row.parseMode || 'none',
+              generateOnRelease: Boolean(row.generateOnRelease),
+              lotNumberTemplate: row.lotNumberTemplate || { parseDirection: 'rtl', tokens: [] },
+            })}
+            transformOut={(row) => ({
+              ...row,
+              name: String(row.name || '').trim(),
+              ownProduction: Boolean(row.ownProduction),
+              parseMode: row.parseMode || 'none',
+              generateOnRelease: Boolean(row.generateOnRelease),
+              lotNumberTemplate: row.lotNumberTemplate || { parseDirection: 'rtl', tokens: [] },
+            })}
+            formExtra={({ editing, setEditing }) => (
+              <AccountingModelForm editing={editing} setEditing={setEditing} />
+            )}
           />
         );
       case 'specifications':
@@ -370,6 +432,12 @@ export default function App() {
               },
               { key: 'productionDate', label: 'Дата производства', type: 'date', required: true },
               { key: 'expiryDate', label: 'Срок годности', type: 'date', required: true },
+              {
+                key: 'productionSequence',
+                label: 'Порядок выпуска',
+                type: 'number',
+                hint: 'Номер загрузки. Для модели «Внутреннее производство» заполняется из номера партии.',
+              },
             ]}
             columns={[
               { key: 'number', label: 'Номер' },
@@ -391,11 +459,23 @@ export default function App() {
               },
               { key: 'productionDate', label: 'Произведено' },
               { key: 'expiryDate', label: 'Годен до' },
+              {
+                key: 'productionSequence',
+                label: 'Порядок',
+                render: (r) =>
+                  r.productionSequence == null || r.productionSequence === ''
+                    ? '—'
+                    : String(r.productionSequence),
+              },
             ]}
             transformOut={(row) => ({
               ...row,
               number: String(row.number || '').trim(),
               identificationNumber: String(row.identificationNumber || '').trim(),
+              productionSequence:
+                row.productionSequence === '' || row.productionSequence == null
+                  ? null
+                  : Number(row.productionSequence),
             })}
             validate={(row) => {
               const number = String(row.number || '').trim();

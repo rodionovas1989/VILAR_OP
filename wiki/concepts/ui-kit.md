@@ -19,9 +19,12 @@
 | SearchableSelect | в фильтрах: `className="ctrl-like"`; в doc-form — underline как inputs |
 | Button | primary (default), `.ghost` / `.secondary`, `.danger` — padding/radius от токенов |
 | ToggleSwitch | стандарт настроек (тоглы) |
+| LabeledToggle | тогл слева, подпись справа, опционально `HintButton` |
+| HintButton | пиктограмма «?» → вложенная модалка с текстом (`nested`) |
 | Table | `.data-table` + `.table-wrap`; sticky `th`, row hover, denser padding |
 | Table cells (ТЧ) | **канон при bleed/наезде:** `.td-clip` / `.td-ctrl` / `.td-num` / `.td-sticky-end` — ellipsis + `title`, **без** горизонтального скролла ТЧ |
-| Modal | единый header/footer spacing; скролл — [ui-scroll-layout](ui-scroll-layout.md) |
+| Modal | единый header/footer spacing; рендер в `document.body` (portal); подсказки — `className="modal-hint"`; скролл — [ui-scroll-layout](ui-scroll-layout.md) |
+| NumberTemplateField | на карточке пример номера + «карандаш»; блоки и порядок — во вложенной модалке |
 
 ## Чеклист нового экрана
 

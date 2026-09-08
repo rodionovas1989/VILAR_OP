@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 type Props = {
   open: boolean;
@@ -24,8 +25,13 @@ export function Modal({
   nested,
 }: Props) {
   if (!open) return null;
-  return (
-    <div className={`modal-backdrop${nested ? ' modal-backdrop-nested' : ''}`}>
+  const isHint = className.includes('modal-hint');
+  const node = (
+    <div
+      className={`modal-backdrop${nested ? ' modal-backdrop-nested' : ''}${
+        isHint ? ' modal-backdrop-hint' : ''
+      }`}
+    >
       <div
         className={`modal ${wide ? 'modal-wide' : ''} ${className}`.trim()}
         role="dialog"
@@ -47,6 +53,7 @@ export function Modal({
       </div>
     </div>
   );
+  return createPortal(node, document.body);
 }
 
 export function useModal() {

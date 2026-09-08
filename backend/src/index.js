@@ -34,6 +34,12 @@ import { materialHasAssayDryApplication, RECALC_METHOD_LABEL } from './constants
 import { normalizeScenario, onLotCreated } from './services/scenarios.js';
 import { normalizeSubstitution } from './services/substitutions.js';
 import {
+  applyLotSequence,
+  backfillLotSequences,
+  normalizeAccountingModel,
+  normalizeMaterialAccounting,
+} from './services/accountingModels.js';
+import {
   assertCharacteristicCreate,
   assertCharacteristicUpdate,
   migrateParamValuesToDocuments,
@@ -136,7 +142,7 @@ function normalizeLot(item, excludeId) {
       );
     }
   }
-  return item;
+  return applyLotSequence(item);
 }
 
 function normalizeSpecLine(line) {
@@ -279,6 +285,27 @@ for (const name of COLLECTIONS) {
       crudRouter(name, {
         beforeCreate: (item) => assertSeriesNumberUnique(item, item.id),
         beforeUpdate: (merged, current) => assertSeriesNumberUnique(merged, current.id),
+      })
+    );
+  } else if (name === 'accounting_models') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => normalizeAccountingModel(item),
+        beforeUpdate: (merged) => normalizeAccountingModel(merged),
+      })
+    );
+  } else if (name === 'materials') {
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => normalizeMaterialAccounting(item),
+        beforeUpdate: (merged) => normalizeMaterialAccounting(merged),
+        afterUpdate: (row, current) => {
+          if (row.accountingModelId !== current.accountingModelId) {
+            backfillLotSequences(row.id);
+          }
+        },
       })
     );
   } else if (name === 'lot_qualities') {

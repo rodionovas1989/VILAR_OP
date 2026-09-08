@@ -18,6 +18,7 @@ import {
 import { computeLineNeed } from './lotRecalc.js';
 import { getLotCharacteristicMap, missingRequiredMessages } from './characteristics.js';
 import { recalcMissingMessage } from '../constants/lotCharacteristics.js';
+import { parseByMaterial } from './accountingModels.js';
 
 export { warehouseByType, stockRowForLot, freeQtyByLot, warehousesWithFreeQty, preferWarehouseForNeed };
 
@@ -100,7 +101,12 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO', opts = 
     } else {
       const d = new Date(a.expiryDate) - new Date(b.expiryDate);
       if (d !== 0) return d;
+      const p = new Date(a.productionDate) - new Date(b.productionDate);
+      if (p !== 0) return p;
     }
+    const sa = Number.isFinite(Number(a.productionSequence)) ? Number(a.productionSequence) : Number.POSITIVE_INFINITY;
+    const sb = Number.isFinite(Number(b.productionSequence)) ? Number(b.productionSequence) : Number.POSITIVE_INFINITY;
+    if (sa !== sb) return sa - sb;
     const comp = warehouseByType('компоненты')?.id;
     if (comp) {
       if (a.warehouseId === comp && b.warehouseId !== comp) return -1;
@@ -296,13 +302,30 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
   return { orderId, algorithm, picks, warnings };
 }
 
+function orderPickRank(orderId, index) {
+  const order = store.getById('production_orders', orderId);
+  if (!order) return { seq: Number.POSITIVE_INFINITY, start: '', index };
+  const series = store.getById('series', order.seriesId);
+  const material = store.getById('materials', order.materialId);
+  const parsed = parseByMaterial(material, series?.number);
+  const seq = parsed.ok && parsed.load != null ? parsed.load : Number.POSITIVE_INFINITY;
+  return { seq, start: String(order.startAt || ''), index };
+}
+
 /**
- * Пакетный подбор: заказы в порядке orderIds делят один виртуальный остаток партия×склад,
+ * Пакетный подбор: заказы в порядке серий (sequence модели учёта, иначе как переданы)
+ * делят один виртуальный остаток партия×склад,
  * поэтому второй заказ получает следующую FEFO/FIFO-партию, а не ту же с ✗.
  */
 export function suggestPicksBulk(orderIds, algorithm = 'FEFO') {
   const claimed = new Map();
-  return (orderIds || []).map((orderId) => suggestPicksForOrder(orderId, algorithm, { claimed }));
+  const ranked = [...(orderIds || [])].map((id, index) => ({ id, ...orderPickRank(id, index) }));
+  ranked.sort((a, b) => {
+    if (a.seq !== b.seq) return a.seq - b.seq;
+    if (a.start !== b.start) return a.start.localeCompare(b.start);
+    return a.index - b.index;
+  });
+  return ranked.map((row) => suggestPicksForOrder(row.id, algorithm, { claimed }));
 }
 
 /**
