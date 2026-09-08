@@ -89,8 +89,8 @@ export default function AdminChangelogPage() {
         <RefreshButton onClick={() => load()} disabled={busy} />
       </div>
       <p className="hint">
-        Обновления пилота по датам. Звезда — новое, карандаш — изменение, ключ — исправление, щит —
-        безопасность.
+        Обновления пилота по датам: что изменилось и зачем это нужно в работе. Звезда — новое,
+        карандаш — изменение, ключ — исправление, щит — безопасность.
       </p>
       {error && <p className="error">{error}</p>}
 
@@ -114,7 +114,13 @@ export default function AdminChangelogPage() {
                       <div className="changelog-item-body">
                         <span className="changelog-kind-label">{meta.label}</span>
                         {item.title ? <h3 className="changelog-item-title">{item.title}</h3> : null}
-                        {item.body ? <p className="changelog-item-text">{item.body}</p> : null}
+                        {item.body
+                          ? item.body.split(/\n\n+/).map((para, paraIdx) => (
+                              <p key={paraIdx} className="changelog-item-text">
+                                {para}
+                              </p>
+                            ))
+                          : null}
                       </div>
                     </li>
                   );

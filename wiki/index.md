@@ -13,7 +13,7 @@
 
 | Страница | Summary |
 |----------|---------|
-| [gmp-one-lot-per-component](concepts/gmp-one-lot-per-component.md) | Одна партия сырья на компонент в серии |
+| [gmp-one-lot-per-component](concepts/gmp-one-lot-per-component.md) | Одна партия на компонент; тогл смешения одного производителя |
 | [fefo-fifo-picking](concepts/fefo-fifo-picking.md) | FEFO/FIFO, годность, свободный остаток, sequence |
 | [order-status-machine](concepts/order-status-machine.md) | новый → спланирован → завершен/отменен |
 | [lot-recalc-assay-dry](concepts/lot-recalc-assay-dry.md) | кг/1000 уп + пересчёт содержания/потери |
@@ -92,4 +92,4 @@
 | [lint-2026-08-26](analyses/lint-2026-08-26.md) | Первый полный lint |
 | [karpathy-gist-fit](analyses/karpathy-gist-fit.md) | Сверка с gist / вставка промпта |
 | [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |
-| [lot-mixing-policy](analyses/lot-mixing-policy.md) | Смешение партий: политика на модели учёта, N строк в заказе |
+| [lot-mixing-policy](analyses/lot-mixing-policy.md) | Тогл смешения одного производителя; справочник качества — позже |

@@ -34,7 +34,7 @@ function normalizeKind(raw: string): ChangelogKind {
   return KIND_ALIASES[key] || 'change';
 }
 
-/** Разбор docs/CHANGELOG.md: ## дата → список `- [kind] **Заголовок.** Описание`. */
+/** Разбор docs/CHANGELOG.md: ## дата → список `- [kind] **Заголовок.** Описание` (+ абзацы ниже пункта). */
 export function parseChangelog(markdown: string): ChangelogSection[] {
   const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
   const sections: ChangelogSection[] = [];
@@ -50,13 +50,20 @@ export function parseChangelog(markdown: string): ChangelogSection[] {
       continue;
     }
     if (!current) continue;
-    const item = ITEM_RE.exec(line.trim());
-    if (!item) continue;
-    const kind = normalizeKind(item[1]);
-    const title = (item[2] || '').trim();
-    const body = (item[3] || '').trim();
-    if (!title && !body) continue;
-    current.items.push({ kind, title, body });
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const item = /^-\s*\[/.test(trimmed) ? ITEM_RE.exec(trimmed) : null;
+    if (item) {
+      const kind = normalizeKind(item[1]);
+      const title = (item[2] || '').trim();
+      const body = (item[3] || '').trim();
+      if (!title && !body) continue;
+      current.items.push({ kind, title, body });
+      continue;
+    }
+    const last = current.items[current.items.length - 1];
+    if (!last) continue;
+    last.body = last.body ? `${last.body}\n\n${trimmed}` : trimmed;
   }
 
   return sections.filter((s) => s.items.length > 0);

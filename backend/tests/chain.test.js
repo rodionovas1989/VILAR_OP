@@ -378,6 +378,21 @@ describe('Резерв и заказ', () => {
     );
   });
 
+  test('партия с истечением сегодня доступна в подборе', () => {
+    store.create('lots', {
+      id: 'lot-rm-today',
+      number: 'RM-TODAY',
+      materialId: 'mat-rm',
+      counterpartyId: 'cp-1',
+      manufacturerId: 'mfr-1',
+      productionDate: isoDays(-1),
+      expiryDate: isoDays(0),
+    });
+    postReceipt(20, 'lot-rm-today');
+    const ids = planning.availableLotsForMaterial('mat-rm', 'FEFO').map((l) => l.id);
+    assert.ok(ids.includes('lot-rm-today'));
+  });
+
   test('отмена спланированного заказа отменяет RES', () => {
     postReceipt(50);
     const { reservationDocument } = planning.confirmMaterialPicks(

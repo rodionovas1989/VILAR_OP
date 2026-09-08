@@ -18,7 +18,7 @@ import {
 import { computeLineNeed } from './lotRecalc.js';
 import { getLotCharacteristicMap, missingRequiredMessages } from './characteristics.js';
 import { recalcMissingMessage } from '../constants/lotCharacteristics.js';
-import { parseByMaterial } from './accountingModels.js';
+import { parseByMaterial, mixSameManufacturerAllowed } from './accountingModels.js';
 
 export { warehouseByType, stockRowForLot, freeQtyByLot, warehousesWithFreeQty, preferWarehouseForNeed };
 
@@ -46,6 +46,23 @@ function requireWarehouseId(warehouseId, label = 'Склад') {
   return warehouseId;
 }
 
+function calendarDate(iso) {
+  return String(iso || '').slice(0, 10);
+}
+
+function todayYmd() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** Годен в день expiryDate включительно (сравнение дат, не datetime UTC). */
+function lotExpiryPassed(expiryDate) {
+  const day = calendarDate(expiryDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return true;
+  return day < todayYmd();
+}
+
 function assertOrderStatus(order, allowed, action) {
   if (!allowed.includes(order.status)) {
     throw new Error(
@@ -69,7 +86,7 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO', opts = 
   const rows = [];
 
   for (const lot of store.readAll('lots').filter((l) => l.materialId === materialId)) {
-    if (new Date(lot.expiryDate) < new Date()) continue;
+    if (lotExpiryPassed(lot.expiryDate)) continue;
     const quality = resolveLotQuality(lot.id);
     const whAvail = warehousesWithFreeQty(lot.id, { excludeProductionOrderId: excludeOrderId }).filter(
       (w) => !filterWh || w.warehouseId === filterWh
@@ -117,7 +134,7 @@ export function availableLotsForMaterial(materialId, algorithm = 'FEFO', opts = 
   return rows;
 }
 
-function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialIds, ok) {
+function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialIds, ok, quantityOverride) {
   const material = store.getById('materials', cand.materialId);
   return {
     specLineId: line.id,
@@ -132,7 +149,7 @@ function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialI
     recalcMethod: needResult.method === 'assay_and_dry' ? 'assay_and_dry' : 'none',
     recalcXLabel: line.recalcXLabel ?? null,
     nominalQuantity: needResult.nominal,
-    quantity: needResult.quantity,
+    quantity: quantityOverride != null ? Number(quantityOverride) : needResult.quantity,
     recalcApplied: needResult.applied,
     recalcMissing: needResult.missing,
     recalcUseAssay: needResult.useAssay,
@@ -141,6 +158,70 @@ function pickPayload(line, specMaterial, cand, lot, needResult, allowedMaterialI
     ...lotFields(lot),
     ok,
   };
+}
+
+/** Покрыть need. Без смешения — одна партия с остатком ≥ need. Со смешением — с начала FEFO/FIFO, пока не наберём (один производитель). */
+function coverNeedWithLots(lots, needQty, claimed, mix) {
+  const need = Number(needQty) || 0;
+  const eligible = (lots || []).filter((l) => l.qualityAllowed !== false);
+  const trySingle = (list) => list.find((l) => effectiveFreeQty(l, claimed) >= need);
+
+  if (!mix) {
+    const hit = trySingle(eligible);
+    return hit ? { ok: true, slices: [{ lot: hit, quantity: need }] } : { ok: false, slices: [] };
+  }
+
+  let remaining = need;
+  let manufacturerId = null;
+  const slices = [];
+  for (const lot of eligible) {
+    if (!lot.manufacturerId) continue;
+    if (manufacturerId && lot.manufacturerId !== manufacturerId) continue;
+    const free = effectiveFreeQty(lot, claimed);
+    if (free <= 0) continue;
+    if (!manufacturerId) manufacturerId = lot.manufacturerId;
+    const take = Math.min(free, remaining);
+    slices.push({ lot, quantity: take });
+    remaining -= take;
+    if (remaining <= 1e-9) break;
+  }
+  if (remaining > 1e-9 || !slices.length) return { ok: false, slices: [] };
+  return { ok: true, slices };
+}
+
+function assertSameManufacturerMix(lines, actionLabel) {
+  const byLine = new Map();
+  for (const line of lines) {
+    const key = line.specLineId || line.materialId;
+    if (!byLine.has(key)) byLine.set(key, []);
+    byLine.get(key).push(line);
+  }
+  for (const group of byLine.values()) {
+    const materials = new Set(group.map((l) => l.materialId));
+    if (materials.size > 1) {
+      throw new Error('Нельзя смешать базовый материал и аналог в одной позиции');
+    }
+    const keys = group.map((l) => `${l.lotId}::${l.warehouseId || ''}`);
+    if (new Set(keys).size !== keys.length) {
+      throw new Error('Дубликат партии на одной позиции спецификации');
+    }
+    if (group.length <= 1) continue;
+    const materialId = group[0].materialId;
+    if (!mixSameManufacturerAllowed(materialId)) {
+      throw new Error(`GMP: нельзя резервировать две партии на одну позицию спецификации`);
+    }
+    const manufacturerIds = new Set(
+      group.map((l) => {
+        const lot = store.getById('lots', l.lotId);
+        return lot?.manufacturerId || '';
+      })
+    );
+    if (manufacturerIds.size !== 1 || manufacturerIds.has('')) {
+      throw new Error(
+        `${actionLabel}: смешение разрешено только для партий одного производителя`
+      );
+    }
+  }
 }
 
 function findSpecLine(spec, pick) {
@@ -215,24 +296,24 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
     const allowedMaterialIds = candidates.map((c) => c.materialId);
 
     let chosenCand = candidates[0];
-    let suitable = null;
+    let cover = { ok: false, slices: [] };
     let suitableNeed = computeLineNeed(line, order.quantity, null);
 
     for (const cand of candidates) {
       const lots = availableLotsForMaterial(cand.materialId, algorithm);
-      const hit = lots.find((l) => {
-        const need = computeLineNeed(line, order.quantity, l);
-        return effectiveFreeQty(l, claimed) >= need.quantity && l.qualityAllowed !== false;
-      });
-      if (hit) {
+      const mix = mixSameManufacturerAllowed(cand.materialId);
+      const previewLot = lots.find((l) => l.qualityAllowed !== false) || lots[0] || null;
+      const need = computeLineNeed(line, order.quantity, previewLot);
+      const attempt = coverNeedWithLots(lots, need.quantity, claimed, mix);
+      if (attempt.ok) {
         chosenCand = cand;
-        suitable = hit;
-        suitableNeed = computeLineNeed(line, order.quantity, hit);
+        cover = attempt;
+        suitableNeed = computeLineNeed(line, order.quantity, attempt.slices[0].lot);
         break;
       }
     }
 
-    if (!suitable) {
+    if (!cover.ok) {
       const triedLots = availableLotsForMaterial(chosenCand.materialId, algorithm);
       const fallback = triedLots[0] || null;
       const fallbackNeed = computeLineNeed(line, order.quantity, fallback);
@@ -252,7 +333,9 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
               ? 'Нет доступных партий (включая аналоги)'
               : anyQty && !anyQty.qualityAllowed
                 ? 'Есть остаток, но партия не годна по качеству'
-                : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
+                : mixSameManufacturerAllowed(chosenCand.materialId)
+                  ? 'Нет партий одного производителя с достаточным суммарным остатком'
+                  : 'Нет одной партии с достаточным остатком (GMP: смешивание партий запрещено)',
         candidates: triedLots.slice(0, 5),
       });
       if (fallbackNeed.missing) {
@@ -283,7 +366,7 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
           message: recalcMissingMessage(suitableNeed.missingCodes),
         });
       }
-      const lotForReq = suitable;
+      const lotForReq = cover.slices[0].lot;
       for (const msg of missingRequiredMessages(lotForReq?.id, chosenCand.materialId)) {
         warnings.push({
           materialId: line.materialId,
@@ -292,10 +375,21 @@ export function suggestPicksForOrder(orderId, algorithm = 'FEFO', opts = {}) {
           message: msg,
         });
       }
-      claimLotQty(claimed, suitable, suitableNeed.quantity);
-      picks.push(
-        pickPayload(line, specMaterial, chosenCand, suitable, suitableNeed, allowedMaterialIds, true)
-      );
+      for (const slice of cover.slices) {
+        claimLotQty(claimed, slice.lot, slice.quantity);
+        picks.push(
+          pickPayload(
+            line,
+            specMaterial,
+            chosenCand,
+            slice.lot,
+            suitableNeed,
+            allowedMaterialIds,
+            true,
+            slice.quantity
+          )
+        );
+      }
     }
   }
 
@@ -439,22 +533,19 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
   if (!spec) throw new Error('Спецификация не найдена');
 
   const byMat = new Map();
-  const byLine = new Set();
   const normalized = [];
   for (const p of picks) {
     const specLine = findSpecLine(spec, p);
     if (!specLine) throw new Error(`Не найдена строка спецификации для материала ${p.materialId}`);
-    if (byLine.has(specLine.id)) {
-      throw new Error('GMP: нельзя резервировать две партии на одну позицию спецификации');
-    }
-    byLine.add(specLine.id);
     const actualMaterialId = p.materialId || specLine.materialId;
     if (!isAllowedSubstitute(specLine.materialId, actualMaterialId, spec.id)) {
       throw new Error('Материал не входит в список аналогов для этой позиции спецификации');
     }
     if (!p.lotId) throw new Error(`Не выбрана партия для материала ${actualMaterialId}`);
     if (byMat.has(actualMaterialId) && byMat.get(actualMaterialId) !== p.lotId) {
-      throw new Error('GMP: нельзя резервировать две партии одного материала на одну серию');
+      if (!mixSameManufacturerAllowed(actualMaterialId)) {
+        throw new Error('GMP: нельзя резервировать две партии одного материала на одну серию');
+      }
     }
     byMat.set(actualMaterialId, p.lotId);
 
@@ -491,6 +582,7 @@ function confirmMaterialPicksUnchecked(orderId, picks, userId) {
     });
   }
 
+  assertSameManufacturerMix(normalized, 'Подтверждение резерва');
   assertLotsQualityForUse(
     normalized.map((p) => p.lotId),
     'Подтверждение резерва'
@@ -613,6 +705,7 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
         substitutionRuleId: line.substitutionRuleId || null,
       });
     }
+    assertSameManufacturerMix(normalized, 'Сохранение факта');
     assertLotsQualityForUse(
       normalized.map((l) => l.lotId),
       'Сохранение факта'

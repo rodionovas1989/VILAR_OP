@@ -20,6 +20,7 @@ export interface AccountingModel {
   ownProduction?: boolean;
   parseMode?: 'none' | 'fill' | 'strict';
   generateOnRelease?: boolean;
+  mixSameManufacturer?: boolean;
   lotNumberTemplate?: {
     parseDirection?: 'rtl' | 'ltr';
     tokens?: unknown[];
@@ -248,7 +249,10 @@ export interface MaterialPick {
   manufacturerId?: string;
   manufacturerName?: string;
   expiryDate?: string;
+  /** Запас − проведённые RES (снимок склада) */
   freeQty?: number;
+  /** Свободно для этой строки: freeQty минус уже предложенное выше по списку */
+  freeForPick?: number;
   ok?: boolean;
   qualityPermission?: string;
   qualityPermissionLabel?: string;

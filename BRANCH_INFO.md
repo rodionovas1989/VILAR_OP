@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `feature/lot-mix-same-manufacturer` | Тогл смешения партий одного производителя + N строк в заказе | **слита** в main |
 | `feature/accounting-models-lot-sequence` | Настройки: модели учёта + sequence в FEFO/FIFO | **слита** в main |
 | `feature/table-cell-contract-prod-cols` | Table-contract clip + иконка колонок на исполнении | **слита** в main |
 | `fix/fb-20260907-00001-lot-idn-pick` | Dual select: партия производителя + IDN (FB-2026-09-07-00001) | **слита** в main |
@@ -14,7 +15,7 @@
 | `feature/iterative-pick-bulk` | Пакетный подбор с виртуальным FEFO + фильтр проблемных | **слита** в main |
 | `feature/multi-warehouse-pri-res` | Мультисклад: N RES/PRI, склад в строке факта (D009/D010) | **слита** в main |
 | `docs/llm-wiki` | LLM Wiki: `wiki/` + rules + secrets-guard; entity follow-up | **слита** в main |
-| `main` | + table cell contract; column menu on production fact | **эталон** |
+| `main` | + модели учёта, смешение партий, лента «Что нового» | **эталон** |
 | `fix/unify-decimal-input` | DecimalInput во всех числовых полях (приёмка и др.) | **слита** в main |
 | `fix/changelog-feed-scroll` | Скролл ленты «Что нового» | **слита** в main |
 | `feature/fb-00002-approved-suppliers-analogues` | Поставщики↔аналоги + лента «Что нового» | **слита** в main |

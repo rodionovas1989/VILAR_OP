@@ -3918,7 +3918,8 @@ th.td-sticky-end {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  max-width: 52rem;
+  width: 100%;
+  align-self: stretch;
   overflow-x: hidden;
   overflow-y: auto;
   padding-right: 4px;
@@ -4003,8 +4004,12 @@ th.td-sticky-end {
 .changelog-item-text {
   margin: 0;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.55;
   color: var(--text-secondary, #3d5166);
+}
+
+.changelog-item-text + .changelog-item-text {
+  margin-top: 8px;
 }
 
 .header-chat {

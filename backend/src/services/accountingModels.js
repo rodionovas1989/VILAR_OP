@@ -20,6 +20,7 @@ export function standardModelSeed() {
     ownProduction: false,
     parseMode: 'none',
     generateOnRelease: false,
+    mixSameManufacturer: false,
     lotNumberTemplate: emptyTemplate(),
   };
 }
@@ -31,6 +32,7 @@ export function internalModelSeed() {
     ownProduction: true,
     parseMode: 'fill',
     generateOnRelease: true,
+    mixSameManufacturer: false,
     lotNumberTemplate: plantLoadTemplate(),
   };
 }
@@ -41,6 +43,7 @@ export function normalizeAccountingModel(raw) {
   const parseMode = PARSE_MODES.includes(raw?.parseMode) ? raw.parseMode : 'none';
   const ownProduction = raw?.ownProduction === true || raw?.ownProduction === 'true';
   const generateOnRelease = raw?.generateOnRelease === true || raw?.generateOnRelease === 'true';
+  const mixSameManufacturer = raw?.mixSameManufacturer === true || raw?.mixSameManufacturer === 'true';
   const lotNumberTemplate = normalizeTemplate(raw?.lotNumberTemplate);
   if ((parseMode === 'strict' || generateOnRelease) && !hasTokens(lotNumberTemplate)) {
     throw new Error('Задайте шаблон номера или выключите строгую проверку / генерацию');
@@ -51,6 +54,7 @@ export function normalizeAccountingModel(raw) {
     ownProduction,
     parseMode,
     generateOnRelease,
+    mixSameManufacturer,
     lotNumberTemplate,
   };
 }
@@ -59,6 +63,11 @@ export function modelOfMaterial(material) {
   const id = material?.accountingModelId;
   if (!id) return null;
   return store.getById('accounting_models', id) || null;
+}
+
+export function mixSameManufacturerAllowed(materialId) {
+  const material = store.getById('materials', materialId);
+  return Boolean(modelOfMaterial(material)?.mixSameManufacturer);
 }
 
 function asSequence(value) {
@@ -145,6 +154,12 @@ export function ensureSeedAccountingModels() {
   if (!models.some((m) => m.id === MODEL_INTERNAL_ID)) {
     models.push(internalModelSeed());
     changed = true;
+  }
+  for (const model of models) {
+    if (model.mixSameManufacturer == null) {
+      model.mixSameManufacturer = false;
+      changed = true;
+    }
   }
   if (changed) store.writeAll('accounting_models', models);
 

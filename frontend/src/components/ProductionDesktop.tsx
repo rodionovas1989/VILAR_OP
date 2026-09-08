@@ -288,7 +288,12 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setActualLines((prev) =>
       scaled.map((s) => {
         const keep = prev.find(
-          (p) => (s.specLineId && p.specLineId === s.specLineId) || p.materialId === s.materialId
+          (p) =>
+            (s.specLineId &&
+              p.specLineId === s.specLineId &&
+              p.lotId === s.lotId &&
+              (p.warehouseId || '') === (s.warehouseId || '')) ||
+            (!s.specLineId && p.materialId === s.materialId && p.lotId === s.lotId)
         );
         return {
           ...s,
@@ -301,7 +306,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     );
   };
 
-  const lineKey = (l: OrderLine, idx: number) => l.specLineId || `${l.materialId}-${idx}`;
+  const lineKey = (l: OrderLine, idx: number) =>
+    `${l.specLineId || l.materialId}::${l.lotId || ''}::${l.warehouseId || ''}::${idx}`;
 
   const charWarnings = useMemo(() => {
     if (!selected) return [];

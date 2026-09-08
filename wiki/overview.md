@@ -18,7 +18,7 @@
 
 ## Ключевые инварианты
 
-- Одна партия сырья на компонент в серии — [concepts/gmp-one-lot-per-component.md](concepts/gmp-one-lot-per-component.md)
+- Одна партия сырья на компонент в серии (несколько — только тогл смешения одного производителя) — [concepts/gmp-one-lot-per-component.md](concepts/gmp-one-lot-per-component.md)
 - Статусы заказа и guards — [concepts/order-status-machine.md](concepts/order-status-machine.md)
 - Потребность: кг на 1000 уп; пересчёт assay/dry — [concepts/lot-recalc-assay-dry.md](concepts/lot-recalc-assay-dry.md)
 - Регистры stock/резервы — в основном **только GET**; запись через документы/planning

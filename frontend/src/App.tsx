@@ -256,6 +256,11 @@ export default function App() {
                 render: (r) => (r.ownProduction ? 'да' : 'нет'),
               },
               {
+                key: 'mixSameManufacturer',
+                label: 'Смешение',
+                render: (r) => (r.mixSameManufacturer ? 'один произв.' : 'нет'),
+              },
+              {
                 key: 'lotNumberTemplate',
                 label: 'Шаблон',
                 render: (r) =>
@@ -267,6 +272,7 @@ export default function App() {
               ownProduction: Boolean(row.ownProduction),
               parseMode: row.parseMode || 'none',
               generateOnRelease: Boolean(row.generateOnRelease),
+              mixSameManufacturer: Boolean(row.mixSameManufacturer),
               lotNumberTemplate: row.lotNumberTemplate || { parseDirection: 'rtl', tokens: [] },
             })}
             transformOut={(row) => ({
@@ -275,6 +281,7 @@ export default function App() {
               ownProduction: Boolean(row.ownProduction),
               parseMode: row.parseMode || 'none',
               generateOnRelease: Boolean(row.generateOnRelease),
+              mixSameManufacturer: Boolean(row.mixSameManufacturer),
               lotNumberTemplate: row.lotNumberTemplate || { parseDirection: 'rtl', tokens: [] },
             })}
             formExtra={({ editing, setEditing }) => (

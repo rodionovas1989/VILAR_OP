@@ -471,6 +471,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     const next = [...suggestions];
     const orderQty = orders.find((o) => o.id === next[orderIdx].orderId)?.quantity || 0;
     const { lotId, warehouseId } = parseLotWhKey(lotWhValue);
+    const sliceQty = next[orderIdx].picks[pickIdx].quantity;
     let pick: MaterialPick = {
       ...next[orderIdx].picks[pickIdx],
       lotId: lotId || null,
@@ -478,6 +479,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     };
     if (!lotId) {
       pick = applyNeedToPick(pick, null, orderQty);
+      pick.quantity = sliceQty;
       pick.lotNumber = null;
       pick.identificationNumber = null;
       pick.warehouseId = null;
@@ -499,6 +501,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
       const lots = (await api.lotsAvailable(pick.materialId, algorithm)) as AvailableLot[];
       const lot = findLotRow(lots, lotId, warehouseId) || lots.find((l) => l.id === lotId);
       pick = applyNeedToPick(pick, lot ?? null, orderQty);
+      pick.quantity = sliceQty;
       pick.lotNumber = lot?.number || null;
       pick.identificationNumber = lot?.identificationNumber || null;
       pick.warehouseId = lot?.warehouseId || warehouseId || null;
@@ -784,11 +787,14 @@ export default function PlanningDesktop({ dictionaries }: Props) {
             </button>
           </div>
           <p className="hint">
-            GMP: на один компонент в серии — одна партия сырья. Пакетный подбор учитывает уже предложенные
-            строки: если партия «съедена» предыдущим заказом, берётся следующая по FEFO/FIFO. Можно вручную
-            заменить партию. Зелёная ✓ — достаточно свободного остатка, красная ✗ — проблема. «Только
-            проблемные» оставляет заказы с ✗ или предупреждениями; после исправления заказ исчезает из
-            списка. «Хвосты партий» — обзор мелких остатков (без авто-утилизации).
+            GMP: по умолчанию на один компонент в серии — одна партия сырья. Если в модели учёта материала
+            включено «Смешение партий одного производителя», подбор может выдать несколько строк (один
+            производитель). Пакетный подбор учитывает уже предложенные строки: если партия «съедена»
+            предыдущим заказом, берётся следующая по FEFO/FIFO. Колонка «Свободно» — остаток для этой строки
+            с учётом заказов выше в списке. Можно вручную заменить партию. Зелёная ✓ —
+            достаточно свободного остатка, красная ✗ — проблема. «Только проблемные» оставляет заказы с ✗ или
+            предупреждениями; после исправления заказ исчезает из списка. «Хвосты партий» — обзор мелких
+            остатков (без авто-утилизации).
           </p>
           {visibleSuggestions.map((s) => {
             const order = orders.find((o) => o.id === s.orderId);
@@ -844,14 +850,16 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                         <th>Контрагент</th>
                         <th>Производитель</th>
                         <th className="col-center">Срок годности</th>
-                        <th className="col-center">Свободно</th>
+                        <th className="col-center" title="Свободный остаток для этой строки с учётом заказов выше в списке">
+                          Свободно
+                        </th>
                         <th className="col-center">OK</th>
                       </tr>
                     </thead>
                     <tbody>
                       {s.picks.map((p, pi) => (
                         <PickRow
-                          key={p.specLineId || `${p.materialId}-${pi}`}
+                          key={`${p.specLineId || p.materialId}-${p.lotId || 'none'}-${p.warehouseId || ''}-${pi}`}
                           pick={p}
                           algorithm={algorithm}
                           materials={dictionaries.materials}
@@ -1250,7 +1258,7 @@ function recomputeSuggestionOk(suggestions: SuggestResult[]): SuggestResult[] {
       const qualityOk = p.qualityAllowed !== false;
       const ok = qtyOk && qualityOk;
       if (key) usedByLotWh.set(key, already + Number(p.quantity || 0));
-      return { ...p, ok };
+      return { ...p, ok, freeForPick: remain };
     }),
   }));
 }
@@ -1540,7 +1548,16 @@ function PickRow({
         )}
       </td>
       <td className="col-center">{pick.lotId ? formatExpiry(pick.expiryDate) : '—'}</td>
-      <td className="col-center num">{pick.freeQty ?? '—'}</td>
+      <td
+        className="col-center num"
+        title={
+          pick.lotId
+            ? 'Свободно для этой строки: запас минус проведённые резервы и уже предложенное в заказах выше'
+            : undefined
+        }
+      >
+        {pick.lotId == null ? '—' : (pick.freeForPick ?? pick.freeQty ?? '—')}
+      </td>
       <td className="ok-cell">
         <span className={ok ? 'ok-mark ok-yes' : 'ok-mark ok-no'} title={ok ? 'OK' : 'Проблема'}>
           {ok ? '✓' : '✗'}
