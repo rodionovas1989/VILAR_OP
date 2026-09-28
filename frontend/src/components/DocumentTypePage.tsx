@@ -116,7 +116,7 @@ function buildDocumentActions(
 
 export default function DocumentTypePage({ documentType, materials, lots, warehouses }: Props) {
   const { user, openLogin } = useAuth();
-  const { formatMaterialQty, formatMaterialQtyDelta } = useQtyFormat();
+  const { formatMaterialQty, formatMaterialQtyDelta, decimalsFor } = useQtyFormat();
   const { remember, drop } = useRecentObjects();
   const objectId = `doc_${documentType}`;
   const permissions = user?.permissions;
@@ -807,6 +807,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                           className="doc-qty-input"
                           min={0}
                           value={line.actualQuantity ?? 0}
+                          displayDecimals={decimalsFor(line.materialId)}
                           onValueChange={(actual) => {
                             const lines = [...editing.lines];
                             const safeActual = actual ?? 0;
@@ -949,6 +950,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                       className="doc-qty-input"
                       min={0}
                       value={line.quantity ?? 0}
+                      displayDecimals={decimalsFor(line.materialId)}
                       onValueChange={(quantity) => {
                         const lines = [...editing.lines];
                         lines[idx] = { ...line, quantity: quantity ?? 0 };

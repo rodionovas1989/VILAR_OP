@@ -4,6 +4,7 @@ import {
   isAllowedDecimalDraft,
   parseDecimalDraft,
 } from '../utils/decimalInput';
+import { formatQty } from '../utils/qty';
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onChange' | 'min'> & {
   value: number | null | undefined;
@@ -13,9 +14,22 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'onC
   /** Разрешить пустое значение (null) */
   allowEmpty?: boolean;
   onReject?: (message: string) => void;
+  /**
+   * Знаков после запятой при показе (не в фокусе). На хранимое значение не влияет.
+   * В фокусе — полная точность для правки.
+   */
+  displayDecimals?: number;
 };
 
 const REJECT_MSG = 'Допустимы цифры и разделитель (, или .)';
+
+function toDisplay(value: number | null | undefined, displayDecimals?: number): string {
+  if (value == null || !Number.isFinite(value)) return '';
+  if (displayDecimals != null) {
+    return formatQty(value, displayDecimals).replace('.', ',');
+  }
+  return formatDecimalDisplay(value);
+}
 
 /**
  * Числовой ввод без type="number": некорректный символ не пишется в поле,
@@ -30,9 +44,10 @@ export default function DecimalInput({
   className,
   onBlur,
   onFocus,
+  displayDecimals,
   ...rest
 }: Props) {
-  const [text, setText] = useState(() => formatDecimalDisplay(value));
+  const [text, setText] = useState(() => toDisplay(value, displayDecimals));
   const focusedRef = useRef(false);
   const rejectId = useId();
   const rejectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,9 +55,9 @@ export default function DecimalInput({
 
   useEffect(() => {
     if (!focusedRef.current) {
-      setText(formatDecimalDisplay(value));
+      setText(toDisplay(value, displayDecimals));
     }
-  }, [value]);
+  }, [value, displayDecimals]);
 
   useEffect(
     () => () => {
@@ -69,13 +84,13 @@ export default function DecimalInput({
       let fallback = 0;
       if (min != null && fallback < min) fallback = min;
       onValueChange(fallback);
-      setText(formatDecimalDisplay(fallback));
+      setText(toDisplay(fallback, displayDecimals));
       return;
     }
     let next = parsed;
     if (min != null && next < min) next = min;
     onValueChange(next);
-    setText(formatDecimalDisplay(next));
+    setText(toDisplay(next, displayDecimals));
   };
 
   return (
@@ -89,6 +104,10 @@ export default function DecimalInput({
         value={text}
         onFocus={(e) => {
           focusedRef.current = true;
+          // Полная точность для правки, даже если показ усечён.
+          if (value != null && Number.isFinite(value)) {
+            setText(formatDecimalDisplay(value));
+          }
           onFocus?.(e);
         }}
         onChange={(e) => {
@@ -104,7 +123,7 @@ export default function DecimalInput({
             return;
           }
           if (min != null && parsed < min) {
-            flashReject(`Значение не меньше ${formatDecimalDisplay(min)}`);
+            flashReject(`Значение не меньше ${toDisplay(min, displayDecimals)}`);
             return;
           }
           onValueChange(parsed);

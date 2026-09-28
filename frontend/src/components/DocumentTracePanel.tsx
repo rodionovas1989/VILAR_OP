@@ -1,6 +1,7 @@
 import { Lot, Material, Warehouse } from '../types';
 import { DocumentTrace, OrderTrace, TraceDocumentRef } from '../types.documents';
 import { displayTimeFromIso, dateFromIso } from '../utils/docDateTime';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const DOC_STATUS: Record<string, string> = {
   draft: 'Создан',
@@ -48,12 +49,15 @@ export default function DocumentTracePanel({
   lots,
   warehouses = [],
 }: Props) {
+  const { formatMaterialQty } = useQtyFormat();
   const matName = (id?: string | null) =>
     (id && materials.find((m) => m.id === id)?.name) || id || '—';
   const lotNum = (id?: string | null) =>
     (id && lots.find((l) => l.id === id)?.number) || id || '—';
   const whName = (id?: string | null) =>
     (id && warehouses.find((w) => w.id === id)?.name) || id || '—';
+  const showQty = (n: number | null | undefined, materialId?: string | null) =>
+    formatMaterialQty(Number(n) || 0, materialId);
 
   const docs: TraceDocumentRef[] = !trace
     ? []
@@ -88,7 +92,7 @@ export default function DocumentTracePanel({
       {order && (
         <p className="trace-order">
           Заказ: {order.id ? `${order.id.slice(0, 8)}…` : '—'} · {ORDER_STATUS[order.status] || order.status} · выпуск{' '}
-          {order.quantity} · {matName(order.materialId)}
+          {showQty(order.quantity, order.materialId)} · {matName(order.materialId)}
         </p>
       )}
 
@@ -222,7 +226,7 @@ export default function DocumentTracePanel({
                     <td>{matName(m.materialId)}</td>
                     <td>{lotNum(m.lotId)}</td>
                     <td>{whName(m.warehouseId)}</td>
-                    <td>{m.quantity}</td>
+                    <td>{showQty(m.quantity, m.materialId)}</td>
                     <td>{DOC_STATUS[m.documentStatus] || m.documentStatus}</td>
                   </tr>
                 ))}
@@ -249,7 +253,7 @@ export default function DocumentTracePanel({
                   <tr key={r.id}>
                     <td>{matName(r.materialId)}</td>
                     <td>{lotNum(r.lotId)}</td>
-                    <td>{r.quantity}</td>
+                    <td>{showQty(r.quantity, r.materialId)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -281,7 +285,7 @@ export default function DocumentTracePanel({
                     <td>{h.action}</td>
                     <td>{h.documentNumber}</td>
                     <td>{matName(h.materialId)}</td>
-                    <td>{h.quantity}</td>
+                    <td>{showQty(h.quantity, h.materialId)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -309,7 +313,7 @@ export default function DocumentTracePanel({
                     <td>{matName(s.materialId)}</td>
                     <td>{lotNum(s.lotId)}</td>
                     <td>{whName(s.warehouseId)}</td>
-                    <td>{s.quantity}</td>
+                    <td>{showQty(s.quantity, s.materialId)}</td>
                   </tr>
                 ))}
               </tbody>

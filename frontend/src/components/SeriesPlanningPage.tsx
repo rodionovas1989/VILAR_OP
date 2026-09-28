@@ -7,6 +7,7 @@ import AccessDenied from './AccessDenied';
 import DecimalInput from './DecimalInput';
 import PageTitle from './PageTitle';
 import SearchableSelect from './SearchableSelect';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'series_planning';
 const ACTIVE = new Set(['новый', 'спланирован']);
@@ -49,6 +50,7 @@ export default function SeriesPlanningPage({
   onDone,
 }: Props) {
   const { user } = useAuth();
+  const { decimalsFor } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
   const canRun =
     canCreateObject(user?.permissions, PAGE_ID) || canModifyObject(user?.permissions, PAGE_ID);
@@ -362,6 +364,9 @@ export default function SeriesPlanningPage({
                       min={1}
                       value={line.quantity === '' ? null : Number(line.quantity)}
                       disabled={!canRun || busy}
+                      displayDecimals={decimalsFor(
+                        series.find((s) => s.id === line.seriesId)?.materialId
+                      )}
                       onValueChange={(value) =>
                         updateLine(line.key, { quantity: String(Math.max(1, Math.round(value ?? 1))) })
                       }

@@ -152,7 +152,7 @@ function analogMaterialIds(
 
 export default function ProductionDesktop({ dictionaries }: Props) {
   const { user } = useAuth();
-  const { formatMaterialQty } = useQtyFormat();
+  const { formatMaterialQty, decimalsFor } = useQtyFormat();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'plan' | 'fact'>('fact');
@@ -545,6 +545,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
               min={0}
               value={actualQuantity}
               disabled={busy}
+              displayDecimals={decimalsFor(selected.materialId)}
               onValueChange={(value) => onFactQtyChange(value ?? 0)}
             />
           </label>
@@ -863,6 +864,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           min={0}
                           value={l.quantity}
                           disabled={busy}
+                          displayDecimals={decimalsFor(l.materialId)}
                           onValueChange={(value) => changeFactQty(key, value ?? 0)}
                         />
                       </td>

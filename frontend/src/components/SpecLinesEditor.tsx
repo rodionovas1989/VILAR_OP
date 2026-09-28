@@ -4,6 +4,7 @@ import { newId } from '../utils/id';
 import DecimalInput from './DecimalInput';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 type MaterialOpt = { id: string; name: string; type?: string };
 
@@ -31,6 +32,7 @@ export default function SpecLinesEditor({
   onChange,
   showTitle = true,
 }: Props) {
+  const { decimalsFor } = useQtyFormat();
   const update = (idx: number, patch: Partial<SpecLine>) => {
     onChange(lines.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   };
@@ -109,6 +111,7 @@ export default function SpecLinesEditor({
                   <DecimalInput
                     min={0}
                     value={line.qtyPerUnit ?? 0}
+                    displayDecimals={decimalsFor(line.materialId)}
                     onValueChange={(value) => update(idx, { qtyPerUnit: value ?? 0 })}
                   />
                 </td>

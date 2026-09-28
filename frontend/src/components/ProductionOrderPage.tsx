@@ -136,7 +136,7 @@ export default function ProductionOrderPage({
   warehouses = [],
 }: Props) {
   const { user } = useAuth();
-  const { formatMaterialQty } = useQtyFormat();
+  const { formatMaterialQty, decimalsFor } = useQtyFormat();
   const { remember, drop } = useRecentObjects();
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
@@ -698,6 +698,7 @@ export default function ProductionOrderPage({
                     min={0}
                     required
                     value={editing.quantity ?? 0}
+                    displayDecimals={decimalsFor(editing.materialId)}
                     onValueChange={(quantity) => setEditing({ ...editing, quantity: quantity ?? 0 })}
                   />
                 ) : (

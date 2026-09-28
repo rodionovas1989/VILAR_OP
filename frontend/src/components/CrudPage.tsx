@@ -18,6 +18,7 @@ import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSetting
 import { Modal } from './Modal';
 import SearchableSelect from './SearchableSelect';
 import DecimalInput from './DecimalInput';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 export type FieldDef = {
   key: string;
@@ -107,6 +108,7 @@ export function CrudPage({
   readOnly = false,
 }: Props) {
   const { user } = useAuth();
+  const { decimalsFor } = useQtyFormat();
   const { remember, drop } = useRecentObjects();
   const loggedIn = Boolean(user);
   const objectId = permissionObjectId ?? pagePermissionId(collection);
@@ -500,6 +502,17 @@ export function CrudPage({
                   <DecimalInput
                     required={f.required}
                     min={null}
+                    displayDecimals={
+                      f.key === 'quantity' || f.key === 'qtyPerUnit'
+                        ? decimalsFor(
+                            editing?.materialId != null
+                              ? String(editing.materialId)
+                              : editing?.baseMaterialId != null
+                                ? String(editing.baseMaterialId)
+                                : null
+                          )
+                        : undefined
+                    }
                     value={(() => {
                       const raw = editing?.[f.key];
                       if (raw == null || raw === '') return null;
