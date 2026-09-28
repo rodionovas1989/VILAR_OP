@@ -1270,7 +1270,16 @@ export default function App() {
         return (
           <PlanningDesktop
             dictionaries={{
-              materials: materials.map((m) => ({ id: m.id, name: m.name, type: m.type })),
+              materials: materials.map((m) => ({
+                id: m.id,
+                name: m.name,
+                type: m.type,
+                accountingModelId: m.accountingModelId,
+              })),
+              accountingModels: accountingModels.map((m) => ({
+                id: m.id,
+                qtyDisplayDecimals: m.qtyDisplayDecimals,
+              })),
               series: series.map((s) => ({ id: s.id, number: s.number })),
               workCenters,
               lots: lots.map((l) => ({

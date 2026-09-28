@@ -16,6 +16,7 @@ import {
   parseLotWhKey,
   shortWarehouseLabel,
 } from '../utils/lotSelect';
+import { formatQty, qtyDisplayDecimalsForMaterial } from '../utils/qty';
 
 type SuggestResult = {
   orderId: string;
@@ -82,7 +83,8 @@ function applyNeedToPick(pick: MaterialPick, lot: AvailableLot | null | undefine
 
 type Props = {
   dictionaries: {
-    materials: { id: string; name: string; type?: string }[];
+    materials: { id: string; name: string; type?: string; accountingModelId?: string }[];
+    accountingModels: { id: string; qtyDisplayDecimals?: number }[];
     series: { id: string; number: string }[];
     workCenters: { id: string; name: string }[];
     lots: {
@@ -127,6 +129,12 @@ export default function PlanningDesktop({ dictionaries }: Props) {
   const [tailsBusy, setTailsBusy] = useState(false);
   const [tails, setTails] = useState<LotLeftoverTail[]>([]);
   const [tailsError, setTailsError] = useState('');
+
+  const fmtQty = (n: number, materialId?: string | null) =>
+    formatQty(
+      n,
+      qtyDisplayDecimalsForMaterial(materialId, dictionaries.materials, dictionaries.accountingModels)
+    );
 
   const orderHasIssues = (s: SuggestResult) =>
     s.picks.some((p) => !p.ok) || (s.warnings?.length ?? 0) > 0;
@@ -316,7 +324,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                 <td>${nameOf(line.lotId, dictionaries.lots)}</td>
                 <td>${cpCell}</td>
                 <td>${mfrCell}</td>
-                <td class="num">${line.quantity}</td>
+                <td class="num">${fmtQty(line.quantity, line.materialId)}</td>
               </tr>`;
                 })
                 .join('')
@@ -331,7 +339,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
               <div><dt>Продукция</dt><dd>${product}</dd></div>
               <div><dt>Рабочий центр</dt><dd>${wc}</dd></div>
               <div><dt>Серия</dt><dd>${seriesNum}</dd></div>
-              <div><dt>Количество</dt><dd>${o.quantity}</dd></div>
+              <div><dt>Количество</dt><dd>${fmtQty(o.quantity, o.materialId)}</dd></div>
               <div><dt>Начало</dt><dd>${start}</dd></div>
               <div><dt>Окончание</dt><dd>${end}</dd></div>
             </dl>
@@ -652,9 +660,6 @@ export default function PlanningDesktop({ dictionaries }: Props) {
     });
   };
 
-  const fmtQty = (n: number) =>
-    Number.isInteger(n) ? String(n) : n.toLocaleString('ru-RU', { maximumFractionDigits: 4 });
-
   return (
     <div className="page planning-desktop">
       <PageTitle pageId="planning_desktop" title="Рабочий стол планирования" />
@@ -732,7 +737,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                     <td>{nameOf(o.workCenterId, dictionaries.workCenters)}</td>
                     <td>{new Date(o.startAt).toLocaleString()}</td>
                     <td>{new Date(o.endAt).toLocaleString()}</td>
-                    <td>{o.quantity}</td>
+                    <td>{fmtQty(o.quantity, o.materialId)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -863,6 +868,11 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           pick={p}
                           algorithm={algorithm}
                           materials={dictionaries.materials}
+                          qtyDecimals={qtyDisplayDecimalsForMaterial(
+                            p.materialId,
+                            dictionaries.materials,
+                            dictionaries.accountingModels
+                          )}
                           counterpartyApproved={isCounterpartyApproved(
                             order?.specificationId,
                             p.materialId,
@@ -1020,7 +1030,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           <span className={`status-pill status-${o.status}`}>{o.status}</span>
                         </td>
                         <td>{new Date(o.startAt).toLocaleString()}</td>
-                        <td>{o.quantity}</td>
+                        <td>{fmtQty(o.quantity, o.materialId)}</td>
                       </tr>
                       {open &&
                         (o.lines?.length
@@ -1069,7 +1079,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                                 </td>
                                 <td className="muted">компонент</td>
                                 <td></td>
-                                <td>{line.quantity}</td>
+                                <td>{fmtQty(line.quantity, line.materialId)}</td>
                               </tr>
                               );
                             })
@@ -1142,8 +1152,8 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                                 y: e.clientY + 12,
                                 lines: [
                                   `${row.materialName} · ${cell.date}`,
-                                  `Расход: ${fmtQty(cell.consumed)} · остаток: ${fmtQty(cell.balance)}`,
-                                  ...cell.orders.map((o) => `• ${o.label}: ${fmtQty(o.quantity)}`),
+                                  `Расход: ${fmtQty(cell.consumed, row.materialId)} · остаток: ${fmtQty(cell.balance, row.materialId)}`,
+                                  ...cell.orders.map((o) => `• ${o.label}: ${fmtQty(o.quantity, row.materialId)}`),
                                 ],
                               });
                             }}
@@ -1161,7 +1171,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                             }}
                             onMouseLeave={() => setTip(null)}
                           >
-                            {fmtQty(cell.balance)}
+                            {fmtQty(cell.balance, row.materialId)}
                           </td>
                         );
                       })}
@@ -1228,9 +1238,9 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                       <td title={t.warehouseName || undefined}>
                         {shortWarehouseLabel(t.warehouseType, t.warehouseName) || '—'}
                       </td>
-                      <td className="num">{t.freeQty}</td>
-                      <td className="num">{t.maxNeed}</td>
-                      <td className="num">{shortfall}</td>
+                      <td className="num">{fmtQty(t.freeQty, t.materialId)}</td>
+                      <td className="num">{fmtQty(t.maxNeed, t.materialId)}</td>
+                      <td className="num">{fmtQty(shortfall, t.materialId)}</td>
                       <td>{t.expiryDate ? String(t.expiryDate).slice(0, 10) : '—'}</td>
                     </tr>
                   );
@@ -1357,6 +1367,7 @@ function PickRow({
   pick,
   algorithm,
   materials,
+  qtyDecimals,
   counterpartyApproved,
   manufacturerApproved,
   onChangeLot,
@@ -1365,12 +1376,14 @@ function PickRow({
   pick: MaterialPick;
   algorithm: string;
   materials: { id: string; name: string }[];
+  qtyDecimals: number;
   counterpartyApproved: boolean;
   manufacturerApproved: boolean;
   onChangeLot: (lotWhValue: string) => void;
   onChangeMaterial: (materialId: string) => void;
 }) {
   const [lots, setLots] = useState<AvailableLot[]>([]);
+  const showQty = (n: number) => formatQty(n, qtyDecimals);
 
   useEffect(() => {
     let cancelled = false;
@@ -1479,16 +1492,16 @@ function PickRow({
           <div className="pick-problem">
             {!pick.lotId
               ? 'Партия не подобрана'
-              : `Недостаточно свободного остатка (нужно ${pick.quantity}, доступно с учётом других заказов)`}
+              : `Недостаточно свободного остатка (нужно ${showQty(pick.quantity)}, доступно с учётом других заказов)`}
           </div>
         )}
       </td>
       <td className="col-center num">
-        {pick.quantity}
+        {showQty(pick.quantity)}
         {pick.recalcApplied ? (
           <div className="pick-recalc-hint">
             пересчёт
-            {pick.nominalQuantity != null ? ` (ном. ${pick.nominalQuantity})` : ''}
+            {pick.nominalQuantity != null ? ` (ном. ${showQty(pick.nominalQuantity)})` : ''}
           </div>
         ) : null}
         {pick.recalcMissing ? (
@@ -1556,7 +1569,11 @@ function PickRow({
             : undefined
         }
       >
-        {pick.lotId == null ? '—' : (pick.freeForPick ?? pick.freeQty ?? '—')}
+        {pick.lotId == null
+          ? '—'
+          : pick.freeForPick != null || pick.freeQty != null
+            ? showQty(Number(pick.freeForPick ?? pick.freeQty))
+            : '—'}
       </td>
       <td className="ok-cell">
         <span className={ok ? 'ok-mark ok-yes' : 'ok-mark ok-no'} title={ok ? 'OK' : 'Проблема'}>

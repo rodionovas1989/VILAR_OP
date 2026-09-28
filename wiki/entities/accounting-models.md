@@ -4,10 +4,12 @@
 
 Сиды (создание, если нет по id):
 
-- `am-standard` **Стандартная** — закуп, без шаблона, `parseMode=none`, смешение выкл.
-- `am-internal` **Внутреннее производство** — `ownProduction`, шаблон загрузка + MM + YY, разбор **справа налево**, `parseMode=fill`, `generateOnRelease`, смешение выкл.
+- `am-standard` **Стандартная** — закуп, без шаблона, `parseMode=none`, смешение выкл., `qtyDisplayDecimals=3`.
+- `am-internal` **Внутреннее производство** — `ownProduction`, шаблон загрузка + MM + YY, разбор **справа налево**, `parseMode=fill`, `generateOnRelease`, смешение выкл., `qtyDisplayDecimals=3`.
 
-Карточка — вкладки: **Основное** (`ownProduction`), **Шаблоны партий** (генерация, разбор, шаблон), **Смешение партий** (`mixSameManufacturer`). Подсказки — `HintButton`.
+Карточка — вкладки: **Основное** (`ownProduction`, **`qtyDisplayDecimals`** 0…6 — только показ qty), **Шаблоны партий** (генерация, разбор, шаблон), **Смешение партий** (`mixSameManufacturer`). Подсказки — `HintButton`.
+
+`qtyDisplayDecimals` не меняет `roundQty`/хранение (6 знаков). UI стола планирования берёт масштаб через `formatQty(n, decimals)` ← материал → модель.
 
 Шаблон — список блоков + `parseDirection` (`rtl`/`ltr`). Разбор и генерация: `backend/src/services/numberTemplates.js`. Подбор FEFO/FIFO читает только `lot.productionSequence`.
 
@@ -15,4 +17,4 @@
 
 Смена модели на материале пересчитывает sequence партий этого материала.
 
-**Связано:** [fefo-fifo-picking](../concepts/fefo-fifo-picking.md), [D011](../decisions/D011-lot-production-sequence.md)
+**Связано:** [fefo-fifo-picking](../concepts/fefo-fifo-picking.md), [D011](../decisions/D011-lot-production-sequence.md), [decimal-input](decimal-input.md)

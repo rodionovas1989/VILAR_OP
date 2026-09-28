@@ -21,6 +21,8 @@ export interface AccountingModel {
   parseMode?: 'none' | 'fill' | 'strict';
   generateOnRelease?: boolean;
   mixSameManufacturer?: boolean;
+  /** Знаков после запятой при показе qty (0–6). На хранение/расчёт не влияет. */
+  qtyDisplayDecimals?: number;
   lotNumberTemplate?: {
     parseDirection?: 'rtl' | 'ltr';
     tokens?: unknown[];

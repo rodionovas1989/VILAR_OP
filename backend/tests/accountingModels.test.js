@@ -36,6 +36,9 @@ describe('модели учёта и FEFO sequence', () => {
     assert.equal(internal.ownProduction, true);
     assert.equal(internal.parseMode, 'fill');
     assert.equal(internal.mixSameManufacturer, false);
+    assert.equal(internal.qtyDisplayDecimals, accounting.DEFAULT_QTY_DISPLAY_DECIMALS);
+    const standard = models.find((m) => m.id === accounting.MODEL_STANDARD_ID);
+    assert.equal(standard.qtyDisplayDecimals, accounting.DEFAULT_QTY_DISPLAY_DECIMALS);
   });
 
   test('новый материал получает Стандартную модель', () => {

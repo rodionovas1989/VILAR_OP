@@ -36,17 +36,41 @@ export default function AccountingModelForm({ editing, setEditing }: Props) {
       </div>
 
       {tab === 'main' ? (
-        <LabeledToggle
-          checked={Boolean(editing.ownProduction)}
-          onCheckedChange={(on) => setField('ownProduction', on)}
-          label="Собственное производство"
-          hint={
-            <p>
-              Включайте для материалов, которые выпускает предприятие. Номер партии и серии тогда задаётся
-              шаблоном (загрузка, месяц, год). Для закупаемого сырья оставьте выключенным — номер свободный.
-            </p>
-          }
-        />
+        <>
+          <LabeledToggle
+            checked={Boolean(editing.ownProduction)}
+            onCheckedChange={(on) => setField('ownProduction', on)}
+            label="Собственное производство"
+            hint={
+              <p>
+                Включайте для материалов, которые выпускает предприятие. Номер партии и серии тогда задаётся
+                шаблоном (загрузка, месяц, год). Для закупаемого сырья оставьте выключенным — номер свободный.
+              </p>
+            }
+          />
+          <div className="full-width accounting-model-parse">
+            <div className="number-template-field-label">
+              <span>Знаков после запятой (отображение)</span>
+              <HintButton title="Знаков после запятой">
+                <p>
+                  Сколько знаков показывать для количеств материалов с этой моделью (рабочий стол планирования и
+                  далее). На расчёт потребности, резерв и остатки не влияет — внутри по-прежнему до 6 знаков.
+                </p>
+                <p>Обычно 3. Для штук можно 0.</p>
+              </HintButton>
+            </div>
+            <SearchableSelect
+              value={String(
+                editing.qtyDisplayDecimals == null || editing.qtyDisplayDecimals === ''
+                  ? 3
+                  : editing.qtyDisplayDecimals
+              )}
+              allowEmpty={false}
+              onChange={(v) => setField('qtyDisplayDecimals', Number(v))}
+              options={[0, 1, 2, 3, 4, 5, 6].map((n) => ({ value: String(n), label: String(n) }))}
+            />
+          </div>
+        </>
       ) : null}
 
       {tab === 'templates' ? (

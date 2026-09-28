@@ -13,6 +13,16 @@ export const MODEL_INTERNAL_ID = 'am-internal';
 
 export const PARSE_MODES = ['none', 'fill', 'strict'];
 
+export const DEFAULT_QTY_DISPLAY_DECIMALS = 3;
+
+/** Масштаб отображения количества: 0…6. На расчёт/хранение не влияет. */
+export function normalizeQtyDisplayDecimals(raw) {
+  if (raw === '' || raw == null) return DEFAULT_QTY_DISPLAY_DECIMALS;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_QTY_DISPLAY_DECIMALS;
+  return Math.min(6, Math.max(0, Math.floor(n)));
+}
+
 export function standardModelSeed() {
   return {
     id: MODEL_STANDARD_ID,
@@ -21,6 +31,7 @@ export function standardModelSeed() {
     parseMode: 'none',
     generateOnRelease: false,
     mixSameManufacturer: false,
+    qtyDisplayDecimals: DEFAULT_QTY_DISPLAY_DECIMALS,
     lotNumberTemplate: emptyTemplate(),
   };
 }
@@ -33,6 +44,7 @@ export function internalModelSeed() {
     parseMode: 'fill',
     generateOnRelease: true,
     mixSameManufacturer: false,
+    qtyDisplayDecimals: DEFAULT_QTY_DISPLAY_DECIMALS,
     lotNumberTemplate: plantLoadTemplate(),
   };
 }
@@ -44,6 +56,7 @@ export function normalizeAccountingModel(raw) {
   const ownProduction = raw?.ownProduction === true || raw?.ownProduction === 'true';
   const generateOnRelease = raw?.generateOnRelease === true || raw?.generateOnRelease === 'true';
   const mixSameManufacturer = raw?.mixSameManufacturer === true || raw?.mixSameManufacturer === 'true';
+  const qtyDisplayDecimals = normalizeQtyDisplayDecimals(raw?.qtyDisplayDecimals);
   const lotNumberTemplate = normalizeTemplate(raw?.lotNumberTemplate);
   if ((parseMode === 'strict' || generateOnRelease) && !hasTokens(lotNumberTemplate)) {
     throw new Error('Задайте шаблон номера или выключите строгую проверку / генерацию');
@@ -55,6 +68,7 @@ export function normalizeAccountingModel(raw) {
     parseMode,
     generateOnRelease,
     mixSameManufacturer,
+    qtyDisplayDecimals,
     lotNumberTemplate,
   };
 }
@@ -159,6 +173,16 @@ export function ensureSeedAccountingModels() {
     if (model.mixSameManufacturer == null) {
       model.mixSameManufacturer = false;
       changed = true;
+    }
+    if (model.qtyDisplayDecimals == null) {
+      model.qtyDisplayDecimals = DEFAULT_QTY_DISPLAY_DECIMALS;
+      changed = true;
+    } else {
+      const next = normalizeQtyDisplayDecimals(model.qtyDisplayDecimals);
+      if (next !== model.qtyDisplayDecimals) {
+        model.qtyDisplayDecimals = next;
+        changed = true;
+      }
     }
   }
   if (changed) store.writeAll('accounting_models', models);
