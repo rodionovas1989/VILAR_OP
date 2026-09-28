@@ -15,6 +15,7 @@ import {
   parseLotWhKey,
   shortWarehouseLabel,
 } from '../utils/lotSelect';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 type Dicts = {
   materials: { id: string; name: string; type?: string }[];
@@ -151,6 +152,7 @@ function analogMaterialIds(
 
 export default function ProductionDesktop({ dictionaries }: Props) {
   const { user } = useAuth();
+  const { formatMaterialQty } = useQtyFormat();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<'plan' | 'fact'>('fact');
@@ -535,7 +537,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
           </div>
           <div className="prod-head-field">
             <span className="muted">План выпуска</span>
-            <strong>{selected.quantity}</strong>
+            <strong>{formatMaterialQty(selected.quantity, selected.materialId)}</strong>
           </div>
           <label className="prod-head-field">
             <span className="muted">Факт выпуска</span>
@@ -668,7 +670,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           <span className="td-clip-text">{cp}</span>
                         </td>
                       )}
-                      <td className="td-num col-qty">{l.quantity}</td>
+                      <td className="td-num col-qty">{formatMaterialQty(l.quantity, l.materialId)}</td>
                     </tr>
                   );
                 })}
@@ -846,7 +848,9 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                       </td>
                       {showCol('free') && (
                         <td className="td-num col-free prod-free-cell">
-                          {selectedOpt?.freeQty != null ? selectedOpt.freeQty : '—'}
+                          {selectedOpt?.freeQty != null
+                            ? formatMaterialQty(selectedOpt.freeQty, l.materialId)
+                            : '—'}
                         </td>
                       )}
                       {showCol('cp') && (
@@ -915,8 +919,10 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                 <td>{nameOf(o.seriesId, dictionaries.series)}</td>
                 <td>{nameOf(o.workCenterId, dictionaries.workCenters)}</td>
                 <td>{new Date(o.startAt).toLocaleString('ru-RU')}</td>
-                <td>{o.quantity}</td>
-                <td>{o.actualQuantity ?? '—'}</td>
+                <td>{formatMaterialQty(o.quantity, o.materialId)}</td>
+                <td>
+                  {o.actualQuantity != null ? formatMaterialQty(o.actualQuantity, o.materialId) : '—'}
+                </td>
                 <td>
                   <button type="button" className="ghost" onClick={() => openOrder(o)}>
                     Исполнение

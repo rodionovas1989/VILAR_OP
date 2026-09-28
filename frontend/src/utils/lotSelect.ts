@@ -59,7 +59,12 @@ export function formatLotIdnLabel(o: LotLabelSource, _disambiguateWarehouse = fa
  */
 export function formatLotWhOptionLabel(
   o: LotLabelSource,
-  opts?: { includeWarehouse?: boolean; includeQualityName?: boolean; includeFreeQty?: boolean }
+  opts?: {
+    includeWarehouse?: boolean;
+    includeQualityName?: boolean;
+    includeFreeQty?: boolean;
+    freeQtyDecimals?: number;
+  }
 ): string {
   const wh =
     opts?.includeWarehouse !== false && (o.warehouseType || o.warehouseName)
@@ -67,7 +72,11 @@ export function formatLotWhOptionLabel(
       : '';
   const free =
     opts?.includeFreeQty !== false && o.freeQty != null && Number.isFinite(Number(o.freeQty))
-      ? ` · своб. ${o.freeQty}`
+      ? ` · своб. ${
+          opts?.freeQtyDecimals != null
+            ? Number(Number(o.freeQty).toFixed(opts.freeQtyDecimals))
+            : o.freeQty
+        }`
       : '';
   const qName =
     opts?.includeQualityName && o.qualityName && o.qualityAllowed !== false

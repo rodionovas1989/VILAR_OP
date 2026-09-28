@@ -8,6 +8,7 @@ import {
   canViewObject,
 } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 import { RecentMode, useRecentObjects } from '../auth/RecentObjectsContext';
 import {
   Lot,
@@ -135,6 +136,7 @@ export default function ProductionOrderPage({
   warehouses = [],
 }: Props) {
   const { user } = useAuth();
+  const { formatMaterialQty } = useQtyFormat();
   const { remember, drop } = useRecentObjects();
   const permissions = user?.permissions;
   const loggedIn = Boolean(user);
@@ -178,11 +180,12 @@ export default function ProductionOrderPage({
         getValue: (o) => (o.startAt ? new Date(o.startAt).toLocaleString('ru-RU') : '—'),
         getSortValue: (o) => (o.startAt ? new Date(o.startAt).getTime() : 0),
       },
-      { key: 'quantity', label: 'План', getValue: (o) => String(o.quantity), getSortValue: (o) => Number(o.quantity) || 0 },
+      { key: 'quantity', label: 'План', getValue: (o) => formatMaterialQty(o.quantity, o.materialId), getSortValue: (o) => Number(o.quantity) || 0 },
       {
         key: 'actualQuantity',
         label: 'Факт',
-        getValue: (o) => (o.actualQuantity != null ? String(o.actualQuantity) : '—'),
+        getValue: (o) =>
+          o.actualQuantity != null ? formatMaterialQty(o.actualQuantity, o.materialId) : '—',
         getSortValue: (o) => (o.actualQuantity != null ? Number(o.actualQuantity) : -1),
       },
       {
@@ -197,7 +200,7 @@ export default function ProductionOrderPage({
       },
       { key: 'lines', label: 'Строк', getValue: (o) => String(o.lines?.length || 0) },
     ];
-  }, [materials, series, workCenters]);
+  }, [materials, series, workCenters, formatMaterialQty]);
 
   const listTable = useListTable(rows, listColumns, {
     persistKey: 'production_orders',
@@ -698,14 +701,18 @@ export default function ProductionOrderPage({
                     onValueChange={(quantity) => setEditing({ ...editing, quantity: quantity ?? 0 })}
                   />
                 ) : (
-                  <span className="readonly-field">{editing.quantity}</span>
+                  <span className="readonly-field">
+                    {formatMaterialQty(editing.quantity ?? 0, editing.materialId)}
+                  </span>
                 )}
               </label>
 
               {editing.actualQuantity != null && (
                 <label>
                   Количество (факт)
-                  <span className="readonly-field">{editing.actualQuantity}</span>
+                  <span className="readonly-field">
+                    {formatMaterialQty(editing.actualQuantity, editing.materialId)}
+                  </span>
                 </label>
               )}
             </div>
@@ -728,7 +735,7 @@ export default function ProductionOrderPage({
                           <td>{matName(line.materialId)}</td>
                           <td>{lotNum(line.lotId)}</td>
                           <td>{lotIdn(line.lotId)}</td>
-                          <td>{line.quantity}</td>
+                          <td>{formatMaterialQty(line.quantity, line.materialId)}</td>
                         </tr>
                       ))}
                     </tbody>

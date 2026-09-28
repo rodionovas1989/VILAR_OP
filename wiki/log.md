@@ -144,3 +144,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Выкат `main`@545037f на https://vilar-prod.ru (FB-2026-09-08-00001). Тикет закрыт в sqlite на ВМ. Бэкап sqlite перед выкатом.
 
+## [2026-09-28] change | Global qty display by accounting model
+
+`QtyFormatProvider` + `useQtyFormat`: все readonly qty в UI (документы, столы, отчёты, регистры) по `qtyDisplayDecimals` модели материала. Агрегаты — default 3. Хранение без изменений.
+

@@ -16,7 +16,7 @@ import {
   parseLotWhKey,
   shortWarehouseLabel,
 } from '../utils/lotSelect';
-import { formatQty, qtyDisplayDecimalsForMaterial } from '../utils/qty';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 type SuggestResult = {
   orderId: string;
@@ -84,7 +84,6 @@ function applyNeedToPick(pick: MaterialPick, lot: AvailableLot | null | undefine
 type Props = {
   dictionaries: {
     materials: { id: string; name: string; type?: string; accountingModelId?: string }[];
-    accountingModels: { id: string; qtyDisplayDecimals?: number }[];
     series: { id: string; number: string }[];
     workCenters: { id: string; name: string }[];
     lots: {
@@ -106,6 +105,7 @@ type Props = {
 
 export default function PlanningDesktop({ dictionaries }: Props) {
   const { user } = useAuth();
+  const { formatMaterialQty } = useQtyFormat();
   const [tab, setTab] = useState<TabId>('orders');
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [selectedNew, setSelectedNew] = useState<Set<string>>(new Set());
@@ -130,11 +130,7 @@ export default function PlanningDesktop({ dictionaries }: Props) {
   const [tails, setTails] = useState<LotLeftoverTail[]>([]);
   const [tailsError, setTailsError] = useState('');
 
-  const fmtQty = (n: number, materialId?: string | null) =>
-    formatQty(
-      n,
-      qtyDisplayDecimalsForMaterial(materialId, dictionaries.materials, dictionaries.accountingModels)
-    );
+  const fmtQty = (n: number, materialId?: string | null) => formatMaterialQty(n, materialId);
 
   const orderHasIssues = (s: SuggestResult) =>
     s.picks.some((p) => !p.ok) || (s.warnings?.length ?? 0) > 0;
@@ -868,11 +864,6 @@ export default function PlanningDesktop({ dictionaries }: Props) {
                           pick={p}
                           algorithm={algorithm}
                           materials={dictionaries.materials}
-                          qtyDecimals={qtyDisplayDecimalsForMaterial(
-                            p.materialId,
-                            dictionaries.materials,
-                            dictionaries.accountingModels
-                          )}
                           counterpartyApproved={isCounterpartyApproved(
                             order?.specificationId,
                             p.materialId,
@@ -1367,7 +1358,6 @@ function PickRow({
   pick,
   algorithm,
   materials,
-  qtyDecimals,
   counterpartyApproved,
   manufacturerApproved,
   onChangeLot,
@@ -1376,14 +1366,14 @@ function PickRow({
   pick: MaterialPick;
   algorithm: string;
   materials: { id: string; name: string }[];
-  qtyDecimals: number;
   counterpartyApproved: boolean;
   manufacturerApproved: boolean;
   onChangeLot: (lotWhValue: string) => void;
   onChangeMaterial: (materialId: string) => void;
 }) {
   const [lots, setLots] = useState<AvailableLot[]>([]);
-  const showQty = (n: number) => formatQty(n, qtyDecimals);
+  const { formatMaterialQty } = useQtyFormat();
+  const showQty = (n: number) => formatMaterialQty(n, pick.materialId);
 
   useEffect(() => {
     let cancelled = false;

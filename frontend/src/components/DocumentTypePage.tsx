@@ -31,7 +31,8 @@ import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, St
 import { Lot, Material, Warehouse } from '../types';
 import { metaForDocumentType } from '../constants/documentTypes';
 import { newId } from '../utils/id';
-import { formatQty, formatQtyDelta, roundQty } from '../utils/qty';
+import { roundQty } from '../utils/qty';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 type Props = {
   documentType: StockDocumentType;
@@ -115,6 +116,7 @@ function buildDocumentActions(
 
 export default function DocumentTypePage({ documentType, materials, lots, warehouses }: Props) {
   const { user, openLogin } = useAuth();
+  const { formatMaterialQty, formatMaterialQtyDelta } = useQtyFormat();
   const { remember, drop } = useRecentObjects();
   const objectId = `doc_${documentType}`;
   const permissions = user?.permissions;
@@ -738,7 +740,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                     <tr key={line.id}>
                       <td>{matName(line.materialId)}</td>
                       <td>{lotNum(line.lotId)}</td>
-                      <td>{line.bookQuantity ?? 0}</td>
+                      <td>{formatMaterialQty(line.bookQuantity ?? 0, line.materialId)}</td>
                     </tr>
                   ))}
                 {!editing.lines.some((l) => Number(l.bookQuantity ?? 0) > 0) && (
@@ -813,7 +815,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                           }}
                         />
                       ) : (
-                        line.actualQuantity ?? line.quantity
+                        formatMaterialQty(line.actualQuantity ?? line.quantity ?? 0, line.materialId)
                       )}
                     </td>
                     {canEditFields && (
@@ -862,10 +864,10 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                   <tr key={row.id || invLineKey(row)}>
                     <td>{matName(row.materialId)}</td>
                     <td>{lotNum(row.lotId)}</td>
-                    <td>{formatQty(row.book)}</td>
-                    <td>{formatQty(row.actual)}</td>
+                    <td>{formatMaterialQty(row.book, row.materialId)}</td>
+                    <td>{formatMaterialQty(row.actual, row.materialId)}</td>
                     <td className={row.delta > 0 ? 'inv-delta-plus' : 'inv-delta-minus'}>
-                      {formatQtyDelta(row.delta)}
+                      {formatMaterialQtyDelta(row.delta, row.materialId)}
                     </td>
                   </tr>
                 ))}
@@ -954,7 +956,7 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
                       }}
                     />
                   ) : (
-                    line.quantity
+                    formatMaterialQty(line.quantity ?? 0, line.materialId)
                   )}
                 </td>
                 {canEditFields && (

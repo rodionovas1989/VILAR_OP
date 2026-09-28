@@ -63,6 +63,8 @@ import { StockDocumentType } from './types.documents';
 import { Role } from './constants/systemObjects';
 import { NAV } from './constants/navConfig';
 import NavTypeIcon from './components/NavTypeIcon';
+import { QtyFormatProvider } from './qtyFormat/QtyFormatContext';
+import { formatQty, qtyDisplayDecimalsForMaterial } from './utils/qty';
 
 function opt(list: { id: string; name?: string; number?: string }[]) {
   return list.map((x) => ({ value: x.id, label: x.name || x.number || x.id }));
@@ -177,6 +179,15 @@ export default function App() {
   };
   const lotDate = (lotId: string, field: 'productionDate' | 'expiryDate') =>
     lotById(lotId)?.[field] || '—';
+  const fmtMatQty = (n: unknown, materialId?: unknown) =>
+    formatQty(
+      Number(n) || 0,
+      qtyDisplayDecimalsForMaterial(
+        materialId != null ? String(materialId) : null,
+        materials,
+        accountingModels
+      )
+    );
 
   const materialFields: FieldDef[] = useMemo(
     () => [
@@ -601,7 +612,7 @@ export default function App() {
             columns={[
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'workCenterId', label: 'РЦ', render: (r) => wcName(String(r.workCenterId)) },
-              { key: 'quantity', label: 'Количество' },
+              { key: 'quantity', label: 'Количество', render: (r) => fmtMatQty(r.quantity, r.materialId) },
             ]}
             validate={(row) => {
               const materialId = String(row.materialId || '');
@@ -790,7 +801,7 @@ export default function App() {
                 label: 'Срок годности',
                 render: (r) => lotDate(String(r.lotId), 'expiryDate'),
               },
-              { key: 'quantity', label: 'Кол-во' },
+              { key: 'quantity', label: 'Кол-во', render: (r) => fmtMatQty(r.quantity, r.materialId) },
             ]}
           />
         );
@@ -812,7 +823,7 @@ export default function App() {
               { key: 'productionOrderId', label: 'Заказ' },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
-              { key: 'quantity', label: 'Кол-во' },
+              { key: 'quantity', label: 'Кол-во', render: (r) => fmtMatQty(r.quantity, r.materialId) },
             ]}
           />
         );
@@ -838,7 +849,7 @@ export default function App() {
               { key: 'action', label: 'Действие' },
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
-              { key: 'quantity', label: 'Кол-во' },
+              { key: 'quantity', label: 'Кол-во', render: (r) => fmtMatQty(r.quantity, r.materialId) },
             ]}
           />
         );
@@ -865,7 +876,7 @@ export default function App() {
               { key: 'materialId', label: 'Материал', render: (r) => matName(String(r.materialId)) },
               { key: 'lotId', label: 'Партия', render: (r) => lotNum(String(r.lotId)) },
               { key: 'seriesId', label: 'Серия', render: (r) => (r.seriesId ? serNum(String(r.seriesId)) : '—') },
-              { key: 'quantity', label: 'Кол-во' },
+              { key: 'quantity', label: 'Кол-во', render: (r) => fmtMatQty(r.quantity, r.materialId) },
               { key: 'documentNumber', label: 'Документ' },
               { key: 'documentStatus', label: 'Статус док.' },
             ]}
@@ -917,7 +928,7 @@ export default function App() {
                   return r.seriesId ? serNum(String(r.seriesId)) : '—';
                 },
               },
-              { key: 'quantity', label: 'Кол-во' },
+              { key: 'quantity', label: 'Кол-во', render: (r) => fmtMatQty(r.quantity, r.materialId) },
               { key: 'documentNumber', label: 'Документ' },
               { key: 'documentType', label: 'Тип док.' },
               { key: 'documentStatus', label: 'Статус док.' },
@@ -1276,10 +1287,6 @@ export default function App() {
                 type: m.type,
                 accountingModelId: m.accountingModelId,
               })),
-              accountingModels: accountingModels.map((m) => ({
-                id: m.id,
-                qtyDisplayDecimals: m.qtyDisplayDecimals,
-              })),
               series: series.map((s) => ({ id: s.id, number: s.number })),
               workCenters,
               lots: lots.map((l) => ({
@@ -1325,6 +1332,7 @@ export default function App() {
   }
 
   return (
+    <QtyFormatProvider materials={materials} accountingModels={accountingModels}>
     <div className="app-shell">
       <AppHeader />
       <RecentObjectsStrip currentPage={page} onNavigate={navigateTo} />
@@ -1374,5 +1382,6 @@ export default function App() {
       </main>
       </div>
     </div>
+    </QtyFormatProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
+| `fix/qty-display-global` | Readonly qty везде по модели учёта | **слита** в main |
 | `fix/fb-20260908-00001-qty-display-decimals` | Модель учёта: знаки qty только для отображения (FB-2026-09-08-00001) | **слита** в main |
 | `feature/lot-mix-same-manufacturer` | Тогл смешения партий одного производителя + N строк в заказе | **слита** в main |
 | `feature/accounting-models-lot-sequence` | Настройки: модели учёта + sequence в FEFO/FIFO | **слита** в main |

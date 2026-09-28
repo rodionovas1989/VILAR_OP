@@ -9,6 +9,7 @@ import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'report_plan_fact';
 
@@ -23,6 +24,7 @@ function monthBounds(d = new Date()) {
 
 export default function PlanFactReportPage() {
   const { user } = useAuth();
+  const { formatMaterialQty, formatMaterialQtyDelta } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
   const initial = monthBounds();
   const [from, setFrom] = useState(initial.from);
@@ -43,7 +45,7 @@ export default function PlanFactReportPage() {
       {
         key: 'planQuantity',
         label: 'План',
-        getValue: (r) => String(r.planQuantity),
+        getValue: (r) => formatMaterialQty(r.planQuantity, r.productId),
         getSortValue: (r) => Number(r.planQuantity) || 0,
       },
       {
@@ -55,17 +57,19 @@ export default function PlanFactReportPage() {
       {
         key: 'factQuantity',
         label: 'Факт',
-        getValue: (r) => (r.factQuantity != null ? String(r.factQuantity) : '—'),
+        getValue: (r) =>
+          r.factQuantity != null ? formatMaterialQty(r.factQuantity, r.productId) : '—',
         getSortValue: (r) => (r.factQuantity != null ? Number(r.factQuantity) : -1),
       },
       {
         key: 'quantityVariance',
         label: 'Откл.',
-        getValue: (r) => (r.quantityVariance != null ? String(r.quantityVariance) : '—'),
+        getValue: (r) =>
+          r.quantityVariance != null ? formatMaterialQtyDelta(r.quantityVariance, r.productId) : '—',
         getSortValue: (r) => (r.quantityVariance != null ? Number(r.quantityVariance) : 0),
       },
     ];
-  }, []);
+  }, [formatMaterialQty, formatMaterialQtyDelta]);
 
   const listTable = useListTable(rows, listColumns, {
     persistKey: PAGE_ID,

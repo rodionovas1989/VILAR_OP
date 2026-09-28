@@ -9,7 +9,7 @@
 
 Карточка — вкладки: **Основное** (`ownProduction`, **`qtyDisplayDecimals`** 0…6 — только показ qty), **Шаблоны партий** (генерация, разбор, шаблон), **Смешение партий** (`mixSameManufacturer`). Подсказки — `HintButton`.
 
-`qtyDisplayDecimals` не меняет `roundQty`/хранение (6 знаков). UI стола планирования берёт масштаб через `formatQty(n, decimals)` ← материал → модель.
+`qtyDisplayDecimals` не меняет `roundQty`/хранение (6 знаков). **Весь readonly-показ qty в UI** (столы, документы, отчёты, регистры) берёт масштаб через `useQtyFormat` / `formatQty(n, decimals)` ← материал → модель. Агрегаты без одного материала — default 3. `DecimalInput` при редактировании не усекает.
 
 Шаблон — список блоков + `parseDirection` (`rtl`/`ltr`). Разбор и генерация: `backend/src/services/numberTemplates.js`. Подбор FEFO/FIFO читает только `lot.productionSequence`.
 

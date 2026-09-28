@@ -8,6 +8,8 @@ import AccessDenied from './AccessDenied';
 import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
+import { roundQty } from '../utils/qty';
 
 const PAGE_ID = 'report_quality_stock';
 
@@ -39,16 +41,6 @@ type MaterialGroup = {
   free: number;
   lots: LotGroup[];
 };
-
-function roundQty(n: number) {
-  return Number(Number(n || 0).toFixed(6));
-}
-
-function formatQty(n: number) {
-  const v = roundQty(n);
-  if (Number.isInteger(v)) return String(v);
-  return String(v);
-}
 
 function qualityDisplay(lot: { qualityMissing: boolean; qualityName?: string | null }) {
   if (lot.qualityMissing) return 'Не задано';
@@ -115,6 +107,7 @@ function groupRows(rows: QualityStockReportRow[]): MaterialGroup[] {
 
 export default function QualityStockReportPage() {
   const { user } = useAuth();
+  const { formatMaterialQty, formatQtyDefault } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
   const [rows, setRows] = useState<QualityStockReportRow[]>([]);
   const [error, setError] = useState('');
@@ -302,9 +295,9 @@ export default function QualityStockReportPage() {
                     <td />
                     <td />
                     <td />
-                    <td className="report-num">{formatQty(mat.quantity)}</td>
-                    <td className="report-num">{formatQty(mat.reserved)}</td>
-                    <td className="report-num">{formatQty(mat.free)}</td>
+                    <td className="report-num">{formatMaterialQty(mat.quantity, mat.id)}</td>
+                    <td className="report-num">{formatMaterialQty(mat.reserved, mat.id)}</td>
+                    <td className="report-num">{formatMaterialQty(mat.free, mat.id)}</td>
                   </tr>
                   {mat.lots.map((lot) => {
                     const lotId = `lot:${mat.id}:${lot.id}`;
@@ -336,9 +329,9 @@ export default function QualityStockReportPage() {
                           </td>
                           <td>{lot.permissionLabel}</td>
                           <td>{lot.documentNumber || '—'}</td>
-                          <td className="report-num">{formatQty(lot.quantity)}</td>
-                          <td className="report-num">{formatQty(lot.reserved)}</td>
-                          <td className="report-num">{formatQty(lot.free)}</td>
+                          <td className="report-num">{formatMaterialQty(lot.quantity, mat.id)}</td>
+                          <td className="report-num">{formatMaterialQty(lot.reserved, mat.id)}</td>
+                          <td className="report-num">{formatMaterialQty(lot.free, mat.id)}</td>
                         </tr>
                         {lot.warehouses.map((wh) => (
                           <tr
@@ -353,9 +346,9 @@ export default function QualityStockReportPage() {
                             <td />
                             <td />
                             <td />
-                            <td className="report-num">{formatQty(wh.quantity)}</td>
-                            <td className="report-num">{formatQty(wh.reserved)}</td>
-                            <td className="report-num">{formatQty(wh.free)}</td>
+                            <td className="report-num">{formatMaterialQty(wh.quantity, mat.id)}</td>
+                            <td className="report-num">{formatMaterialQty(wh.reserved, mat.id)}</td>
+                            <td className="report-num">{formatMaterialQty(wh.free, mat.id)}</td>
                           </tr>
                         ))}
                       </Fragment>
@@ -376,9 +369,9 @@ export default function QualityStockReportPage() {
             <tfoot>
               <tr className="report-tree-total">
                 <td colSpan={6}>Итого</td>
-                <td className="report-num">{formatQty(totals.quantity)}</td>
-                <td className="report-num">{formatQty(totals.reserved)}</td>
-                <td className="report-num">{formatQty(totals.free)}</td>
+                <td className="report-num">{formatQtyDefault(totals.quantity)}</td>
+                <td className="report-num">{formatQtyDefault(totals.reserved)}</td>
+                <td className="report-num">{formatQtyDefault(totals.free)}</td>
               </tr>
             </tfoot>
           )}

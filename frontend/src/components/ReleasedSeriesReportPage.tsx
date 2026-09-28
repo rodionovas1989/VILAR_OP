@@ -9,11 +9,13 @@ import PageTitle from './PageTitle';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'report_released_series';
 
 export default function ReleasedSeriesReportPage() {
   const { user } = useAuth();
+  const { formatMaterialQty } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
   const [rows, setRows] = useState<ReleasedSeriesRow[]>([]);
   const [error, setError] = useState('');
@@ -27,9 +29,13 @@ export default function ReleasedSeriesReportPage() {
       { key: 'seriesNumber', label: 'Серия', getValue: (r) => r.seriesNumber },
       { key: 'lotNumber', label: 'Партия', getValue: (r) => r.lotNumber },
       { key: 'productionDate', label: 'Дата производства', getValue: (r) => r.productionDate },
-      { key: 'quantity', label: 'Количество', getValue: (r) => String(r.quantity) },
+      {
+        key: 'quantity',
+        label: 'Количество',
+        getValue: (r) => formatMaterialQty(r.quantity, r.productId),
+      },
     ];
-  }, []);
+  }, [formatMaterialQty]);
 
   const listTable = useListTable(rows, listColumns, {
     persistKey: PAGE_ID,
@@ -167,7 +173,7 @@ export default function ReleasedSeriesReportPage() {
                                 <tr key={`${row.id}-c-${i}`}>
                                   <td>{c.materialName}</td>
                                   <td>{c.lotNumber}</td>
-                                  <td>{c.quantity}</td>
+                                  <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
                                   <td>{c.unit || '—'}</td>
                                 </tr>
                               ))}
