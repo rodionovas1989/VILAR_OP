@@ -148,3 +148,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 `QtyFormatProvider` + `useQtyFormat`: все readonly qty в UI (документы, столы, отчёты, регистры) по `qtyDisplayDecimals` модели материала. Агрегаты — default 3. Хранение без изменений.
 
+## [2026-09-28] ops | Deploy global qty display
+
+Выкат `main`@5be901b на https://vilar-prod.ru. Бэкап sqlite перед выкатом.
+
