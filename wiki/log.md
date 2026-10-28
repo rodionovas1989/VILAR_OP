@@ -176,3 +176,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Трассировка: иконки view/edit → nested `DocumentPeekModal` поверх related-docs.
 
+## [2026-10-28] ops | Deploy FB package on pilot
+
+Выкат `main`@ff15e23 на https://vilar-prod.ru. Закрыты FB-2026-09-30-00001, 10-27-00001…00003, 10-28-00001. Бэкап sqlite перед выкатом.
+
