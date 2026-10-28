@@ -1601,6 +1601,10 @@ th {
   padding: 16px;
 }
 
+.modal-peek .peek-lines {
+  margin-top: 12px;
+}
+
 .modal-backdrop-nested {
   z-index: 70;
 }
