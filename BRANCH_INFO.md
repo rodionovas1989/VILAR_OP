@@ -2,7 +2,8 @@
 
 | Ветка | Описание | Статус |
 |-------|----------|--------|
-| `feature/fb-20261027-00002-dict-active-filter` | Контрагенты/производители: active + фильтр (FB-2026-10-27-00002) | в работе |
+| `fix/fb-20261028-00001-fact-lot-lines` | Факт: add/remove строк партий (FB-2026-10-28-00001) | в работе |
+| `feature/fb-20261027-00002-dict-active-filter` | Контрагенты/производители: active + фильтр (FB-2026-10-27-00002) | **слита** в main |
 | `fix/fb-20261027-00003-user-active-policy` | Пользователи: деактивация без удаления (FB-2026-10-27-00003) | **слита** в main |
 | `fix/qty-display-decimal-input` | DecimalInput: displayDecimals по модели учёта | **слита** в main |
 | `fix/qty-display-global` | Readonly qty везде по модели учёта | **слита** в main |

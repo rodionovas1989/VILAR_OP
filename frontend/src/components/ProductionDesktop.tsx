@@ -210,7 +210,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
   const hiddenOnTab = OPTIONAL_PROD_COLS.filter((c) => c.tabs.includes(tab) && hiddenCols.has(c.id)).length;
 
   const factColSpan =
-    4 + (showCol('idn') ? 1 : 0) + (showCol('free') ? 1 : 0) + (showCol('cp') ? 1 : 0);
+    5 + (showCol('idn') ? 1 : 0) + (showCol('free') ? 1 : 0) + (showCol('cp') ? 1 : 0);
   const planColSpan = 3 + (showCol('idn') ? 1 : 0) + (showCol('cp') ? 1 : 0);
 
   const defaultWhTo = useMemo(
@@ -377,6 +377,29 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     );
   };
 
+  const removeFactLine = (key: string) => {
+    setActualLines((prev) => prev.filter((l, idx) => lineKey(l, idx) !== key));
+  };
+
+  /** Добавить строку партии по позиции плана (вторая партия / забытая позиция). */
+  const addFactLine = (template: OrderLine) => {
+    const specMaterialId = template.specMaterialId || template.materialId;
+    setActualLines((prev) => [
+      ...prev,
+      {
+        specLineId: template.specLineId,
+        specMaterialId,
+        materialId: template.materialId,
+        lotId: '',
+        warehouseId: template.warehouseId || null,
+        quantity: 0,
+        substitutionRuleId: null,
+      },
+    ]);
+  };
+
+  const factLinesForSave = () => actualLines.filter((l) => Number(l.quantity) > 0);
+
   const changeFactMaterial = async (key: string, materialId: string) => {
     const specMaterialId =
       actualLines.find((l, idx) => lineKey(l, idx) === key)?.specMaterialId || materialId;
@@ -418,7 +441,10 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setError('');
     setMessage('');
     try {
-      await api.saveProductionFact(selected.id, { actualQuantity, actualLines });
+      await api.saveProductionFact(selected.id, {
+        actualQuantity,
+        actualLines: factLinesForSave(),
+      });
       setMessage('Факт сохранён');
       await load();
     } catch (e) {
@@ -430,7 +456,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
 
   const completeProduction = async () => {
     if (!selected) return;
-    const unfit = actualLines
+    const lines = factLinesForSave();
+    const unfit = lines
       .map((l) => {
         const opt = (lotOptions[l.materialId] || []).find(
           (o) => o.id === l.lotId && (!l.warehouseId || o.warehouseId === l.warehouseId)
@@ -444,11 +471,11 @@ export default function ProductionDesktop({ dictionaries }: Props) {
       setError(`Нельзя завершить: партии не годны по качеству. ${unfit.join('; ')}`);
       return;
     }
-    if (actualLines.some((l) => !l.warehouseId)) {
+    if (lines.some((l) => !l.warehouseId)) {
       setError('Укажите склад списания в каждой строке факта');
       return;
     }
-    const conditional = actualLines
+    const conditional = lines
       .map((l) => {
         const opt = (lotOptions[l.materialId] || []).find(
           (o) => o.id === l.lotId && (!l.warehouseId || o.warehouseId === l.warehouseId)
@@ -473,7 +500,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
     setError('');
     setMessage('');
     try {
-      await api.saveProductionFact(selected.id, { actualQuantity, actualLines });
+      await api.saveProductionFact(selected.id, { actualQuantity, actualLines: lines });
       await api.completeOrder(selected.id, {
         userId: user?.id,
         warehouseToId: warehouseToId || undefined,
@@ -698,7 +725,8 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                   <th className="col-wh">Склад</th>
                   {showCol('free') && <th className="col-free col-center">Свободно</th>}
                   {showCol('cp') && <th className="col-cp">Контрагент</th>}
-                  <th className="col-qty col-center td-sticky-end">Кол-во</th>
+                  <th className="col-qty col-center">Кол-во</th>
+                  <th className="col-actions td-sticky-end" aria-label="Действия" />
                 </tr>
               </thead>
               <tbody>
@@ -859,7 +887,7 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           <span className="td-clip-text">{cp}</span>
                         </td>
                       )}
-                      <td className="td-num col-qty prod-qty-cell td-sticky-end">
+                      <td className="td-num col-qty prod-qty-cell">
                         <DecimalInput
                           min={0}
                           value={l.quantity}
@@ -868,18 +896,56 @@ export default function ProductionDesktop({ dictionaries }: Props) {
                           onValueChange={(value) => changeFactQty(key, value ?? 0)}
                         />
                       </td>
+                      <td className="td-sticky-end col-actions">
+                        <div className="row-actions">
+                          <IconButton
+                            icon="delete"
+                            label="Убрать строку"
+                            tone="danger"
+                            disabled={busy}
+                            onClick={() => removeFactLine(key)}
+                          />
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
                 {!actualLines.length && (
                   <tr>
                     <td colSpan={factColSpan} className="muted">
-                      Нет фактического состава
+                      Нет фактического состава — добавьте строку по позиции плана
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+            <div className="toolbar-actions fact-add-lines">
+              <span className="muted">Добавить партию для:</span>
+              {(planLines.reduce(
+                (acc, pl) => {
+                  const k = String(pl.specLineId || pl.specMaterialId || pl.materialId);
+                  if (acc.seen.has(k)) return acc;
+                  acc.seen.add(k);
+                  acc.items.push(pl);
+                  return acc;
+                },
+                { seen: new Set<string>(), items: [] as OrderLine[] }
+              ).items).map((pl) => (
+                <button
+                  key={String(pl.specLineId || pl.materialId)}
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() => addFactLine(pl)}
+                >
+                  + {nameOf(pl.specMaterialId || pl.materialId, dictionaries.materials)}
+                </button>
+              ))}
+            </div>
+            <p className="hint">
+              Строка с количеством 0 при сохранении не попадёт в факт (как «не брали»). Вторая партия на
+              позицию — только если в модели учёта разрешено смешение одного производителя.
+            </p>
           </div>
         )}
       </div>
