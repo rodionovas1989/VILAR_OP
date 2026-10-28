@@ -1108,18 +1108,28 @@ export default function App() {
         return (
           <>
             <p className="hint">{ADMIN_USERS_PDN_HINT}</p>
+            <p className="hint">
+              Неактивных пользователей нельзя удалить: снимите «Активен» — вход будет закрыт, записи в
+              истории останутся.
+            </p>
             <CrudPage
             title="Пользователи"
             collection="users"
+            allowDelete={false}
             transformIn={(row) => {
               const { passwordHash: _ph, ...rest } = row;
-              return { ...rest, password: '' };
+              return {
+                ...rest,
+                password: '',
+                active: row.active === false || row.active === 'false' ? 'false' : 'true',
+              };
             }}
             transformOut={(row) => {
               const body = { ...row };
               if (!body.password) delete body.password;
               delete body.pdnAcceptedAt;
               delete body.pdnPolicyVersion;
+              body.active = body.active !== 'false' && body.active !== false;
               return body;
             }}
             validate={(row) => {
@@ -1166,7 +1176,11 @@ export default function App() {
                 label: 'Роль',
                 render: (row) => roles.find((r) => r.id === row.roleId)?.name || String(row.roleId || '—'),
               },
-              { key: 'active', label: 'Активен' },
+              {
+                key: 'active',
+                label: 'Активен',
+                render: (row) => (row.active === false || row.active === 'false' ? 'нет' : 'да'),
+              },
               {
                 key: 'pdn',
                 label: 'ПДн',

@@ -48,6 +48,10 @@ test('свободный материал удаляется без ошибки
   assert.doesNotThrow(() => assertCanDelete('materials', ['mat-free']));
 });
 
+test('пользователей нельзя удалить — только деактивация', () => {
+  assert.throws(() => assertCanDelete('users', ['user-admin']), /Активен|нельзя удалять/);
+});
+
 test.after(() => {
   closeDb();
   fs.rmSync(tmpDir, { recursive: true, force: true });

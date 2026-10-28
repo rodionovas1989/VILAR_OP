@@ -76,6 +76,8 @@ type Props = {
   hideFormFields?: boolean;
   /** Список без кнопок создать/изменить/удалить (регистры, история) */
   readOnly?: boolean;
+  /** Скрыть удаление (например пользователи — только деактивация) */
+  allowDelete?: boolean;
 };
 function toLocalInput(iso?: string) {
   if (!iso) return '';
@@ -106,6 +108,7 @@ export function CrudPage({
   skipAccessCheck,
   hideFormFields,
   readOnly = false,
+  allowDelete = true,
 }: Props) {
   const { user } = useAuth();
   const { decimalsFor } = useQtyFormat();
@@ -117,6 +120,7 @@ export function CrudPage({
   const canView = skipAccessCheck || canViewObject(permissions, objectId, loggedIn);
   const canCreate = !readOnly && (skipAccessCheck || canCreateObject(permissions, objectId));
   const canModify = !readOnly && (skipAccessCheck || canModifyObject(permissions, objectId));
+  const canDelete = canModify && allowDelete;
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
@@ -283,7 +287,7 @@ export function CrudPage({
   };
 
   const bulkDelete = async () => {
-    if (!selected.size || !canModify) return;
+    if (!selected.size || !canDelete) return;
     if (!confirm(`Удалить выбранные (${selected.size})?`)) return;
     setError('');
     try {
@@ -340,7 +344,7 @@ export function CrudPage({
               Изменить статус ({selected.size})
             </button>
           ) : null}
-          {canModify && (
+          {canDelete && (
             <button type="button" className="danger" disabled={!selected.size} onClick={bulkDelete}>
               Удалить выбранные
             </button>

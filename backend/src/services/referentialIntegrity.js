@@ -17,6 +17,7 @@ const COLLECTION_LABELS = {
   lot_qualities: 'Качества партий',
   lot_characteristics: 'Характеристики партий',
   production_orders: 'Заказы на производство',
+  users: 'Пользователи',
   stock: 'Запасы',
   active_reservations: 'Резервы',
   reservation_history: 'Резервы (ист)',
@@ -335,6 +336,12 @@ export function assertCanDelete(collection, ids) {
   const list = [...new Set((ids || []).filter(Boolean).map(String))];
   if (!list.length) return;
 
+  if (collection === 'users') {
+    throw new Error(
+      'Пользователей нельзя удалять — снимите признак «Активен». История операций сохранится.'
+    );
+  }
+
   if (collection === 'lot_characteristics') {
     for (const id of list) {
       const row = store.getById(collection, id);
@@ -378,5 +385,6 @@ export function isProtectedDictionary(collection) {
     'accounting_models',
     'lot_qualities',
     'lot_characteristics',
+    'users',
   ].includes(collection);
 }
