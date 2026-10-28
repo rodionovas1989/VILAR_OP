@@ -13,15 +13,27 @@ import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'report_released_series';
 
+function yearBounds(year: number) {
+  return { from: `${year}-01-01`, to: `${year}-12-31` };
+}
+
 export default function ReleasedSeriesReportPage() {
   const { user } = useAuth();
   const { formatMaterialQty } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(currentYear);
   const [rows, setRows] = useState<ReleasedSeriesRow[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const yearOptions = useMemo(() => {
+    const ys: number[] = [];
+    for (let y = currentYear; y >= currentYear - 10; y -= 1) ys.push(y);
+    return ys;
+  }, [currentYear]);
 
   const listColumns = useMemo((): ListColumn<ReleasedSeriesRow>[] => {
     return [
@@ -42,11 +54,12 @@ export default function ReleasedSeriesReportPage() {
     userId: user?.id,
   });
 
-  const load = async () => {
+  const load = async (y = year) => {
     setBusy(true);
     setError('');
     try {
-      setRows(await api.releasedSeriesReport());
+      const { from, to } = yearBounds(y);
+      setRows(await api.releasedSeriesReport({ from, to }));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -56,6 +69,7 @@ export default function ReleasedSeriesReportPage() {
 
   useEffect(() => {
     load().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
 
   const toggleRow = (id: string) => {
@@ -71,7 +85,12 @@ export default function ReleasedSeriesReportPage() {
     setBusy(true);
     setError('');
     try {
-      await api.exportReleasedSeriesXlsx(listTable.displayRows.map((r) => r.id));
+      const { from, to } = yearBounds(year);
+      await api.exportReleasedSeriesXlsx({
+        ids: listTable.displayRows.map((r) => r.id),
+        from,
+        to,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -94,7 +113,24 @@ export default function ReleasedSeriesReportPage() {
     <div className="page report-page">
       <div className="page-toolbar report-no-print">
         <PageTitle pageId={PAGE_ID} title="Выпущенные серии продукции" />
-        <div className="toolbar-actions">
+        <div className="toolbar-actions report-filter-bar">
+          <label className="report-filter-inline">
+            Год
+            <select
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              disabled={busy}
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={() => void load(year)} disabled={busy}>
+            Применить
+          </button>
           <ListViewSettingsButton
             open={listSettingsOpen}
             onOpenChange={setListSettingsOpen}
@@ -107,7 +143,7 @@ export default function ReleasedSeriesReportPage() {
           <button type="button" className="ghost" onClick={printReport} disabled={busy}>
             Печать
           </button>
-          <RefreshButton onClick={() => load()} disabled={busy} />
+          <RefreshButton onClick={() => load(year)} disabled={busy} />
         </div>
       </div>
       {listSettingsOpen && (
@@ -127,12 +163,14 @@ export default function ReleasedSeriesReportPage() {
       )}
 
       <p className="hint report-no-print">
-        Завершённые заказы: выпуск ГП и фактически потраченные компоненты. Раскройте строку, чтобы увидеть состав.
+        Завершённые заказы за выбранный год: выпуск ГП и фактически потраченные компоненты с
+        контрагентом и производителем. Раскройте строку для состава. Excel — листы «Серии»,
+        «Компоненты» и сводка «Поставщики сырья» (кг по поставщику и списку серий).
       </p>
 
       {error && <p className="error report-no-print">{error}</p>}
 
-      <h2 className="report-print-title">Выпущенные серии продукции</h2>
+      <h2 className="report-print-title">Выпущенные серии продукции — {year}</h2>
 
       <div className="table-wrap">
         <table className="data-table report-table">
@@ -164,6 +202,8 @@ export default function ReleasedSeriesReportPage() {
                               <tr>
                                 <th>Компонент</th>
                                 <th>Партия</th>
+                                <th>Контрагент</th>
+                                <th>Производитель</th>
                                 <th>Количество</th>
                                 <th>Ед.</th>
                               </tr>
@@ -173,6 +213,8 @@ export default function ReleasedSeriesReportPage() {
                                 <tr key={`${row.id}-c-${i}`}>
                                   <td>{c.materialName}</td>
                                   <td>{c.lotNumber}</td>
+                                  <td>{c.counterpartyName || '—'}</td>
+                                  <td>{c.manufacturerName || '—'}</td>
                                   <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
                                   <td>{c.unit || '—'}</td>
                                 </tr>
@@ -193,7 +235,7 @@ export default function ReleasedSeriesReportPage() {
             {!listTable.displayRows.length && (
               <tr>
                 <td colSpan={listColumns.length + 1} className="muted">
-                  Нет выпущенных серий по выбранным отборам
+                  Нет выпущенных серий за {year}
                 </td>
               </tr>
             )}

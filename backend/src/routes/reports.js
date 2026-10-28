@@ -4,6 +4,7 @@ import { requirePermission } from '../middleware/access.js';
 import {
   releasedSeriesReport,
   filterReleasedSeries,
+  aggregateReleasedSuppliers,
   planFactReport,
   filterPlanFactReport,
   stockReport,
@@ -19,12 +20,20 @@ import {
 
 const router = Router();
 
-router.get('/released-series', requirePermission('report_released_series', 'read'), (_req, res) => {
-  res.json(releasedSeriesReport());
+router.get('/released-series', requirePermission('report_released_series', 'read'), (req, res) => {
+  res.json(
+    releasedSeriesReport({
+      from: req.query.from || undefined,
+      to: req.query.to || undefined,
+    })
+  );
 });
 
 router.post('/released-series.xlsx', requirePermission('report_released_series', 'read'), async (req, res) => {
-  const all = releasedSeriesReport();
+  const all = releasedSeriesReport({
+    from: req.body?.from || undefined,
+    to: req.body?.to || undefined,
+  });
   const rows = filterReleasedSeries(all, req.body?.ids);
   const wb = new ExcelJS.Workbook();
   wb.creator = 'Vilar OP';
@@ -54,6 +63,8 @@ router.post('/released-series.xlsx', requirePermission('report_released_series',
     { header: 'Партия ГП', key: 'lotNumber', width: 18 },
     { header: 'Компонент', key: 'materialName', width: 36 },
     { header: 'Партия компонента', key: 'componentLot', width: 18 },
+    { header: 'Контрагент', key: 'counterpartyName', width: 24 },
+    { header: 'Производитель', key: 'manufacturerName', width: 28 },
     { header: 'Количество', key: 'quantity', width: 14 },
     { header: 'Ед.', key: 'unit', width: 8 },
   ];
@@ -65,10 +76,34 @@ router.post('/released-series.xlsx', requirePermission('report_released_series',
         lotNumber: row.lotNumber,
         materialName: c.materialName,
         componentLot: c.lotNumber,
+        counterpartyName: c.counterpartyName,
+        manufacturerName: c.manufacturerName,
         quantity: c.quantity,
         unit: c.unit,
       });
     }
+  }
+
+  const suppliersSheet = wb.addWorksheet('Поставщики сырья');
+  suppliersSheet.columns = [
+    { header: 'Продукция', key: 'productName', width: 36 },
+    { header: 'Компонент', key: 'materialName', width: 36 },
+    { header: 'Контрагент', key: 'counterpartyName', width: 24 },
+    { header: 'Производитель', key: 'manufacturerName', width: 28 },
+    { header: 'Количество', key: 'quantity', width: 14 },
+    { header: 'Ед.', key: 'unit', width: 8 },
+    { header: 'Серии', key: 'seriesList', width: 40 },
+  ];
+  for (const a of aggregateReleasedSuppliers(rows)) {
+    suppliersSheet.addRow({
+      productName: a.productName,
+      materialName: a.materialName,
+      counterpartyName: a.counterpartyName,
+      manufacturerName: a.manufacturerName,
+      quantity: a.quantity,
+      unit: a.unit,
+      seriesList: (a.seriesNumbers || []).join(', '),
+    });
   }
 
   const stamp = new Date().toISOString().slice(0, 10);

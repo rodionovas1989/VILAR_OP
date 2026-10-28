@@ -12,15 +12,42 @@ function indexById(rows) {
   return map;
 }
 
-/** Отчёт: выпущенные серии продукции (завершённые заказы). */
-export function releasedSeriesReport() {
+function mapReleasedComponent(line, materials, lots, counterparties, manufacturers) {
+  const mat = materials[line.materialId];
+  const lot = lots[line.lotId];
+  const cpId = line.counterpartyId || lot?.counterpartyId || null;
+  const mfrId = line.manufacturerId || lot?.manufacturerId || null;
+  return {
+    materialId: line.materialId,
+    materialName: mat?.name || line.materialId,
+    unit: mat?.unit || '',
+    lotId: line.lotId || '',
+    lotNumber: lot?.number || line.lotId || '—',
+    quantity: Math.abs(Number(line.quantity) || 0),
+    counterpartyId: cpId || '',
+    counterpartyName: (cpId && counterparties[cpId]?.name) || '—',
+    manufacturerId: mfrId || '',
+    manufacturerName: (mfrId && manufacturers[mfrId]?.name) || '—',
+  };
+}
+
+/**
+ * Отчёт: выпущенные серии продукции (завершённые заказы).
+ * from/to — фильтр по дате производства ГП (YYYY-MM-DD).
+ */
+export function releasedSeriesReport({ from, to } = {}) {
   const materials = indexById(store.readAll('materials'));
   const seriesMap = indexById(store.readAll('series'));
   const lotsList = store.readAll('lots');
   const lots = indexById(lotsList);
+  const counterparties = indexById(store.readAll('counterparties'));
+  const manufacturers = indexById(store.readAll('manufacturers'));
   const register = store
     .readAll('production_register')
     .filter((r) => r.documentStatus !== 'cancelled');
+
+  const fromDay = from ? String(from).slice(0, 10) : null;
+  const toDay = to ? String(to).slice(0, 10) : null;
 
   const orders = store.readAll('production_orders').filter((o) => o.status === DONE_STATUS);
   const rows = [];
@@ -30,11 +57,12 @@ export function releasedSeriesReport() {
     const receipts = moves.filter((r) => r.type === 'receipt' || Number(r.quantity) > 0);
     const issues = moves.filter((r) => r.type === 'issue' || Number(r.quantity) < 0);
 
+    let row;
     if (receipts.length || issues.length) {
       const gpMove = receipts[0] || null;
       const gpLot = gpMove?.lotId ? lots[gpMove.lotId] : null;
       const quantity = receipts.reduce((s, r) => s + Math.abs(Number(r.quantity) || 0), 0);
-      rows.push({
+      row = {
         id: order.id,
         orderId: order.id,
         productId: gpMove?.materialId || order.materialId,
@@ -54,74 +82,60 @@ export function releasedSeriesReport() {
           (order.actualQuantity != null ? Number(order.actualQuantity) : Number(order.quantity)) ||
           0,
         documentNumber: gpMove?.documentNumber || '',
-        components: issues.map((l) => {
-          const mat = materials[l.materialId];
-          const lot = lots[l.lotId];
-          return {
-            materialId: l.materialId,
-            materialName: mat?.name || l.materialId,
-            unit: mat?.unit || '',
-            lotId: l.lotId || '',
-            lotNumber: lot?.number || l.lotId || '—',
-            quantity: Math.abs(Number(l.quantity) || 0),
-          };
-        }),
-      });
-      continue;
+        components: issues.map((l) =>
+          mapReleasedComponent(l, materials, lots, counterparties, manufacturers)
+        ),
+      };
+    } else {
+      // fallback: старые завершённые заказы без движений в регистре
+      const series = seriesMap[order.seriesId];
+      const prrDocs = documents
+        .listDocuments('production_receipt', { productionOrderId: order.id })
+        .filter((d) => d.status === 'posted');
+      const prr = prrDocs[0] || null;
+      const gpLine = prr?.lines?.[0] || null;
+      const gpLot =
+        (gpLine?.lotId && lots[gpLine.lotId]) ||
+        lotsList.find((l) => l.number === `ГП-${series?.number || ''}`) ||
+        null;
+
+      const quantity =
+        order.actualQuantity != null && Number(order.actualQuantity) > 0
+          ? Number(order.actualQuantity)
+          : gpLine
+            ? Number(gpLine.quantity)
+            : Number(order.quantity) || 0;
+
+      const productionDate =
+        gpLot?.productionDate || prr?.date || String(order.endAt || '').slice(0, 10) || '—';
+
+      const factLines =
+        Array.isArray(order.actualLines) && order.actualLines.length > 0
+          ? order.actualLines
+          : order.lines || [];
+
+      row = {
+        id: order.id,
+        orderId: order.id,
+        productId: order.materialId,
+        productName: materials[order.materialId]?.name || order.materialId,
+        seriesId: order.seriesId || '',
+        seriesNumber: series?.number || order.seriesId || '—',
+        lotId: gpLot?.id || gpLine?.lotId || '',
+        lotNumber: gpLot?.number || gpLine?.lotId || '—',
+        productionDate,
+        quantity,
+        documentNumber: prr?.number || '',
+        components: factLines.map((l) =>
+          mapReleasedComponent(l, materials, lots, counterparties, manufacturers)
+        ),
+      };
     }
 
-    // fallback: старые завершённые заказы без движений в регистре
-    const series = seriesMap[order.seriesId];
-    const prrDocs = documents
-      .listDocuments('production_receipt', { productionOrderId: order.id })
-      .filter((d) => d.status === 'posted');
-    const prr = prrDocs[0] || null;
-    const gpLine = prr?.lines?.[0] || null;
-    const gpLot =
-      (gpLine?.lotId && lots[gpLine.lotId]) ||
-      lotsList.find((l) => l.number === `ГП-${series?.number || ''}`) ||
-      null;
-
-    const quantity =
-      order.actualQuantity != null && Number(order.actualQuantity) > 0
-        ? Number(order.actualQuantity)
-        : gpLine
-          ? Number(gpLine.quantity)
-          : Number(order.quantity) || 0;
-
-    const productionDate =
-      gpLot?.productionDate || prr?.date || String(order.endAt || '').slice(0, 10) || '—';
-
-    const factLines =
-      Array.isArray(order.actualLines) && order.actualLines.length > 0
-        ? order.actualLines
-        : order.lines || [];
-
-    rows.push({
-      id: order.id,
-      orderId: order.id,
-      productId: order.materialId,
-      productName: materials[order.materialId]?.name || order.materialId,
-      seriesId: order.seriesId || '',
-      seriesNumber: series?.number || order.seriesId || '—',
-      lotId: gpLot?.id || gpLine?.lotId || '',
-      lotNumber: gpLot?.number || gpLine?.lotId || '—',
-      productionDate,
-      quantity,
-      documentNumber: prr?.number || '',
-      components: factLines.map((l) => {
-        const mat = materials[l.materialId];
-        const lot = lots[l.lotId];
-        return {
-          materialId: l.materialId,
-          materialName: mat?.name || l.materialId,
-          unit: mat?.unit || '',
-          lotId: l.lotId || '',
-          lotNumber: lot?.number || l.lotId || '—',
-          quantity: Number(l.quantity) || 0,
-        };
-      }),
-    });
+    const day = String(row.productionDate || '').slice(0, 10);
+    if (fromDay && (day === '—' || day < fromDay)) continue;
+    if (toDay && (day === '—' || day > toDay)) continue;
+    rows.push(row);
   }
 
   rows.sort(
@@ -130,6 +144,54 @@ export function releasedSeriesReport() {
       String(a.seriesNumber).localeCompare(String(b.seriesNumber), 'ru', { numeric: true })
   );
   return rows;
+}
+
+/** Сводка поставщиков/производителей сырья по сериям (кг). */
+export function aggregateReleasedSuppliers(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    for (const c of row.components || []) {
+      const key = [
+        c.materialId || '',
+        c.counterpartyId || '',
+        c.manufacturerId || '',
+        row.productId || '',
+      ].join('::');
+      let agg = map.get(key);
+      if (!agg) {
+        agg = {
+          productId: row.productId,
+          productName: row.productName,
+          materialId: c.materialId,
+          materialName: c.materialName,
+          unit: c.unit || '',
+          counterpartyId: c.counterpartyId || '',
+          counterpartyName: c.counterpartyName || '—',
+          manufacturerId: c.manufacturerId || '',
+          manufacturerName: c.manufacturerName || '—',
+          quantity: 0,
+          seriesNumbers: new Set(),
+        };
+        map.set(key, agg);
+      }
+      agg.quantity += Number(c.quantity) || 0;
+      if (row.seriesNumber) agg.seriesNumbers.add(row.seriesNumber);
+    }
+  }
+  return [...map.values()]
+    .map((a) => ({
+      ...a,
+      quantity: Number(a.quantity.toFixed(6)),
+      seriesNumbers: [...a.seriesNumbers].sort((x, y) =>
+        String(x).localeCompare(String(y), 'ru', { numeric: true })
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        String(a.productName).localeCompare(String(b.productName), 'ru') ||
+        String(a.materialName).localeCompare(String(b.materialName), 'ru') ||
+        String(a.counterpartyName).localeCompare(String(b.counterpartyName), 'ru')
+    );
 }
 
 export function filterReleasedSeries(rows, ids) {
