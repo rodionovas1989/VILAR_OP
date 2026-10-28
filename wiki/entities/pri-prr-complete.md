@@ -12,5 +12,7 @@
 
 Склад списания задаётся в строке факта на столе управления заказами (не один склад на весь заказ).
 
+**Факт (FB-2026-10-28-00001):** состав редактируемый — add/remove строк, qty 0 = omit при `saveProductionFact`; PRI строится только из сохранённого факта с qty > 0.
+
 **Код:** `backend/src/services/planning.js`, `productionRegister.js`  
 **Связано:** [reservation-res.md](reservation-res.md), [production-register.md](production-register.md)

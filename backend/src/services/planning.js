@@ -662,13 +662,14 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
     if (!order) throw new Error('Заказ не найден');
     assertOrderStatus(order, [ORDER_STATUS.planned], 'Сохранение факта');
     if (!(Number(actualQuantity) > 0)) throw new Error('Фактический выпуск должен быть больше 0');
-    if (!Array.isArray(actualLines) || !actualLines.length) {
+    if (!Array.isArray(actualLines)) {
       throw new Error('Укажите фактический состав компонентов');
     }
     const normalized = [];
     for (const line of actualLines) {
+      // qty ≤ 0 — строка не использована (omit), не ошибка
+      if (!(Number(line.quantity) > 0)) continue;
       if (!line.materialId || !line.lotId) throw new Error('В факте у каждой строки должны быть материал и партия');
-      if (!(Number(line.quantity) > 0)) throw new Error('Количество в факте должно быть больше 0');
       const lot = store.getById('lots', line.lotId);
       if (!lot || lot.materialId !== line.materialId) {
         throw new Error('Партия в факте не соответствует материалу');
@@ -704,6 +705,9 @@ export function saveProductionFact(orderId, { actualQuantity, actualLines }) {
         quantity: Number(line.quantity),
         substitutionRuleId: line.substitutionRuleId || null,
       });
+    }
+    if (!normalized.length) {
+      throw new Error('Укажите фактический состав компонентов (строки с количеством > 0)');
     }
     assertSameManufacturerMix(normalized, 'Сохранение факта');
     assertLotsQualityForUse(

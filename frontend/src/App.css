@@ -1420,6 +1420,11 @@ button.link {
   min-height: 0;
 }
 
+.production-desktop .fact-add-lines {
+  margin-top: 8px;
+  align-items: center;
+}
+
 .planning-desktop .table-wrap,
 .planning-desktop .matrix-wrap {
   flex: 1;

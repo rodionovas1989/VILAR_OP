@@ -164,3 +164,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Контрагенты и производители: `active`, колонка/фильтр, selects через `activeOrSelected`. Правило `dictionary-requisites.mdc`, concept `dictionary-active`.
 
+## [2026-10-28] fix | FB-2026-10-28-00001 fact lot lines add/remove
+
+Исполнение: удаление строки / qty 0 omit при save; кнопки «+ материал» по позициям плана. GMP mix без изменений.
+
