@@ -198,6 +198,7 @@ export function ensureCollections() {
   migrateStockDocumentsToTyped();
   migrateLegacyReservationsToDocuments();
   migrateLotQualitiesDefaults();
+  migrateDictionaryActiveDefaults();
   migrateLotCharacteristics();
   migrateAccountingModels();
 }
@@ -571,6 +572,21 @@ function migrateLotQualitiesDefaults() {
     },
   ];
   writeAll('lot_qualities', seed);
+}
+
+/** Soft-flag active у контрагентов/производителей (FB-2026-10-27-00002). */
+function migrateDictionaryActiveDefaults() {
+  for (const name of ['counterparties', 'manufacturers']) {
+    const rows = readAll(name);
+    let changed = false;
+    for (const row of rows) {
+      if (row.active === undefined) {
+        row.active = true;
+        changed = true;
+      }
+    }
+    if (changed) writeAll(name, rows);
+  }
 }
 
 function invertLegacyDryValue(value) {

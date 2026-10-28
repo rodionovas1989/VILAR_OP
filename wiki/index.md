@@ -27,6 +27,7 @@
 | [tech-maps-series-planning](concepts/tech-maps-series-planning.md) | Техкарты, объёмы серий, plan-series |
 | [ui-scroll-layout](concepts/ui-scroll-layout.md) | Скролл в modal-doc / doc-form-scroll |
 | [ui-kit](concepts/ui-kit.md) | Clinical Ops: токены, ctrl, table |
+| [dictionary-active](concepts/dictionary-active.md) | Soft-flag `active` у справочников |
 
 ## Entities
 

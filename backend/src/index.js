@@ -382,6 +382,29 @@ for (const name of COLLECTIONS) {
         sanitize: sanitizeUser,
       })
     );
+  } else if (name === 'counterparties' || name === 'manufacturers') {
+    const label = name === 'counterparties' ? 'контрагента' : 'производителя';
+    app.use(
+      `/api/${name}`,
+      crudRouter(name, {
+        beforeCreate: (item) => {
+          item.name = String(item.name || '').trim();
+          if (!item.name) throw new Error(`Укажите название ${label}`);
+          item.active = item.active !== false && item.active !== 'false';
+          return item;
+        },
+        beforeUpdate: (merged) => {
+          if (merged.name !== undefined) {
+            merged.name = String(merged.name || '').trim();
+            if (!merged.name) throw new Error(`Укажите название ${label}`);
+          }
+          if (merged.active !== undefined) {
+            merged.active = merged.active !== false && merged.active !== 'false';
+          }
+          return merged;
+        },
+      })
+    );
   } else {
     app.use(`/api/${name}`, crudRouter(name, { readOnly }));
   }

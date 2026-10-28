@@ -1,0 +1,11 @@
+# Справочники: реквизиты и фильтры
+
+При добавлении или смене реквизита справочника (materials, lots, series, warehouses, counterparties, manufacturers, work_centers, tech_maps, lot_qualities, …):
+
+1. **Тип** в `frontend/src/types.ts` (+ при необходимости seed/миграция в `store.js`).
+2. **CRUD**: поле в форме + колонка списка; если значение скрытое/булево — `render` «да»/«нет» (не сырой `true`).
+3. **Фильтр списка**: колонка `filterable` (по умолчанию true в `useListTable`) — пользователь должен мочь отсечь архив/неактивное.
+4. **Selects в документах**: новый флаг «скрыт для выбора» (`active === false` и аналоги) — не предлагать в новых строках; текущее выбранное значение оставлять через `activeOrSelected` (`frontend/src/utils/activeOnly.ts`).
+5. **Wiki**: кратко обновить entity/concept, если меняется доменная семантика.
+
+Не плодить отдельные enum «архив» рядом с уже принятым boolean `active` (users, qualities, CP/MFR).

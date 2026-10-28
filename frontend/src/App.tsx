@@ -65,10 +65,22 @@ import { NAV } from './constants/navConfig';
 import NavTypeIcon from './components/NavTypeIcon';
 import { QtyFormatProvider } from './qtyFormat/QtyFormatContext';
 import { formatQty, qtyDisplayDecimalsForMaterial } from './utils/qty';
+import { activeOrSelected } from './utils/activeOnly';
 
 function opt(list: { id: string; name?: string; number?: string }[]) {
   return list.map((x) => ({ value: x.id, label: x.name || x.number || x.id }));
 }
+
+const ACTIVE_FIELD: FieldDef = {
+  key: 'active',
+  label: 'Активен',
+  type: 'select',
+  defaultValue: 'true',
+  options: [
+    { value: 'true', label: 'да' },
+    { value: 'false', label: 'нет' },
+  ],
+};
 
 export default function App() {
   const { user, loading: authLoading, needsPdnAccept } = useAuth();
@@ -396,8 +408,8 @@ export default function App() {
                 setEditing={setEditing}
                 productMaterials={materials.filter((m) => m.type === 'продукт').map((m) => ({ id: m.id, name: m.name }))}
                 materials={materials.filter((m) => m.type !== 'продукт')}
-                counterparties={counterparties.map((c) => ({ id: c.id, name: c.name }))}
-                manufacturers={manufacturers.map((m) => ({ id: m.id, name: m.name }))}
+                counterparties={counterparties.map((c) => ({ id: c.id, name: c.name, active: c.active }))}
+                manufacturers={manufacturers.map((m) => ({ id: m.id, name: m.name, active: m.active }))}
                 techMaps={techMaps.map((t) => ({ id: t.id, name: t.name }))}
                 substitutions={substitutions}
                 characteristics={lotCharacteristics}
@@ -410,8 +422,23 @@ export default function App() {
           <CrudPage
             title="Контрагенты"
             collection="counterparties"
-            fields={[{ key: 'name', label: 'Название', required: true }]}
-            columns={[{ key: 'name', label: 'Название' }]}
+            fields={[{ key: 'name', label: 'Название', required: true }, ACTIVE_FIELD]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'active',
+                label: 'Активен',
+                render: (r) => (r.active === false || r.active === 'false' ? 'нет' : 'да'),
+              },
+            ]}
+            transformIn={(row) => ({
+              ...row,
+              active: row.active === false || row.active === 'false' ? 'false' : 'true',
+            })}
+            transformOut={(row) => ({
+              ...row,
+              active: row.active !== 'false' && row.active !== false,
+            })}
           />
         );
       case 'manufacturers':
@@ -419,8 +446,23 @@ export default function App() {
           <CrudPage
             title="Производители"
             collection="manufacturers"
-            fields={[{ key: 'name', label: 'Название', required: true }]}
-            columns={[{ key: 'name', label: 'Название' }]}
+            fields={[{ key: 'name', label: 'Название', required: true }, ACTIVE_FIELD]}
+            columns={[
+              { key: 'name', label: 'Название' },
+              {
+                key: 'active',
+                label: 'Активен',
+                render: (r) => (r.active === false || r.active === 'false' ? 'нет' : 'да'),
+              },
+            ]}
+            transformIn={(row) => ({
+              ...row,
+              active: row.active === false || row.active === 'false' ? 'false' : 'true',
+            })}
+            transformOut={(row) => ({
+              ...row,
+              active: row.active !== 'false' && row.active !== false,
+            })}
           />
         );
       case 'lots':
@@ -441,12 +483,16 @@ export default function App() {
                 label: 'Контрагент',
                 type: 'select',
                 options: opt(counterparties),
+                optionsFor: (editing) =>
+                  opt(activeOrSelected(counterparties, String(editing.counterpartyId || ''))),
               },
               {
                 key: 'manufacturerId',
                 label: 'Производитель',
                 type: 'select',
                 options: opt(manufacturers),
+                optionsFor: (editing) =>
+                  opt(activeOrSelected(manufacturers, String(editing.manufacturerId || ''))),
               },
               { key: 'productionDate', label: 'Дата производства', type: 'date', required: true },
               { key: 'expiryDate', label: 'Срок годности', type: 'date', required: true },

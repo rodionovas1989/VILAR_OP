@@ -67,11 +67,15 @@ export interface Specification {
 export interface Counterparty {
   id: string;
   name: string;
+  /** false = архив; в новых документах не предлагается */
+  active?: boolean;
 }
 
 export interface Manufacturer {
   id: string;
   name: string;
+  /** false = архив; в новых документах не предлагается */
+  active?: boolean;
 }
 
 export interface Lot {

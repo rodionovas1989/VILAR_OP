@@ -160,3 +160,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Пользователей нельзя удалять — только `active: false`. Login: явное сообщение при отключённой учётке. UI: `allowDelete={false}`, колонка «да/нет». Wiki: `users-active`.
 
+## [2026-10-28] feature | FB-2026-10-27-00002 dictionary active CP/MFR
+
+Контрагенты и производители: `active`, колонка/фильтр, selects через `activeOrSelected`. Правило `dictionary-requisites.mdc`, concept `dictionary-active`.
+
