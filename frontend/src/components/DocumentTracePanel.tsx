@@ -2,6 +2,7 @@ import { Lot, Material, Warehouse } from '../types';
 import { DocumentTrace, OrderTrace, TraceDocumentRef } from '../types.documents';
 import { displayTimeFromIso, dateFromIso } from '../utils/docDateTime';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
+import IconButton from './IconButton';
 
 const DOC_STATUS: Record<string, string> = {
   draft: 'Создан',
@@ -21,6 +22,7 @@ const DOC_TYPE: Record<string, string> = {
   production_receipt: 'Выпуск из производства',
   shipment: 'Отгрузка',
   quality_management: 'Управление качеством',
+  lot_characteristic_management: 'Управление характеристиками',
 };
 
 const ORDER_STATUS: Record<string, string> = {
@@ -36,6 +38,7 @@ type Props = {
   materials: Material[];
   lots: Lot[];
   warehouses?: Warehouse[];
+  onOpenDocument?: (doc: TraceDocumentRef, mode: 'view' | 'edit') => void;
 };
 
 function isDocumentTrace(t: DocumentTrace | OrderTrace | null | undefined): t is DocumentTrace {
@@ -48,6 +51,7 @@ export default function DocumentTracePanel({
   materials,
   lots,
   warehouses = [],
+  onOpenDocument,
 }: Props) {
   const { formatMaterialQty } = useQtyFormat();
   const matName = (id?: string | null) =>
@@ -183,6 +187,7 @@ export default function DocumentTracePanel({
                   <th>Номер</th>
                   <th>Статус</th>
                   <th>Дата</th>
+                  {onOpenDocument ? <th className="col-actions" aria-label="Открыть" /> : null}
                 </tr>
               </thead>
               <tbody>
@@ -192,6 +197,23 @@ export default function DocumentTracePanel({
                     <td>{d.number}</td>
                     <td>{DOC_STATUS[d.status] || d.status}</td>
                     <td>{d.date}</td>
+                    {onOpenDocument ? (
+                      <td className="col-actions">
+                        <div className="row-actions" onClick={(e) => e.stopPropagation()}>
+                          <IconButton
+                            icon="view"
+                            label="Просмотр"
+                            tone="muted"
+                            onClick={() => onOpenDocument(d, 'view')}
+                          />
+                          <IconButton
+                            icon="edit"
+                            label="Изменить"
+                            onClick={() => onOpenDocument(d, 'edit')}
+                          />
+                        </div>
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>

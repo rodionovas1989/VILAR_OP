@@ -172,3 +172,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 `releasedSeriesReport({from,to})` + CP/MFR в компонентах; Excel лист «Поставщики сырья»; UI фильтр года.
 
+## [2026-10-28] feature | FB-2026-09-30-00001 related document peek
+
+Трассировка: иконки view/edit → nested `DocumentPeekModal` поверх related-docs.
+
