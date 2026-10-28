@@ -275,6 +275,10 @@ export interface ReleasedSeriesComponent {
   lotId: string;
   lotNumber: string;
   quantity: number;
+  counterpartyId?: string;
+  counterpartyName?: string;
+  manufacturerId?: string;
+  manufacturerName?: string;
 }
 
 export interface ReleasedSeriesRow {
