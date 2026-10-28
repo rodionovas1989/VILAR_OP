@@ -79,9 +79,12 @@ export function verifyToken(token) {
 export function login(loginName, password, rememberMe = false) {
   const login = String(loginName || '').trim();
   if (!login || !password) throw new Error('Укажите логин и пароль');
-  const user = store.readAll('users').find((u) => u.login === login && u.active !== false);
+  const user = store.readAll('users').find((u) => u.login === login);
   if (!user || !verifyPassword(password, user.passwordHash)) {
     throw new Error('Неверный логин или пароль');
+  }
+  if (user.active === false) {
+    throw new Error('Учётная запись отключена. Обратитесь к администратору.');
   }
   const ttl = rememberMe ? REMEMBER_MS : SESSION_MS;
   return {

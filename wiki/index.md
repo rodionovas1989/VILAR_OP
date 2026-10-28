@@ -46,6 +46,7 @@
 | [production-register](entities/production-register.md) | Аналитика PRI/PRR |
 | [ops-debug](entities/ops-debug.md) | ops_debug.jsonl |
 | [login-audit](entities/login-audit.md) | Журнал входов + status log |
+| [users-active](entities/users-active.md) | `active`, запрет delete, блокировка входа |
 | [changelog-feed](entities/changelog-feed.md) | CHANGELOG → «Что нового» |
 
 ## Decisions
