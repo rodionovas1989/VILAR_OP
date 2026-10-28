@@ -4,7 +4,7 @@ import SpecLinesEditor from './SpecLinesEditor';
 import SpecSuppliersEditor from './SpecSuppliersEditor';
 import SearchableSelect from './SearchableSelect';
 
-type Opt = { id: string; name: string; type?: string };
+type Opt = { id: string; name: string; type?: string; active?: boolean };
 
 type Props = {
   editing: Record<string, unknown>;

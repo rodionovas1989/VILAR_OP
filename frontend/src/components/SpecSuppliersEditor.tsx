@@ -2,8 +2,9 @@ import { ApprovedSupplier, SpecLine, Substitution } from '../types';
 import IconButton from './IconButton';
 import SearchableSelect from './SearchableSelect';
 import { isSpecAnalogueMaterial, substitutesFor } from '../utils/substitutions';
+import { activeOrSelected } from '../utils/activeOnly';
 
-type Opt = { id: string; name: string };
+type Opt = { id: string; name: string; active?: boolean };
 
 type MaterialOption = {
   value: string;
@@ -144,7 +145,10 @@ export default function SpecSuppliersEditor({
                       required
                       value={row.counterpartyId}
                       onChange={(v) => update(idx, { counterpartyId: v })}
-                      options={counterparties.map((c) => ({ value: c.id, label: c.name }))}
+                      options={activeOrSelected(counterparties, row.counterpartyId).map((c) => ({
+                        value: c.id,
+                        label: c.name,
+                      }))}
                     />
                   </td>
                   <td>
@@ -152,7 +156,10 @@ export default function SpecSuppliersEditor({
                       required
                       value={row.manufacturerId}
                       onChange={(v) => update(idx, { manufacturerId: v })}
-                      options={manufacturers.map((m) => ({ value: m.id, label: m.name }))}
+                      options={activeOrSelected(manufacturers, row.manufacturerId).map((m) => ({
+                        value: m.id,
+                        label: m.name,
+                      }))}
                     />
                   </td>
                   <td>
