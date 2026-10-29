@@ -3,9 +3,9 @@ import { api } from '../api';
 import { canViewObject } from '../auth/permissions';
 import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
-import { ReleasedSeriesRow } from '../types';
+import { ReleasedSeriesProductTotal, ReleasedSeriesRow } from '../types';
 import AccessDenied from './AccessDenied';
-import PageTitle from './PageTitle';
+import ReportChrome from './ReportChrome';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
@@ -13,7 +13,9 @@ import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'report_released_series';
 
-function yearBounds(year: number) {
+type Layout = 'series' | 'product';
+
+function yearBounds(year = new Date().getFullYear()) {
   return { from: `${year}-01-01`, to: `${year}-12-31` };
 }
 
@@ -21,19 +23,16 @@ export default function ReleasedSeriesReportPage() {
   const { user } = useAuth();
   const { formatMaterialQty } = useQtyFormat();
   const canView = canViewObject(user?.permissions, PAGE_ID, Boolean(user));
-  const currentYear = new Date().getFullYear();
-  const [year, setYear] = useState(currentYear);
+  const initial = yearBounds();
+  const [from, setFrom] = useState(initial.from);
+  const [to, setTo] = useState(initial.to);
+  const [layout, setLayout] = useState<Layout>('series');
   const [rows, setRows] = useState<ReleasedSeriesRow[]>([]);
+  const [byProduct, setByProduct] = useState<ReleasedSeriesProductTotal[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  const yearOptions = useMemo(() => {
-    const ys: number[] = [];
-    for (let y = currentYear; y >= currentYear - 10; y -= 1) ys.push(y);
-    return ys;
-  }, [currentYear]);
 
   const listColumns = useMemo((): ListColumn<ReleasedSeriesRow>[] => {
     return [
@@ -54,12 +53,16 @@ export default function ReleasedSeriesReportPage() {
     userId: user?.id,
   });
 
-  const load = async (y = year) => {
+  const load = async (range = { from, to }) => {
     setBusy(true);
     setError('');
     try {
-      const { from, to } = yearBounds(y);
-      setRows(await api.releasedSeriesReport({ from, to }));
+      if (!range.from || !range.to) throw new Error('Укажите даты начала и окончания периода');
+      if (range.from > range.to) throw new Error('Дата окончания раньше даты начала');
+      const data = await api.releasedSeriesReport(range);
+      setRows(data.rows);
+      setByProduct(data.byProduct);
+      setExpanded(new Set());
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -85,9 +88,9 @@ export default function ReleasedSeriesReportPage() {
     setBusy(true);
     setError('');
     try {
-      const { from, to } = yearBounds(year);
+      const source = layout === 'series' ? listTable.displayRows : rows;
       await api.exportReleasedSeriesXlsx({
-        ids: listTable.displayRows.map((r) => r.id),
+        ids: source.map((r) => r.id),
         from,
         to,
       });
@@ -99,6 +102,10 @@ export default function ReleasedSeriesReportPage() {
   };
 
   const printReport = () => {
+    if (layout === 'product') {
+      window.print();
+      return;
+    }
     setExpanded(new Set(listTable.displayRows.map((r) => r.id)));
     requestAnimationFrame(() => {
       requestAnimationFrame(() => window.print());
@@ -109,44 +116,52 @@ export default function ReleasedSeriesReportPage() {
     return <AccessDenied title="Выпущенные серии продукции" />;
   }
 
+  const periodLabel = `${from || '…'} — ${to || '…'}`;
+
   return (
     <div className="page report-page">
-      <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="Выпущенные серии продукции" />
-        <div className="toolbar-actions report-filter-bar">
-          <label className="report-filter-inline">
-            Год
-            <select
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              disabled={busy}
-            >
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" onClick={() => void load(year)} disabled={busy}>
-            Применить
-          </button>
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
-            activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
-          />
-          <button type="button" className="ghost" onClick={exportExcel} disabled={busy}>
-            Excel
-          </button>
-          <button type="button" className="ghost" onClick={printReport} disabled={busy}>
-            Печать
-          </button>
-          <RefreshButton onClick={() => load(year)} disabled={busy} />
-        </div>
-      </div>
-      {listSettingsOpen && (
+      <ReportChrome
+        pageId={PAGE_ID}
+        title="Выпущенные серии продукции"
+        variants={[
+          { id: 'series', label: 'По сериям' },
+          { id: 'product', label: 'Итого по продукту' },
+        ]}
+        variant={layout}
+        onVariantChange={(id) => setLayout(id as Layout)}
+        busy={busy}
+        onExcel={() => void exportExcel()}
+        onPrint={printReport}
+        filters={
+          <>
+            <label className="report-filter-inline">
+              <span>с</span>
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={busy} />
+            </label>
+            <label className="report-filter-inline">
+              <span>по</span>
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={busy} />
+            </label>
+            <button type="button" onClick={() => void load()} disabled={busy}>
+              Применить
+            </button>
+          </>
+        }
+        tools={
+          <>
+            {layout === 'series' && (
+              <ListViewSettingsButton
+                open={listSettingsOpen}
+                onOpenChange={setListSettingsOpen}
+                activeFilterCount={listTable.activeFilterCount}
+                sortRulesCount={listTable.sortRules.length}
+              />
+            )}
+            <RefreshButton onClick={() => load()} disabled={busy} />
+          </>
+        }
+      />
+      {layout === 'series' && listSettingsOpen && (
         <div className="report-no-print">
           <ListViewSettingsPanel
             open={listSettingsOpen}
@@ -162,86 +177,150 @@ export default function ReleasedSeriesReportPage() {
         </div>
       )}
 
-      <p className="hint report-no-print">
-        Завершённые заказы за выбранный год: выпуск ГП и фактически потраченные компоненты с
-        контрагентом и производителем. Раскройте строку для состава. Excel — листы «Серии»,
-        «Компоненты» и сводка «Поставщики сырья» (кг по поставщику и списку серий).
-      </p>
-
       {error && <p className="error report-no-print">{error}</p>}
 
-      <h2 className="report-print-title">Выпущенные серии продукции — {year}</h2>
+      <h2 className="report-print-title">
+        Выпущенные серии продукции — {periodLabel}
+        {layout === 'product' ? ' — итог по продукту' : ''}
+      </h2>
 
-      <div className="table-wrap">
-        <table className="data-table report-table">
-          <ListTableHeader columns={listColumns} extraHead={<th className="report-no-print" />} />
-          <tbody>
-            {listTable.displayRows.map((row) => {
-              const open = expanded.has(row.id);
-              return (
-                <Fragment key={row.id}>
-                  <tr
-                    className={open ? 'report-row is-open' : 'report-row'}
-                    onClick={() => toggleRow(row.id)}
-                  >
-                    {listColumns.map((col) => (
-                      <td key={col.key}>{col.getValue(row)}</td>
+      {layout === 'product' ? (
+        <div>
+          {byProduct.map((product) => (
+            <section key={product.productId || product.productName} className="report-product-block">
+              <h3>{product.productName}</h3>
+              <div className="table-wrap">
+                <table className="data-table report-table">
+                  <thead>
+                    <tr>
+                      <th>Серия</th>
+                      <th>Партия ГП</th>
+                      <th>Дата производства</th>
+                      <th>Количество</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {product.series.map((series) => (
+                      <tr key={series.orderId || series.seriesId}>
+                        <td>{series.seriesNumber}</td>
+                        <td>{series.lotNumber}</td>
+                        <td>{series.productionDate}</td>
+                        <td>{formatMaterialQty(series.quantity, product.productId)}</td>
+                      </tr>
                     ))}
-                    <td className="report-no-print">
-                      <span className="report-expand-chevron" aria-hidden>
-                        {open ? '▾' : '▸'}
-                      </span>
-                    </td>
-                  </tr>
-                  {open && (
-                    <tr className="report-detail-row">
-                      <td colSpan={listColumns.length + 1}>
-                        {row.components?.length ? (
-                          <table className="report-nested-table">
-                            <thead>
-                              <tr>
-                                <th>Компонент</th>
-                                <th>Партия</th>
-                                <th>Контрагент</th>
-                                <th>Производитель</th>
-                                <th>Количество</th>
-                                <th>Ед.</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {row.components.map((c, i) => (
-                                <tr key={`${row.id}-c-${i}`}>
-                                  <td>{c.materialName}</td>
-                                  <td>{c.lotNumber}</td>
-                                  <td>{c.counterpartyName || '—'}</td>
-                                  <td>{c.manufacturerName || '—'}</td>
-                                  <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
-                                  <td>{c.unit || '—'}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        ) : (
-                          <p className="hint" style={{ margin: 0 }}>
-                            Нет фактических строк состава
-                          </p>
-                        )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="table-wrap">
+                <table className="data-table report-nested-table">
+                  <thead>
+                    <tr>
+                      <th>Компонент</th>
+                      <th>Партия</th>
+                      <th>Контрагент</th>
+                      <th>Производитель</th>
+                      <th>Количество</th>
+                      <th>Ед.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {product.components.length ? (
+                      product.components.map((c) => (
+                        <tr key={`${c.materialId}-${c.lotId || c.lotNumber}`}>
+                          <td>{c.materialName}</td>
+                          <td>{c.lotNumber}</td>
+                          <td>{c.counterpartyName || '—'}</td>
+                          <td>{c.manufacturerName || '—'}</td>
+                          <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
+                          <td>{c.unit || '—'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="muted">
+                          Нет фактических строк состава
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+          {!byProduct.length && <p className="muted">Нет выпущенных серий за выбранный период</p>}
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table className="data-table report-table">
+            <ListTableHeader columns={listColumns} extraHead={<th className="report-no-print" />} />
+            <tbody>
+              {listTable.displayRows.map((row) => {
+                const open = expanded.has(row.id);
+                return (
+                  <Fragment key={row.id}>
+                    <tr
+                      className={open ? 'report-row is-open' : 'report-row'}
+                      onClick={() => toggleRow(row.id)}
+                    >
+                      {listColumns.map((col) => (
+                        <td key={col.key}>{col.getValue(row)}</td>
+                      ))}
+                      <td className="report-no-print">
+                        <span className="report-expand-chevron" aria-hidden>
+                          {open ? '▾' : '▸'}
+                        </span>
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-            {!listTable.displayRows.length && (
-              <tr>
-                <td colSpan={listColumns.length + 1} className="muted">
-                  Нет выпущенных серий за {year}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    {open && (
+                      <tr className="report-detail-row">
+                        <td colSpan={listColumns.length + 1}>
+                          {row.components?.length ? (
+                            <table className="report-nested-table">
+                              <thead>
+                                <tr>
+                                  <th>Компонент</th>
+                                  <th>Партия</th>
+                                  <th>Контрагент</th>
+                                  <th>Производитель</th>
+                                  <th>Количество</th>
+                                  <th>Ед.</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {row.components.map((c, i) => (
+                                  <tr key={`${row.id}-c-${i}`}>
+                                    <td>{c.materialName}</td>
+                                    <td>{c.lotNumber}</td>
+                                    <td>{c.counterpartyName || '—'}</td>
+                                    <td>{c.manufacturerName || '—'}</td>
+                                    <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
+                                    <td>{c.unit || '—'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <p className="hint" style={{ margin: 0 }}>
+                              Нет фактических строк состава
+                            </p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+              {!listTable.displayRows.length && (
+                <tr>
+                  <td colSpan={listColumns.length + 1} className="muted">
+                    Нет выпущенных серий за выбранный период
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { requirePermission } from '../middleware/access.js';
 import {
   releasedSeriesReport,
   filterReleasedSeries,
+  aggregateReleasedByProduct,
   aggregateReleasedSuppliers,
   planFactReport,
   filterPlanFactReport,
@@ -21,12 +22,11 @@ import {
 const router = Router();
 
 router.get('/released-series', requirePermission('report_released_series', 'read'), (req, res) => {
-  res.json(
-    releasedSeriesReport({
-      from: req.query.from || undefined,
-      to: req.query.to || undefined,
-    })
-  );
+  const rows = releasedSeriesReport({
+    from: req.query.from || undefined,
+    to: req.query.to || undefined,
+  });
+  res.json({ rows, byProduct: aggregateReleasedByProduct(rows) });
 });
 
 router.post('/released-series.xlsx', requirePermission('report_released_series', 'read'), async (req, res) => {
@@ -104,6 +104,41 @@ router.post('/released-series.xlsx', requirePermission('report_released_series',
       unit: a.unit,
       seriesList: (a.seriesNumbers || []).join(', '),
     });
+  }
+
+  const totalSheet = wb.addWorksheet('Итого по продукту');
+  totalSheet.columns = [
+    { width: 36 },
+    { width: 18 },
+    { width: 20 },
+    { width: 28 },
+    { width: 14 },
+    { width: 10 },
+  ];
+  for (const product of aggregateReleasedByProduct(rows)) {
+    totalSheet.addRow([product.productName]);
+    totalSheet.addRow(['Серия', 'Партия ГП', 'Дата производства', 'Количество']);
+    for (const series of product.series) {
+      totalSheet.addRow([
+        series.seriesNumber,
+        series.lotNumber,
+        series.productionDate,
+        series.quantity,
+      ]);
+    }
+    totalSheet.addRow([]);
+    totalSheet.addRow(['Компонент', 'Партия', 'Контрагент', 'Производитель', 'Количество', 'Ед.']);
+    for (const c of product.components) {
+      totalSheet.addRow([
+        c.materialName,
+        c.lotNumber,
+        c.counterpartyName,
+        c.manufacturerName,
+        c.quantity,
+        c.unit,
+      ]);
+    }
+    totalSheet.addRow([]);
   }
 
   const stamp = new Date().toISOString().slice(0, 10);

@@ -180,11 +180,19 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Выкат `main`@ff15e23 на https://vilar-prod.ru. Закрыты FB-2026-09-30-00001, 10-27-00001…00003, 10-28-00001. Бэкап sqlite перед выкатом.
 
+## [2026-10-29] query | Ticket intake from pilot
+
+Правило входа: тикеты читать с пилота (`local/dump-feedback-open.py`), не из локальной sqlite. 1 тикет = 1 ветка. Страница `feedback-tickets`, триггер в SCHEMA и `wiki-schema.mdc`.
+
 ## [2026-10-29] fix | FB-2026-10-29-00001 series with done order
 
 Планирование серий: серия занята любым заказом кроме `отменен`, включая `завершен`. UI и `planSeries`.
 
-## [2026-10-29] query | Ticket intake from pilot
+## [2026-10-29] feature | FB-2026-10-29-00002 released series by product
 
-Правило входа: тикеты читать с пилота (`local/dump-feedback-open.py`), не из локальной sqlite. 1 тикет = 1 ветка. Страница `feedback-tickets`, триггер в SCHEMA и `wiki-schema.mdc`.
+Компоновка «Итого по продукту» и даты с/по у того же отчёта выпущенных серий. Концепция `traceability-reports`.
+
+## [2026-10-29] change | Report chrome + same-origin API in dev
+
+Шапка отчётов: вариант в дропдауне, печать и Excel — пиктограммы. Dev API по умолчанию `/api`, чтобы cookie не терялась между `localhost` и `127.0.0.1`. Пиктограммы экспорта — квадрат `--ctrl-h`, подпись «Вариант отчета:». Поясняющие абзацы под шапкой отчётов не используем.
 

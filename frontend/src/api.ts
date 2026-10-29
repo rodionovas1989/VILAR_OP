@@ -1,4 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+/** В dev без VITE_API_URL — относительный `/api` (прокси Vite), чтобы cookie сессии была на том же хосте, что и страница. */
+export const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /** Переходный Bearer; основной контур — httpOnly cookie + credentials. */
 let authToken: string | null = null;
@@ -344,9 +345,10 @@ export const api = {
     if (params?.from) q.set('from', params.from);
     if (params?.to) q.set('to', params.to);
     const qs = q.toString();
-    return request<import('./types').ReleasedSeriesRow[]>(
-      `/reports/released-series${qs ? `?${qs}` : ''}`
-    );
+    return request<{
+      rows: import('./types').ReleasedSeriesRow[];
+      byProduct: import('./types').ReleasedSeriesProductTotal[];
+    }>(`/reports/released-series${qs ? `?${qs}` : ''}`);
   },
   exportReleasedSeriesXlsx: (body: { ids: string[]; from?: string; to?: string }) =>
     downloadFile(`/reports/released-series.xlsx`, `released-series-${new Date().toISOString().slice(0, 10)}.xlsx`, {

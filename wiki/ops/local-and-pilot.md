@@ -4,6 +4,7 @@
 
 - `install.bat` / `start-all.bat` / `restart-all.bat` / `backup.bat`
 - API `:3001`, UI `:5173`; Node 22+
+- В dev интерфейс ходит в API через относительный `/api` (прокси Vite). Cookie сессии на том же хосте, что и страница.
 - Порты защищены `scripts/port-guard.ps1`
 - Канон: [DEPLOYMENT.md](../../DEPLOYMENT.md)
 

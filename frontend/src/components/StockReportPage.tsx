@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
 import { StockReportRow } from '../types';
 import AccessDenied from './AccessDenied';
-import PageTitle from './PageTitle';
+import ReportChrome from './ReportChrome';
 import RefreshButton from './RefreshButton';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
@@ -186,30 +186,33 @@ export default function StockReportPage() {
 
   return (
     <div className="page report-page">
-      <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="Отчет по запасам" />
-        <div className="toolbar-actions">
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
-            activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
-          />
-          <button type="button" className="ghost" onClick={expandAll} disabled={busy}>
-            Развернуть всё
-          </button>
-          <button type="button" className="ghost" onClick={collapseAll} disabled={busy}>
-            Свернуть всё
-          </button>
-          <button type="button" className="ghost" onClick={exportExcel} disabled={busy}>
-            Excel
-          </button>
-          <button type="button" className="ghost" onClick={printReport} disabled={busy}>
-            Печать
-          </button>
-          <RefreshButton onClick={() => load()} disabled={busy} />
-        </div>
-      </div>
+      <ReportChrome
+        pageId={PAGE_ID}
+        title="Отчет по запасам"
+        variants={[{ id: 'tree', label: 'Дерево складов' }]}
+        variant="tree"
+        onVariantChange={() => {}}
+        busy={busy}
+        onExcel={() => void exportExcel()}
+        onPrint={printReport}
+        tools={
+          <>
+            <ListViewSettingsButton
+              open={listSettingsOpen}
+              onOpenChange={setListSettingsOpen}
+              activeFilterCount={listTable.activeFilterCount}
+              sortRulesCount={listTable.sortRules.length}
+            />
+            <button type="button" className="ghost" onClick={expandAll} disabled={busy}>
+              Развернуть всё
+            </button>
+            <button type="button" className="ghost" onClick={collapseAll} disabled={busy}>
+              Свернуть всё
+            </button>
+            <RefreshButton onClick={() => load()} disabled={busy} />
+          </>
+        }
+      />
       {listSettingsOpen && (
         <div className="report-no-print">
           <ListViewSettingsPanel
@@ -225,11 +228,6 @@ export default function StockReportPage() {
           />
         </div>
       )}
-
-      <p className="hint report-no-print">
-        Иерархия Склад → Материал → Идентификатор партии. На группах — суммы остатка, резерва и свободного
-        количества. В колонке «Партия производителя» — номер партии у производителя.
-      </p>
 
       {error && <p className="error report-no-print">{error}</p>}
 

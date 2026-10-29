@@ -10,7 +10,9 @@ export type IconKind =
   | 'status'
   | 'links'
   | 'help'
-  | 'columns';
+  | 'columns'
+  | 'excel'
+  | 'print';
 
 const ICONS: Record<IconKind, ReactNode> = {
   edit: (
@@ -91,6 +93,38 @@ const ICONS: Record<IconKind, ReactNode> = {
         fill="currentColor"
         d="M3 5h4v14H3V5zm7 0h4v14h-4V5zm7 0h4v14h-4V5z"
       />
+    </svg>
+  ),
+  excel: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" strokeWidth="1.75" />
+      <rect x="3.9" y="3.9" width="4.4" height="4.4" fill="currentColor" />
+    </svg>
+  ),
+  print: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path
+        d="M7 8V3.2c0-.7.5-1.2 1.2-1.2h7.6c.7 0 1.2.5 1.2 1.2V8"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path d="M9 4.3h6M9 6.3h3.2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path
+        d="M4 8.5h16a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-4.5a2 2 0 0 1 2-2z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <circle cx="18" cy="11.7" r="1" fill="currentColor" />
+      <path
+        d="M7 14.2h10V21a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-6.8z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M9.2 17.2h5.6M9.2 19.5h3.4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>
   ),
 };

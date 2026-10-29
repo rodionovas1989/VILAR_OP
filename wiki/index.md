@@ -25,6 +25,7 @@
 | [legal-pdn](concepts/legal-pdn.md) | ПДн, согласие, без саморегистрации |
 | [qbl-soft-block](concepts/qbl-soft-block.md) | QBL мягкий карантин партии |
 | [tech-maps-series-planning](concepts/tech-maps-series-planning.md) | Техкарты, объёмы серий, plan-series |
+| [traceability-reports](concepts/traceability-reports.md) | Прослеживаемость: один отчёт, компоновки, период датами |
 | [ui-scroll-layout](concepts/ui-scroll-layout.md) | Скролл в modal-doc / doc-form-scroll |
 | [ui-kit](concepts/ui-kit.md) | Clinical Ops: токены, ctrl, table |
 | [dictionary-active](concepts/dictionary-active.md) | Soft-flag `active` у справочников |
