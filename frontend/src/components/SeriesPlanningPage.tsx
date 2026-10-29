@@ -10,7 +10,6 @@ import SearchableSelect from './SearchableSelect';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'series_planning';
-const ACTIVE = new Set(['новый', 'спланирован']);
 
 type PlanLine = {
   key: string;
@@ -83,7 +82,7 @@ export default function SeriesPlanningPage({
   const occupiedSeriesIds = useMemo(() => {
     const set = new Set<string>();
     for (const o of orders) {
-      if (o.seriesId && ACTIVE.has(o.status || 'новый')) set.add(o.seriesId);
+      if (o.seriesId && (o.status || 'новый') !== 'отменен') set.add(o.seriesId);
     }
     return set;
   }, [orders]);
@@ -264,9 +263,10 @@ export default function SeriesPlanningPage({
       </div>
 
       <p className="hint" style={{ marginTop: 0 }}>
-        В списке только серии без незакрытого заказа. При выборе серии подставляются основная спецификация, РЦ из
-        техкарты и количество из плановых объёмов (продукт × РЦ) — всё можно изменить. Одна серия — одна строка и один
-        незакрытый заказ. «Подобрать серии» заполняет таблицу всеми свободными сериями.
+        В списке только серии без заказа или с отменённым заказом. Завершённая серия снова не предлагается. При выборе
+        серии подставляются основная спецификация, РЦ из техкарты и количество из плановых объёмов (продукт × РЦ) — всё
+        можно изменить. Одна серия — одна строка и один не отменённый заказ. «Подобрать серии» заполняет таблицу всеми
+        свободными сериями.
       </p>
 
       {error && <p className="error">{error}</p>}

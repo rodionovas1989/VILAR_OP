@@ -454,6 +454,38 @@ describe('Полная цепочка: приёмка → резерв → за�
     assert.ok(statusLogs.some((r) => r.action === 'fulfill' && r.documentType === 'reservation'));
   });
 
+  test('planSeries не берёт серию с завершённым заказом и берёт после отмены', () => {
+    store.update('production_orders', 'ord-1', { status: 'завершен' });
+    store.create('series', { id: 'ser-2', number: 'S-002', materialId: 'mat-gp' });
+    const day = isoDays(0);
+    assert.throws(
+      () =>
+        planning.planSeries({
+          startDate: day,
+          endDate: day,
+          lines: [{ seriesId: 'ser-1', quantity: 100 }],
+        }),
+      /завершен/
+    );
+    const created = planning.planSeries({
+      startDate: day,
+      endDate: day,
+      lines: [{ seriesId: 'ser-2', quantity: 100 }],
+    });
+    assert.equal(created.count, 1);
+    assert.equal(created.orders[0].seriesId, 'ser-2');
+    assert.equal(created.orders[0].status, 'новый');
+
+    store.update('production_orders', 'ord-1', { status: 'отменен' });
+    const again = planning.planSeries({
+      startDate: day,
+      endDate: day,
+      lines: [{ seriesId: 'ser-1', quantity: 50 }],
+    });
+    assert.equal(again.count, 1);
+    assert.equal(again.orders[0].seriesId, 'ser-1');
+  });
+
   test('отчёт выпущенных серий показывает ГП и фактические компоненты', async () => {
     postReceipt(50);
     planning.confirmMaterialPicks('ord-1', [{ materialId: 'mat-rm', lotId: 'lot-rm', quantity: 2 }], USER);

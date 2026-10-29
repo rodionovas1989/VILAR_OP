@@ -1081,8 +1081,6 @@ export function materialBalanceMatrix({ from, to } = {}) {
   return { dates, rows, from: rangeFrom, to: rangeTo };
 }
 
-const ACTIVE_ORDER_STATUSES = [ORDER_STATUS.new, ORDER_STATUS.planned];
-
 function parsePeriodBound(dateStr, endOfDay) {
   const raw = String(dateStr || '').trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
@@ -1135,12 +1133,12 @@ export function planSeries(payload = {}) {
     const series = store.getById('series', seriesId);
     if (!series) throw new Error(`${label}: серия не найдена`);
 
-    const open = store
+    const blocking = store
       .readAll('production_orders')
-      .find((o) => o.seriesId === seriesId && ACTIVE_ORDER_STATUSES.includes(o.status));
-    if (open) {
+      .find((o) => o.seriesId === seriesId && o.status !== ORDER_STATUS.cancelled);
+    if (blocking) {
       throw new Error(
-        `${label}: у серии «${series.number}» уже есть незакрытый заказ (статус «${open.status}»). Выберите серию без активного заказа.`
+        `${label}: у серии «${series.number}» уже есть заказ (статус «${blocking.status}»). К планированию доступны серии без заказа или только с отменённым.`
       );
     }
 

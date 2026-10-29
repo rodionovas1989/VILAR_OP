@@ -2,7 +2,7 @@
 
 - **Техкарта** (`tech_maps`): имя + `workCenterId`.
 - **Плановые объёмы серий:** срез `materialId + workCenterId → quantity`; при создании заказа количество подставляется (можно править).
-- **Планирование серий:** объём на период → массовые заказы со статусом `новый` (`POST /api/planning/plan-series`).
+- **Планирование серий:** объём на период → массовые заказы со статусом `новый` (`POST /api/planning/plan-series`). В подбор и в `planSeries` не попадают серии, у которых уже есть заказ кроме `отменен` (в том числе `завершен`). Отмена заказа серию освобождает.
 - Отчёт **План/Факт** производства — UI `PlanFactReportPage`.
 
 **Связано:** [entities/production-order.md](../entities/production-order.md), [order-status-machine.md](order-status-machine.md)
