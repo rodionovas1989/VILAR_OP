@@ -60,5 +60,6 @@
 | Query с ценным синтезом | analyses/decisions + log |
 | Релиз / тег | CHANGELOG (люди) + при необходимости ops wiki |
 | По просьбе / раз в спринт | **lint** вики |
+| Запрос про тикеты / FB-… / обратную связь | Пилот, не локальная sqlite: [feedback-tickets](../entities/feedback-tickets.md). 1 тикет = 1 ветка |
 
 Если агент менял поведение продукта и не тронул wiki — это нарушение schema (то же, что забыть ROADMAP).

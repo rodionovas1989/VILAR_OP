@@ -180,3 +180,7 @@ FB-2026-09-07-00001: подбор/факт/карточка заказа — dua
 
 Выкат `main`@ff15e23 на https://vilar-prod.ru. Закрыты FB-2026-09-30-00001, 10-27-00001…00003, 10-28-00001. Бэкап sqlite перед выкатом.
 
+## [2026-10-29] query | Ticket intake from pilot
+
+Правило входа: тикеты читать с пилота (`local/dump-feedback-open.py`), не из локальной sqlite. 1 тикет = 1 ветка. Страница `feedback-tickets`, триггер в SCHEMA и `wiki-schema.mdc`.
+

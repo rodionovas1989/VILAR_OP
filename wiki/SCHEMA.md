@@ -73,6 +73,7 @@ wiki/
 | Ingest raw | sources + linked pages + log |
 | Полезный ответ-синтез | analyses или decision + log |
 | Релиз | CHANGELOG для людей; ops wiki при смене деплоя |
+| Запрос про тикеты / FB-… / обратную связь | Не локальная sqlite. Выгрузка с пилота по [feedback-tickets](entities/feedback-tickets.md); 1 тикет = 1 ветка |
 
 Пропуск wiki при изменении домена = тот же класс ошибки, что устаревший ROADMAP.
 
