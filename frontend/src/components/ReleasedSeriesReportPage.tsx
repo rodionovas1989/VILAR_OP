@@ -10,6 +10,12 @@ import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
+import {
+  componentKey,
+  componentsOfSeries,
+  ReportLink,
+  seriesUsingComponent,
+} from '../utils/releasedSeriesLink';
 
 const PAGE_ID = 'report_released_series';
 
@@ -34,6 +40,7 @@ export default function ReleasedSeriesReportPage() {
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [openProducts, setOpenProducts] = useState<Set<string>>(new Set());
+  const [linkByProduct, setLinkByProduct] = useState<Record<string, ReportLink | null>>({});
 
   const listColumns = useMemo((): ListColumn<ReleasedSeriesRow>[] => {
     return [
@@ -65,6 +72,7 @@ export default function ReleasedSeriesReportPage() {
       setByProduct(data.byProduct);
       setExpanded(new Set());
       setOpenProducts(new Set(data.byProduct.map((product) => product.productId || product.productName)));
+      setLinkByProduct({});
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -104,6 +112,18 @@ export default function ReleasedSeriesReportPage() {
   };
 
   const productKey = (product: ReleasedSeriesProductTotal) => product.productId || product.productName;
+
+  const toggleLink = (productId: string, next: ReportLink) => {
+    setLinkByProduct((prev) => {
+      const current = prev[productId];
+      const same =
+        current?.kind === next.kind &&
+        (current.kind === 'series'
+          ? next.kind === 'series' && current.orderId === next.orderId
+          : next.kind === 'component' && current.key === next.key);
+      return { ...prev, [productId]: same ? null : next };
+    });
+  };
 
   const toggleProduct = (id: string) => {
     setOpenProducts((prev) => {
@@ -244,6 +264,38 @@ export default function ReleasedSeriesReportPage() {
               </button>
               {open && (
               <div className="report-product-body">
+              {(() => {
+                const link = linkByProduct[id] || null;
+                const seriesRows =
+                  link?.kind === 'component'
+                    ? seriesUsingComponent(rows, product.productId, product.productName, link.key)
+                    : product.series.map((series) => ({ ...series, componentQty: null as number | null }));
+                const componentRows =
+                  link?.kind === 'series'
+                    ? componentsOfSeries(rows, link.orderId)
+                    : product.components;
+                const seriesLabel =
+                  link?.kind === 'series'
+                    ? product.series.find((series) => series.orderId === link.orderId)?.seriesNumber
+                    : '';
+                const componentLabel =
+                  link?.kind === 'component'
+                    ? product.components.find((c) => componentKey(c) === link.key)
+                    : null;
+                return (
+              <>
+              {link && (
+                <p className="report-link-caption">
+                  {link.kind === 'series'
+                    ? `Сырьё серии ${seriesLabel || '—'}`
+                    : `Серии с ${componentLabel?.materialName || 'компонентом'}${
+                        componentLabel?.lotNumber ? `, партия ${componentLabel.lotNumber}` : ''
+                      }`}
+                  <button type="button" className="ghost" onClick={() => toggleLink(id, link)}>
+                    Снять
+                  </button>
+                </p>
+              )}
               <div className="table-wrap">
                 <table className="data-table report-table">
                   <thead>
@@ -251,18 +303,40 @@ export default function ReleasedSeriesReportPage() {
                       <th>Серия</th>
                       <th>Партия ГП</th>
                       <th>Дата производства</th>
-                      <th>Количество</th>
+                      <th>Выпуск</th>
+                      {link?.kind === 'component' && <th>Компонент</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {product.series.map((series) => (
-                      <tr key={series.orderId || series.seriesId}>
+                    {seriesRows.map((series) => {
+                      const active = link?.kind === 'series' && link.orderId === series.orderId;
+                      return (
+                      <tr
+                        key={series.orderId || series.seriesId}
+                        className={active ? 'report-row is-selected' : 'report-row'}
+                        onClick={() => toggleLink(id, { kind: 'series', orderId: series.orderId })}
+                      >
                         <td>{series.seriesNumber}</td>
                         <td>{series.lotNumber}</td>
                         <td>{series.productionDate}</td>
                         <td>{formatMaterialQty(series.quantity, product.productId)}</td>
+                        {link?.kind === 'component' && (
+                          <td>
+                            {series.componentQty != null
+                              ? formatMaterialQty(series.componentQty, componentLabel?.materialId)
+                              : '—'}
+                          </td>
+                        )}
                       </tr>
-                    ))}
+                      );
+                    })}
+                    {!seriesRows.length && (
+                      <tr>
+                        <td colSpan={link?.kind === 'component' ? 5 : 4} className="muted">
+                          Нет серий
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -279,9 +353,16 @@ export default function ReleasedSeriesReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {product.components.length ? (
-                      product.components.map((c) => (
-                        <tr key={`${c.materialId}-${c.lotId || c.lotNumber}`}>
+                    {componentRows.length ? (
+                      componentRows.map((c) => {
+                        const key = componentKey(c);
+                        const active = link?.kind === 'component' && link.key === key;
+                        return (
+                        <tr
+                          key={key}
+                          className={active ? 'report-row is-selected' : 'report-row'}
+                          onClick={() => toggleLink(id, { kind: 'component', key })}
+                        >
                           <td>{c.materialName}</td>
                           <td>{c.lotNumber}</td>
                           <td>{c.counterpartyName || '—'}</td>
@@ -289,7 +370,8 @@ export default function ReleasedSeriesReportPage() {
                           <td>{formatMaterialQty(c.quantity, c.materialId)}</td>
                           <td>{c.unit || '—'}</td>
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={6} className="muted">
@@ -300,6 +382,9 @@ export default function ReleasedSeriesReportPage() {
                   </tbody>
                 </table>
               </div>
+              </>
+                );
+              })()}
               </div>
               )}
             </section>

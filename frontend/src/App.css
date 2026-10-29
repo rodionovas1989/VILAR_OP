@@ -3588,6 +3588,19 @@ button.report-product-head:hover {
   margin-top: 8px;
 }
 
+.report-link-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.report-row.is-selected td {
+  background: rgba(26, 122, 98, 0.16);
+}
+
 .user-guide-search {
   display: flex;
   gap: 8px;
