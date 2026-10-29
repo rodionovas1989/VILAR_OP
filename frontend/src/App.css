@@ -648,6 +648,7 @@ button.linkish {
 }
 
 .page > .table-wrap,
+.page > .report-scroll,
 .page > .user-guide-layout,
 .page > .changelog-feed {
   flex: 1;
@@ -3537,16 +3538,53 @@ th.td-sticky-end {
   flex-wrap: wrap;
 }
 
+.report-scroll {
+  overflow: auto;
+}
+
 .report-product-block {
-  margin-bottom: 1.5rem;
+  margin-bottom: 10px;
 }
 
-.report-product-block h3 {
-  margin: 0 0 8px;
-  font-size: 15px;
+button.report-product-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  min-height: var(--ctrl-h);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #e8eef3;
+  color: var(--text);
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
 }
 
-.report-product-block .table-wrap + .table-wrap {
+button.report-product-head:hover {
+  border-color: var(--side);
+  background: #dfe7ee;
+}
+
+.report-product-name {
+  min-width: 0;
+}
+
+.report-product-meta {
+  margin-left: auto;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.report-product-body .table-wrap {
+  margin-top: 8px;
+}
+
+.report-product-body .table-wrap + .table-wrap {
   margin-top: 8px;
 }
 
@@ -3904,6 +3942,7 @@ th.td-sticky-end {
   .content,
   .page,
   .table-wrap,
+  .report-scroll,
   .user-guide-layout,
   .user-guide-body {
     display: block !important;

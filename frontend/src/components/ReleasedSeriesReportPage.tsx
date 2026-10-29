@@ -33,6 +33,7 @@ export default function ReleasedSeriesReportPage() {
   const [busy, setBusy] = useState(false);
   const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [openProducts, setOpenProducts] = useState<Set<string>>(new Set());
 
   const listColumns = useMemo((): ListColumn<ReleasedSeriesRow>[] => {
     return [
@@ -63,6 +64,7 @@ export default function ReleasedSeriesReportPage() {
       setRows(data.rows);
       setByProduct(data.byProduct);
       setExpanded(new Set());
+      setOpenProducts(new Set(data.byProduct.map((product) => product.productId || product.productName)));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -101,9 +103,23 @@ export default function ReleasedSeriesReportPage() {
     }
   };
 
+  const productKey = (product: ReleasedSeriesProductTotal) => product.productId || product.productName;
+
+  const toggleProduct = (id: string) => {
+    setOpenProducts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const printReport = () => {
     if (layout === 'product') {
-      window.print();
+      setOpenProducts(new Set(byProduct.map(productKey)));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => window.print());
+      });
       return;
     }
     setExpanded(new Set(listTable.displayRows.map((r) => r.id)));
@@ -157,6 +173,26 @@ export default function ReleasedSeriesReportPage() {
                 sortRulesCount={listTable.sortRules.length}
               />
             )}
+            {layout === 'product' && (
+              <>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() => setOpenProducts(new Set(byProduct.map(productKey)))}
+                >
+                  Развернуть всё
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() => setOpenProducts(new Set())}
+                >
+                  Свернуть всё
+                </button>
+              </>
+            )}
             <RefreshButton onClick={() => load()} disabled={busy} />
           </>
         }
@@ -185,10 +221,29 @@ export default function ReleasedSeriesReportPage() {
       </h2>
 
       {layout === 'product' ? (
-        <div>
-          {byProduct.map((product) => (
-            <section key={product.productId || product.productName} className="report-product-block">
-              <h3>{product.productName}</h3>
+        <div className="report-scroll">
+          {byProduct.map((product) => {
+            const id = productKey(product);
+            const open = openProducts.has(id);
+            return (
+            <section key={id} className="report-product-block">
+              <button
+                type="button"
+                className="report-product-head"
+                aria-expanded={open}
+                onClick={() => toggleProduct(id)}
+              >
+                <span className="report-expand-chevron" aria-hidden>
+                  {open ? '▾' : '▸'}
+                </span>
+                <span className="report-product-name">{product.productName}</span>
+                <span className="report-product-meta">
+                  серий: {product.series.length}
+                  {product.components.length ? ` · партий сырья: ${product.components.length}` : ''}
+                </span>
+              </button>
+              {open && (
+              <div className="report-product-body">
               <div className="table-wrap">
                 <table className="data-table report-table">
                   <thead>
@@ -245,8 +300,11 @@ export default function ReleasedSeriesReportPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
+              )}
             </section>
-          ))}
+            );
+          })}
           {!byProduct.length && <p className="muted">Нет выпущенных серий за выбранный период</p>}
         </div>
       ) : (
