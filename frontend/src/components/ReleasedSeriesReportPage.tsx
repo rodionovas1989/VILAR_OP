@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
 import { ReleasedSeriesProductTotal, ReleasedSeriesRow } from '../types';
 import AccessDenied from './AccessDenied';
-import PageTitle from './PageTitle';
+import ReportChrome from './ReportChrome';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
@@ -120,53 +120,47 @@ export default function ReleasedSeriesReportPage() {
 
   return (
     <div className="page report-page">
-      <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="Выпущенные серии продукции" />
-        <div className="toolbar-actions report-filter-bar">
-          <label className="report-filter-inline">
-            <span>с</span>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={busy} />
-          </label>
-          <label className="report-filter-inline">
-            <span>по</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={busy} />
-          </label>
-          <button type="button" onClick={() => void load()} disabled={busy}>
-            Применить
-          </button>
-          <button
-            type="button"
-            className={layout === 'series' ? undefined : 'ghost'}
-            onClick={() => setLayout('series')}
-            disabled={busy}
-          >
-            По сериям
-          </button>
-          <button
-            type="button"
-            className={layout === 'product' ? undefined : 'ghost'}
-            onClick={() => setLayout('product')}
-            disabled={busy}
-          >
-            Итого по продукту
-          </button>
-          {layout === 'series' && (
-            <ListViewSettingsButton
-              open={listSettingsOpen}
-              onOpenChange={setListSettingsOpen}
-              activeFilterCount={listTable.activeFilterCount}
-              sortRulesCount={listTable.sortRules.length}
-            />
-          )}
-          <button type="button" className="ghost" onClick={exportExcel} disabled={busy}>
-            Excel
-          </button>
-          <button type="button" className="ghost" onClick={printReport} disabled={busy}>
-            Печать
-          </button>
-          <RefreshButton onClick={() => load()} disabled={busy} />
-        </div>
-      </div>
+      <ReportChrome
+        pageId={PAGE_ID}
+        title="Выпущенные серии продукции"
+        variants={[
+          { id: 'series', label: 'По сериям' },
+          { id: 'product', label: 'Итого по продукту' },
+        ]}
+        variant={layout}
+        onVariantChange={(id) => setLayout(id as Layout)}
+        busy={busy}
+        onExcel={() => void exportExcel()}
+        onPrint={printReport}
+        filters={
+          <>
+            <label className="report-filter-inline">
+              <span>с</span>
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={busy} />
+            </label>
+            <label className="report-filter-inline">
+              <span>по</span>
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={busy} />
+            </label>
+            <button type="button" onClick={() => void load()} disabled={busy}>
+              Применить
+            </button>
+          </>
+        }
+        tools={
+          <>
+            {layout === 'series' && (
+              <ListViewSettingsButton
+                open={listSettingsOpen}
+                onOpenChange={setListSettingsOpen}
+                activeFilterCount={listTable.activeFilterCount}
+                sortRulesCount={listTable.sortRules.length}
+              />
+            )}
+            <RefreshButton onClick={() => load()} disabled={busy} />
+          </>
+        }
+      />
       {layout === 'series' && listSettingsOpen && (
         <div className="report-no-print">
           <ListViewSettingsPanel
@@ -182,12 +176,6 @@ export default function ReleasedSeriesReportPage() {
           />
         </div>
       )}
-
-      <p className="hint report-no-print">
-        Завершённые заказы за период. «По сериям» — выпуск и состав каждой серии. «Итого по продукту» —
-        какие серии вышли и сколько сырья по каждой партии ушло на все эти серии вместе. Excel — листы
-        «Серии», «Компоненты», «Поставщики сырья» и «Итого по продукту».
-      </p>
 
       {error && <p className="error report-no-print">{error}</p>}
 

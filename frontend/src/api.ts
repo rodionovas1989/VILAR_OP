@@ -1,4 +1,5 @@
-export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+/** В dev без VITE_API_URL — относительный `/api` (прокси Vite), чтобы cookie сессии была на том же хосте, что и страница. */
+export const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /** Переходный Bearer; основной контур — httpOnly cookie + credentials. */
 let authToken: string | null = null;

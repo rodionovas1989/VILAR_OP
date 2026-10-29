@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
 import { PlanFactReportRow } from '../types';
 import AccessDenied from './AccessDenied';
-import PageTitle from './PageTitle';
+import ReportChrome from './ReportChrome';
 import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
@@ -116,32 +116,42 @@ export default function PlanFactReportPage() {
 
   return (
     <div className="page report-page">
-      <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="План/Факт производства" />
-        <div className="toolbar-actions report-filter-bar">
-          <label className="report-filter-inline">
-            <span>с</span>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </label>
-          <label className="report-filter-inline">
-            <span>по</span>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-          </label>
-          <button type="button" onClick={() => void load()} disabled={busy}>
-            Применить
-          </button>
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
-            activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
-          />
-          <button type="button" className="ghost" onClick={exportExcel} disabled={busy}>
-            Excel
-          </button>
-          <RefreshButton onClick={() => void load()} disabled={busy} />
-        </div>
-      </div>
+      <ReportChrome
+        pageId={PAGE_ID}
+        title="План/Факт производства"
+        variants={[{ id: 'plan-fact', label: 'План и факт' }]}
+        variant="plan-fact"
+        onVariantChange={() => {}}
+        busy={busy}
+        onExcel={() => void exportExcel()}
+        onPrint={() => window.print()}
+        filters={
+          <>
+            <label className="report-filter-inline">
+              <span>с</span>
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </label>
+            <label className="report-filter-inline">
+              <span>по</span>
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            </label>
+            <button type="button" onClick={() => void load()} disabled={busy}>
+              Применить
+            </button>
+          </>
+        }
+        tools={
+          <>
+            <ListViewSettingsButton
+              open={listSettingsOpen}
+              onOpenChange={setListSettingsOpen}
+              activeFilterCount={listTable.activeFilterCount}
+              sortRulesCount={listTable.sortRules.length}
+            />
+            <RefreshButton onClick={() => void load()} disabled={busy} />
+          </>
+        }
+      />
 
       {listSettingsOpen && (
         <div className="report-no-print">
@@ -158,10 +168,6 @@ export default function PlanFactReportPage() {
           />
         </div>
       )}
-
-      <p className="hint report-no-print">
-        План по горизонту заказа; факт — дата и объём выпуска. Отменённые скрывайте отбором по колонке «Статус».
-      </p>
 
       {error && <p className="error report-no-print">{error}</p>}
 

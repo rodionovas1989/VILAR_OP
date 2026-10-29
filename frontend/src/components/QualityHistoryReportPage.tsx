@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
 import { QualityHistoryReportRow } from '../types';
 import AccessDenied from './AccessDenied';
-import PageTitle from './PageTitle';
+import ReportChrome from './ReportChrome';
 import RefreshButton from './RefreshButton';
 import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
 
@@ -146,30 +146,33 @@ export default function QualityHistoryReportPage() {
 
   return (
     <div className="page report-page">
-      <div className="page-toolbar report-no-print">
-        <PageTitle pageId={PAGE_ID} title="История качеств" />
-        <div className="toolbar-actions">
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
-            activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
-          />
-          <button type="button" className="ghost" onClick={expandAll} disabled={busy}>
-            Развернуть всё
-          </button>
-          <button type="button" className="ghost" onClick={collapseAll} disabled={busy}>
-            Свернуть всё
-          </button>
-          <button type="button" className="ghost" onClick={exportExcel} disabled={busy}>
-            Excel
-          </button>
-          <button type="button" className="ghost" onClick={() => window.print()} disabled={busy}>
-            Печать
-          </button>
-          <RefreshButton onClick={() => load()} disabled={busy} />
-        </div>
-      </div>
+      <ReportChrome
+        pageId={PAGE_ID}
+        title="История качеств"
+        variants={[{ id: 'events', label: 'События' }]}
+        variant="events"
+        onVariantChange={() => {}}
+        busy={busy}
+        onExcel={() => void exportExcel()}
+        onPrint={() => window.print()}
+        tools={
+          <>
+            <ListViewSettingsButton
+              open={listSettingsOpen}
+              onOpenChange={setListSettingsOpen}
+              activeFilterCount={listTable.activeFilterCount}
+              sortRulesCount={listTable.sortRules.length}
+            />
+            <button type="button" className="ghost" onClick={expandAll} disabled={busy}>
+              Развернуть всё
+            </button>
+            <button type="button" className="ghost" onClick={collapseAll} disabled={busy}>
+              Свернуть всё
+            </button>
+            <RefreshButton onClick={() => load()} disabled={busy} />
+          </>
+        }
+      />
       {listSettingsOpen && (
         <div className="report-no-print">
           <ListViewSettingsPanel
@@ -185,10 +188,6 @@ export default function QualityHistoryReportPage() {
           />
         </div>
       )}
-
-      <p className="hint report-no-print">
-        Материал → Партия → события журнала (проведение / отмена документов управления качеством).
-      </p>
 
       {error && <p className="error report-no-print">{error}</p>}
 
