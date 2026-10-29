@@ -96,7 +96,7 @@ npm run dev
 - `GET /api/admin/changelog` — markdown из `docs/CHANGELOG.md`
 - Проведение: `POST /api/documents/:type/:id/post` — userId берётся из токена, не из тела
 - `GET /api/quality/documents` — документы качества
-- `GET /api/reports/released-series` — отчёт выпущенных серий
+- `GET /api/reports/released-series` — отчёт выпущенных серий (`from`/`to`); ответ `{ rows, byProduct }`
 - `POST /api/reports/released-series.xlsx` — Excel того же отчёта (тело `{ "ids": [...] }` — необязательный отбор строк)
 - `GET /api/reports/stock` — отчёт запасов (строки партия×склад)
 - `POST /api/reports/stock.xlsx` — Excel запасов (иерархия + детализация; тело `{ "ids": [...] }`)

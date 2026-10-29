@@ -458,7 +458,7 @@ describe('Полная цепочка: приёмка → резерв → за�
     postReceipt(50);
     planning.confirmMaterialPicks('ord-1', [{ materialId: 'mat-rm', lotId: 'lot-rm', quantity: 2 }], USER);
     planning.completeOrder('ord-1', USER);
-    const { releasedSeriesReport } = await import('../src/services/reports.js');
+    const { releasedSeriesReport, aggregateReleasedByProduct } = await import('../src/services/reports.js');
     const rows = releasedSeriesReport();
     assert.equal(rows.length, 1);
     assert.equal(rows[0].productName, 'Препарат');
@@ -469,6 +469,63 @@ describe('Полная цепочка: приёмка → резерв → за�
     assert.equal(rows[0].components[0].materialName, 'Сырьё А');
     assert.equal(rows[0].components[0].lotNumber, 'RM-001');
     assert.equal(rows[0].components[0].quantity, 2);
+    const totals = aggregateReleasedByProduct(rows);
+    assert.equal(totals.length, 1);
+    assert.equal(totals[0].series.length, 1);
+    assert.equal(totals[0].components.length, 1);
+    assert.equal(totals[0].components[0].quantity, 2);
+    assert.equal('seriesNumber' in totals[0].components[0], false);
+  });
+
+  test('итог по продукту суммирует одну партию по всем сериям', async () => {
+    const { aggregateReleasedByProduct } = await import('../src/services/reports.js');
+    const component = {
+      materialId: 'm1',
+      materialName: 'Крахмал',
+      unit: 'кг',
+      lotId: 'l1',
+      lotNumber: 'L-1',
+      quantity: 2,
+      counterpartyId: 'c',
+      counterpartyName: 'Поставщик',
+      manufacturerId: 'mf',
+      manufacturerName: 'Завод',
+    };
+    const totals = aggregateReleasedByProduct([
+      {
+        productId: 'p1',
+        productName: 'Препарат',
+        seriesId: 's1',
+        seriesNumber: '180926',
+        lotId: 'gp1',
+        lotNumber: 'GP-1',
+        productionDate: '2026-09-18',
+        quantity: 1000,
+        orderId: 'o1',
+        components: [component],
+      },
+      {
+        productId: 'p1',
+        productName: 'Препарат',
+        seriesId: 's2',
+        seriesNumber: '190926',
+        lotId: 'gp2',
+        lotNumber: 'GP-2',
+        productionDate: '2026-09-19',
+        quantity: 500,
+        orderId: 'o2',
+        components: [{ ...component, quantity: 1.5 }, { ...component, lotId: 'l2', lotNumber: 'L-2', quantity: 0.5 }],
+      },
+    ]);
+    assert.equal(totals.length, 1);
+    assert.deepEqual(
+      totals[0].series.map((s) => s.seriesNumber),
+      ['180926', '190926']
+    );
+    assert.equal(totals[0].components.length, 2);
+    const summed = totals[0].components.find((c) => c.lotNumber === 'L-1');
+    assert.equal(summed.quantity, 3.5);
+    assert.equal('seriesNumber' in summed, false);
   });
 
   test('отчёт запасов группирует склад → материал → партия и учитывает резерв', async () => {

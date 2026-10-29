@@ -296,6 +296,36 @@ export interface ReleasedSeriesRow {
   components: ReleasedSeriesComponent[];
 }
 
+export interface ReleasedSeriesProductSeries {
+  orderId: string;
+  seriesId: string;
+  seriesNumber: string;
+  lotId: string;
+  lotNumber: string;
+  productionDate: string;
+  quantity: number;
+}
+
+export interface ReleasedSeriesProductComponent {
+  materialId: string;
+  materialName: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  counterpartyId: string;
+  counterpartyName: string;
+  manufacturerId: string;
+  manufacturerName: string;
+  quantity: number;
+}
+
+export interface ReleasedSeriesProductTotal {
+  productId: string;
+  productName: string;
+  series: ReleasedSeriesProductSeries[];
+  components: ReleasedSeriesProductComponent[];
+}
+
 export interface StockReportRow {
   id: string;
   warehouseId: string;

@@ -146,6 +146,68 @@ export function releasedSeriesReport({ from, to } = {}) {
   return rows;
 }
 
+/**
+ * Итог за период по продукту: список серий и сырьё суммой по материал+партия
+ * (без разреза количества по сериям).
+ */
+export function aggregateReleasedByProduct(rows) {
+  const map = new Map();
+  for (const row of rows || []) {
+    const key = row.productId || row.productName || '';
+    let agg = map.get(key);
+    if (!agg) {
+      agg = {
+        productId: row.productId || '',
+        productName: row.productName || '',
+        series: [],
+        components: new Map(),
+      };
+      map.set(key, agg);
+    }
+    agg.series.push({
+      orderId: row.orderId || row.id || '',
+      seriesId: row.seriesId || '',
+      seriesNumber: row.seriesNumber || '—',
+      lotId: row.lotId || '',
+      lotNumber: row.lotNumber || '—',
+      productionDate: row.productionDate || '—',
+      quantity: Number(row.quantity) || 0,
+    });
+    for (const c of row.components || []) {
+      const ckey = `${c.materialId || ''}::${c.lotId || c.lotNumber || ''}`;
+      let line = agg.components.get(ckey);
+      if (!line) {
+        line = {
+          materialId: c.materialId || '',
+          materialName: c.materialName || '',
+          unit: c.unit || '',
+          lotId: c.lotId || '',
+          lotNumber: c.lotNumber || '—',
+          counterpartyId: c.counterpartyId || '',
+          counterpartyName: c.counterpartyName || '—',
+          manufacturerId: c.manufacturerId || '',
+          manufacturerName: c.manufacturerName || '—',
+          quantity: 0,
+        };
+        agg.components.set(ckey, line);
+      }
+      line.quantity += Number(c.quantity) || 0;
+    }
+  }
+
+  const byNum = (a, b) => String(a).localeCompare(String(b), 'ru', { numeric: true });
+  return [...map.values()]
+    .map((a) => ({
+      productId: a.productId,
+      productName: a.productName,
+      series: [...a.series].sort((x, y) => byNum(x.seriesNumber, y.seriesNumber)),
+      components: [...a.components.values()]
+        .map((c) => ({ ...c, quantity: Number(c.quantity.toFixed(6)) }))
+        .sort((x, y) => byNum(x.materialName, y.materialName) || byNum(x.lotNumber, y.lotNumber)),
+    }))
+    .sort((a, b) => String(a.productName).localeCompare(String(b.productName), 'ru'));
+}
+
 /** Сводка поставщиков/производителей сырья по сериям (кг). */
 export function aggregateReleasedSuppliers(rows) {
   const map = new Map();

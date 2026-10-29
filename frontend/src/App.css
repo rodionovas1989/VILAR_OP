@@ -3464,6 +3464,19 @@ th.td-sticky-end {
   display: none;
 }
 
+.report-product-block {
+  margin-bottom: 1.5rem;
+}
+
+.report-product-block h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.report-product-block .table-wrap + .table-wrap {
+  margin-top: 8px;
+}
+
 .user-guide-search {
   display: flex;
   gap: 8px;

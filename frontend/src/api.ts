@@ -344,9 +344,10 @@ export const api = {
     if (params?.from) q.set('from', params.from);
     if (params?.to) q.set('to', params.to);
     const qs = q.toString();
-    return request<import('./types').ReleasedSeriesRow[]>(
-      `/reports/released-series${qs ? `?${qs}` : ''}`
-    );
+    return request<{
+      rows: import('./types').ReleasedSeriesRow[];
+      byProduct: import('./types').ReleasedSeriesProductTotal[];
+    }>(`/reports/released-series${qs ? `?${qs}` : ''}`);
   },
   exportReleasedSeriesXlsx: (body: { ids: string[]; from?: string; to?: string }) =>
     downloadFile(`/reports/released-series.xlsx`, `released-series-${new Date().toISOString().slice(0, 10)}.xlsx`, {
