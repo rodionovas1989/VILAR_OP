@@ -349,6 +349,72 @@ export interface StockReportRow {
   free: number;
 }
 
+export interface StockMovementRow {
+  id: string;
+  at: string;
+  day: string;
+  time: string;
+  documentId: string;
+  documentNumber: string;
+  documentType: string;
+  documentTypeLabel: string;
+  documentStatus: string;
+  documentStatusLabel: string;
+  warehouseId: string;
+  warehouseName: string;
+  materialId: string;
+  materialName: string;
+  unit: string;
+  lotId: string;
+  lotNumber: string;
+  identificationNumber: string;
+  seriesId: string;
+  seriesNumber: string;
+  productionOrderId: string;
+  orderLabel: string;
+  quantity: number;
+  kindLabel: string;
+  balanceAfter: number;
+}
+
+export interface StockMovementLotMatch {
+  id: string;
+  number: string;
+  identificationNumber: string;
+  materialName: string;
+}
+
+export interface StockMovementLotCard {
+  id: string;
+  materialId: string;
+  number: string;
+  identificationNumber: string;
+  materialName: string;
+  unit: string;
+  counterpartyName: string;
+  manufacturerName: string;
+  qualityName: string;
+  qualityDefaulted: boolean;
+  stock: { warehouseId: string; warehouseName: string; quantity: number }[];
+  reservations: { id: string; warehouseName: string; quantity: number; documentNumber: string; documentTypeLabel: string }[];
+  reservationHistory: {
+    id: string;
+    day: string;
+    time: string;
+    actionLabel: string;
+    quantity: number;
+    documentNumber: string;
+    documentTypeLabel: string;
+  }[];
+}
+
+export interface StockMovementReport {
+  needsFilter: boolean;
+  rows: StockMovementRow[];
+  lot: StockMovementLotCard | null;
+  lotMatches: StockMovementLotMatch[];
+}
+
 export interface QualityStockReportRow {
   id: string;
   materialId: string;

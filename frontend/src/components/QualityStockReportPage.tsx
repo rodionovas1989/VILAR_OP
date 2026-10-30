@@ -6,8 +6,8 @@ import { useListTable, ListColumn } from '../hooks/useListTable';
 import { QualityStockReportRow } from '../types';
 import AccessDenied from './AccessDenied';
 import ReportChrome from './ReportChrome';
-import RefreshButton from './RefreshButton';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import IconButton from './IconButton';
+import { ListViewSettings } from './ListViewSettings';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 import { roundQty } from '../utils/qty';
 
@@ -112,7 +112,6 @@ export default function QualityStockReportPage() {
   const [rows, setRows] = useState<QualityStockReportRow[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const listColumns = useMemo((): ListColumn<QualityStockReportRow>[] => {
@@ -222,37 +221,20 @@ export default function QualityStockReportPage() {
         onPrint={() => window.print()}
         tools={
           <>
-            <ListViewSettingsButton
-              open={listSettingsOpen}
-              onOpenChange={setListSettingsOpen}
+            <ListViewSettings
+              columns={listColumns}
+              filterOptions={listTable.filterOptions}
+              filters={listTable.filters}
+              sortRules={listTable.sortRules}
+              onApply={listTable.applySettings}
               activeFilterCount={listTable.activeFilterCount}
-              sortRulesCount={listTable.sortRules.length}
             />
-            <button type="button" className="ghost" onClick={expandAll} disabled={busy}>
-              Развернуть всё
-            </button>
-            <button type="button" className="ghost" onClick={collapseAll} disabled={busy}>
-              Свернуть всё
-            </button>
-            <RefreshButton onClick={() => load()} disabled={busy} />
+            <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
+            <IconButton className="toolbar-icon" icon="expandAll" label="Развернуть всё" onClick={expandAll} disabled={busy} />
+            <IconButton className="toolbar-icon" icon="collapseAll" label="Свернуть всё" onClick={collapseAll} disabled={busy} />
           </>
         }
       />
-      {listSettingsOpen && (
-        <div className="report-no-print">
-          <ListViewSettingsPanel
-            open={listSettingsOpen}
-            onClose={() => setListSettingsOpen(false)}
-            columns={listColumns}
-            filterOptions={listTable.filterOptions}
-            filters={listTable.filters}
-            sortRules={listTable.sortRules}
-            onApply={listTable.applySettings}
-            onReset={listTable.resetSettings}
-            activeFilterCount={listTable.activeFilterCount}
-          />
-        </div>
-      )}
 
       {error && <p className="error report-no-print">{error}</p>}
 

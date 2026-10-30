@@ -31,11 +31,10 @@ import DocumentTraceModal from './DocumentTraceModal';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
-import RefreshButton from './RefreshButton';
 import SearchableSelect from './SearchableSelect';
 import DecimalInput from './DecimalInput';
 import ListTableHeader from './ListTableHeader';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 
 const OBJECT_ID = 'production_orders';
 
@@ -149,7 +148,6 @@ export default function ProductionOrderPage({
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [trace, setTrace] = useState<OrderTrace | null>(null);
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceOpen, setTraceOpen] = useState(false);
@@ -447,32 +445,19 @@ export default function ProductionOrderPage({
         <PageTitle pageId="production_orders" title="Заказы на производство" />
         <div className="toolbar-actions">
           {canCreate && (
-            <button type="button" onClick={startCreate} disabled={busy}>
-              Создать
-            </button>
+            <IconButton className="toolbar-icon" icon="create" label="Создать" onClick={startCreate} disabled={busy} />
           )}
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
+          <ListViewSettings
+            columns={listColumns}
+            filterOptions={listTable.filterOptions}
+            filters={listTable.filters}
+            sortRules={listTable.sortRules}
+            onApply={listTable.applySettings}
             activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
           />
-          <RefreshButton onClick={() => load()} disabled={busy} />
+          <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
         </div>
       </div>
-      {listSettingsOpen && (
-        <ListViewSettingsPanel
-          open={listSettingsOpen}
-          onClose={() => setListSettingsOpen(false)}
-          columns={listColumns}
-          filterOptions={listTable.filterOptions}
-          filters={listTable.filters}
-          sortRules={listTable.sortRules}
-          onApply={listTable.applySettings}
-          onReset={listTable.resetSettings}
-          activeFilterCount={listTable.activeFilterCount}
-        />
-      )}
 
       <p className="hint">
         Заказ не проводит движения напрямую: резервирование и списание выполняются через связанные документы и

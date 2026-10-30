@@ -12,7 +12,12 @@ export type IconKind =
   | 'help'
   | 'columns'
   | 'excel'
-  | 'print';
+  | 'print'
+  | 'create'
+  | 'filter'
+  | 'sort'
+  | 'expandAll'
+  | 'collapseAll';
 
 const ICONS: Record<IconKind, ReactNode> = {
   edit: (
@@ -102,6 +107,39 @@ const ICONS: Record<IconKind, ReactNode> = {
       <rect x="3.9" y="3.9" width="4.4" height="4.4" fill="currentColor" />
     </svg>
   ),
+  create: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
+  filter: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path
+        d="M4.5 5h15l-5.5 7.1V19l-4 1.6v-8.5L4.5 5z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  expandAll: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path d="M7 6.5 12 11.5 17 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 12.5 12 17.5 17 12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  collapseAll: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path d="M7 11.5 12 6.5l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 17.5 12 12.5l5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  sort: (
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
+      <path d="M8 4v16M8 4 4.5 7.5M8 4l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 20V4M16 20l-3.5-3.5M16 20l3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   print: (
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden>
       <path
@@ -133,19 +171,31 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon: IconKind;
   label: string;
   tone?: 'default' | 'success' | 'danger' | 'muted';
+  /** Число на бейдже (0 не показывается) */
+  badge?: number;
+  active?: boolean;
 };
 
 /** Компактная кнопка-пиктограмма с единым стилем */
-export default function IconButton({ icon, label, tone = 'default', className = '', ...rest }: Props) {
+export default function IconButton({
+  icon,
+  label,
+  tone = 'default',
+  badge = 0,
+  active = false,
+  className = '',
+  ...rest
+}: Props) {
   return (
     <button
       type="button"
-      className={`icon-action icon-action-${tone} ${className}`.trim()}
+      className={`icon-action icon-action-${tone}${active ? ' is-active' : ''} ${className}`.trim()}
       title={label}
       aria-label={label}
       {...rest}
     >
       {ICONS[icon]}
+      {badge > 0 ? <span className="toolbar-icon-badge">{badge > 99 ? '99+' : badge}</span> : null}
     </button>
   );
 }

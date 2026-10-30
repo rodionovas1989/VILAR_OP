@@ -15,9 +15,8 @@ import ActionsMenu, { ActionMenuItem } from './ActionsMenu';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
 import PageTitle from './PageTitle';
-import RefreshButton from './RefreshButton';
 import ListTableHeader from './ListTableHeader';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import SearchableSelect from './SearchableSelect';
 
 const OBJECT_ID = 'admin_feedback';
@@ -76,8 +75,6 @@ export default function FeedbackPage() {
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
-
   const pages = useMemo(() => allCatalogItems(), []);
 
   const listColumns = useMemo((): ListColumn<FeedbackTicket>[] => {
@@ -274,32 +271,19 @@ export default function FeedbackPage() {
         <PageTitle pageId={PAGE_ID} title="Обратная связь" />
         <div className="toolbar-actions">
           {canCreate && (
-            <button type="button" onClick={startCreate} disabled={busy}>
-              Создать
-            </button>
+            <IconButton className="toolbar-icon" icon="create" label="Создать" onClick={startCreate} disabled={busy} />
           )}
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
+          <ListViewSettings
+            columns={listColumns}
+            filterOptions={listTable.filterOptions}
+            filters={listTable.filters}
+            sortRules={listTable.sortRules}
+            onApply={listTable.applySettings}
             activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
           />
-          <RefreshButton onClick={() => load()} disabled={busy} />
+          <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
         </div>
       </div>
-      {listSettingsOpen && (
-        <ListViewSettingsPanel
-          open={listSettingsOpen}
-          onClose={() => setListSettingsOpen(false)}
-          columns={listColumns}
-          filterOptions={listTable.filterOptions}
-          filters={listTable.filters}
-          sortRules={listTable.sortRules}
-          onApply={listTable.applySettings}
-          onReset={listTable.resetSettings}
-          activeFilterCount={listTable.activeFilterCount}
-        />
-      )}
 
       <p className="hint">
         {canModerate

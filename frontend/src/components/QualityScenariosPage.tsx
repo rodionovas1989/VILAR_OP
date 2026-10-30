@@ -5,8 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useListTable, ListColumn } from '../hooks/useListTable';
 import AccessDenied from './AccessDenied';
 import PageTitle from './PageTitle';
-import RefreshButton from './RefreshButton';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import ListTableHeader from './ListTableHeader';
 import { Modal } from './Modal';
 import IconButton from './IconButton';
@@ -71,7 +70,6 @@ export default function QualityScenariosPage() {
   const [qualities, setQualities] = useState<RefItem[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -210,33 +208,19 @@ export default function QualityScenariosPage() {
         <PageTitle pageId={PAGE_ID} title="Сценарии" />
         <div className="toolbar-actions">
           {canCreate && (
-            <button type="button" className="btn primary" onClick={openCreate}>
-              Создать
-            </button>
+            <IconButton className="toolbar-icon" icon="create" label="Создать" onClick={openCreate} disabled={busy} />
           )}
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
+          <ListViewSettings
+            columns={listColumns}
+            filterOptions={listTable.filterOptions}
+            filters={listTable.filters}
+            sortRules={listTable.sortRules}
+            onApply={listTable.applySettings}
             activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
           />
-          <RefreshButton onClick={() => load()} disabled={busy} />
+          <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
         </div>
       </div>
-
-      {listSettingsOpen && (
-        <ListViewSettingsPanel
-          open={listSettingsOpen}
-          onClose={() => setListSettingsOpen(false)}
-          columns={listColumns}
-          filterOptions={listTable.filterOptions}
-          filters={listTable.filters}
-          sortRules={listTable.sortRules}
-          onApply={listTable.applySettings}
-          onReset={listTable.resetSettings}
-          activeFilterCount={listTable.activeFilterCount}
-        />
-      )}
 
       <p className="hint">
         Тип «Регистрация новых партий»: при создании партии (справочник или выпуск ГП) система подбирает

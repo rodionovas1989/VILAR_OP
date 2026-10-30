@@ -6,9 +6,10 @@ import { useListTable, ListColumn } from '../hooks/useListTable';
 import { ReleasedSeriesProductTotal, ReleasedSeriesRow } from '../types';
 import AccessDenied from './AccessDenied';
 import ReportChrome from './ReportChrome';
-import RefreshButton from './RefreshButton';
+import ReportPeriodFields from './ReportPeriodFields';
+import IconButton from './IconButton';
 import ListTableHeader from './ListTableHeader';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 import {
   componentKey,
@@ -37,7 +38,6 @@ export default function ReleasedSeriesReportPage() {
   const [byProduct, setByProduct] = useState<ReleasedSeriesProductTotal[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [openProducts, setOpenProducts] = useState<Set<string>>(new Set());
   const [linkByProduct, setLinkByProduct] = useState<Record<string, ReportLink | null>>({});
@@ -82,8 +82,8 @@ export default function ReleasedSeriesReportPage() {
 
   useEffect(() => {
     load().catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when the committed period changes
+  }, [from, to]);
 
   const toggleRow = (id: string) => {
     setExpanded((prev) => {
@@ -169,69 +169,52 @@ export default function ReleasedSeriesReportPage() {
         onExcel={() => void exportExcel()}
         onPrint={printReport}
         filters={
-          <>
-            <label className="report-filter-inline">
-              <span>с</span>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={busy} />
-            </label>
-            <label className="report-filter-inline">
-              <span>по</span>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={busy} />
-            </label>
-            <button type="button" onClick={() => void load()} disabled={busy}>
-              Применить
-            </button>
-          </>
+          <ReportPeriodFields
+            from={from}
+            to={to}
+            disabled={busy}
+            onCommit={(nextFrom, nextTo) => {
+              setFrom(nextFrom);
+              setTo(nextTo);
+            }}
+          />
         }
         tools={
           <>
             {layout === 'series' && (
-              <ListViewSettingsButton
-                open={listSettingsOpen}
-                onOpenChange={setListSettingsOpen}
+              <ListViewSettings
+                columns={listColumns}
+                filterOptions={listTable.filterOptions}
+                filters={listTable.filters}
+                sortRules={listTable.sortRules}
+                onApply={listTable.applySettings}
                 activeFilterCount={listTable.activeFilterCount}
-                sortRulesCount={listTable.sortRules.length}
               />
             )}
-            {layout === 'product' && (
-              <>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => setOpenProducts(new Set(byProduct.map(productKey)))}
-                >
-                  Развернуть всё
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() => setOpenProducts(new Set())}
-                >
-                  Свернуть всё
-                </button>
-              </>
-            )}
-            <RefreshButton onClick={() => load()} disabled={busy} />
+            <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
+            <IconButton
+              className="toolbar-icon"
+              icon="expandAll"
+              label="Развернуть всё"
+              disabled={busy}
+              onClick={() => {
+                if (layout === 'product') setOpenProducts(new Set(byProduct.map(productKey)));
+                else setExpanded(new Set(listTable.displayRows.map((r) => r.id)));
+              }}
+            />
+            <IconButton
+              className="toolbar-icon"
+              icon="collapseAll"
+              label="Свернуть всё"
+              disabled={busy}
+              onClick={() => {
+                if (layout === 'product') setOpenProducts(new Set());
+                else setExpanded(new Set());
+              }}
+            />
           </>
         }
       />
-      {layout === 'series' && listSettingsOpen && (
-        <div className="report-no-print">
-          <ListViewSettingsPanel
-            open={listSettingsOpen}
-            onClose={() => setListSettingsOpen(false)}
-            columns={listColumns}
-            filterOptions={listTable.filterOptions}
-            filters={listTable.filters}
-            sortRules={listTable.sortRules}
-            onApply={listTable.applySettings}
-            onReset={listTable.resetSettings}
-            activeFilterCount={listTable.activeFilterCount}
-          />
-        </div>
-      )}
 
       {error && <p className="error report-no-print">{error}</p>}
 

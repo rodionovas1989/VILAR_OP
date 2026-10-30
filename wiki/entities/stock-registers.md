@@ -7,4 +7,6 @@
 
 Свободный остаток и склады — `backend/src/services/stock.js`.
 
+Журнал дельт для расследования — отчёт «Движения запасов» (`stockMovementReport.js`), не экран «Запасы (ист)».
+
 **Связано:** [concepts/document-lifecycle.md](../concepts/document-lifecycle.md)

@@ -96,3 +96,4 @@
 | [karpathy-gist-fit](analyses/karpathy-gist-fit.md) | Сверка с gist / вставка промпта |
 | [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |
 | [lot-mixing-policy](analyses/lot-mixing-policy.md) | Тогл смешения одного производителя; справочник качества — позже |
+| [stock-movement-inquiry](analyses/stock-movement-inquiry.md) | Отчёт «Движения запасов»: журнал и карточка партии |

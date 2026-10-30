@@ -52,6 +52,7 @@ export const NAV_PAGE_IDS = new Set([
   'report_released_series',
   'report_plan_fact',
   'report_stock',
+  'report_stock_movements',
   'report_quality_stock',
   'report_quality_history',
   'admin_feedback',

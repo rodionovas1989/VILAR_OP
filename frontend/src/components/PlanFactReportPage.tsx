@@ -6,9 +6,10 @@ import { useListTable, ListColumn } from '../hooks/useListTable';
 import { PlanFactReportRow } from '../types';
 import AccessDenied from './AccessDenied';
 import ReportChrome from './ReportChrome';
-import RefreshButton from './RefreshButton';
+import ReportPeriodFields from './ReportPeriodFields';
+import IconButton from './IconButton';
 import ListTableHeader from './ListTableHeader';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import { useQtyFormat } from '../qtyFormat/QtyFormatContext';
 
 const PAGE_ID = 'report_plan_fact';
@@ -32,7 +33,6 @@ export default function PlanFactReportPage() {
   const [rows, setRows] = useState<PlanFactReportRow[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
 
   const listColumns = useMemo((): ListColumn<PlanFactReportRow>[] => {
     return [
@@ -90,8 +90,8 @@ export default function PlanFactReportPage() {
 
   useEffect(() => {
     load().catch(console.error);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when the committed period changes
+  }, [from, to]);
 
   const exportExcel = async () => {
     setBusy(true);
@@ -126,48 +126,36 @@ export default function PlanFactReportPage() {
         onExcel={() => void exportExcel()}
         onPrint={() => window.print()}
         filters={
-          <>
-            <label className="report-filter-inline">
-              <span>с</span>
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
-            </label>
-            <label className="report-filter-inline">
-              <span>по</span>
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
-            </label>
-            <button type="button" onClick={() => void load()} disabled={busy}>
-              Применить
-            </button>
-          </>
+          <ReportPeriodFields
+            from={from}
+            to={to}
+            disabled={busy}
+            onCommit={(nextFrom, nextTo) => {
+              setFrom(nextFrom);
+              setTo(nextTo);
+            }}
+          />
         }
         tools={
           <>
-            <ListViewSettingsButton
-              open={listSettingsOpen}
-              onOpenChange={setListSettingsOpen}
+            <ListViewSettings
+              columns={listColumns}
+              filterOptions={listTable.filterOptions}
+              filters={listTable.filters}
+              sortRules={listTable.sortRules}
+              onApply={listTable.applySettings}
               activeFilterCount={listTable.activeFilterCount}
-              sortRulesCount={listTable.sortRules.length}
             />
-            <RefreshButton onClick={() => void load()} disabled={busy} />
+            <IconButton
+              className="toolbar-icon"
+              icon="refresh"
+              label="Обновить"
+              onClick={() => void load()}
+              disabled={busy}
+            />
           </>
         }
       />
-
-      {listSettingsOpen && (
-        <div className="report-no-print">
-          <ListViewSettingsPanel
-            open={listSettingsOpen}
-            onClose={() => setListSettingsOpen(false)}
-            columns={listColumns}
-            filterOptions={listTable.filterOptions}
-            filters={listTable.filters}
-            sortRules={listTable.sortRules}
-            onApply={listTable.applySettings}
-            onReset={listTable.resetSettings}
-            activeFilterCount={listTable.activeFilterCount}
-          />
-        </div>
-      )}
 
       {error && <p className="error report-no-print">{error}</p>}
 
