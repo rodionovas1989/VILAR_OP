@@ -13,8 +13,7 @@ import { useRecentEntityBridge } from '../hooks/useRecentEntityBridge';
 import AccessDenied from './AccessDenied';
 import IconButton from './IconButton';
 import PageTitle from './PageTitle';
-import RefreshButton from './RefreshButton';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import { Modal } from './Modal';
 import SearchableSelect from './SearchableSelect';
 import DecimalInput from './DecimalInput';
@@ -130,8 +129,6 @@ export function CrudPage({
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [bulkStatus, setBulkStatus] = useState('');
   const [statusBusy, setStatusBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
-
   const rowLabel = (row: Record<string, unknown>) =>
     String(row.name || row.number || row.id || '');
 
@@ -335,9 +332,7 @@ export function CrudPage({
         <PageTitle pageId={pageId} title={title} />
         <div className="toolbar-actions">
           {canCreate && (
-            <button type="button" onClick={openCreate}>
-              Создать
-            </button>
+            <IconButton className="toolbar-icon" icon="create" label="Создать" onClick={openCreate} />
           )}
           {bulkStatusOptions?.length && canModify ? (
             <button type="button" className="ghost" disabled={!selected.size} onClick={openStatusModal}>
@@ -345,32 +340,26 @@ export function CrudPage({
             </button>
           ) : null}
           {canDelete && (
-            <button type="button" className="danger" disabled={!selected.size} onClick={bulkDelete}>
-              Удалить выбранные
-            </button>
+            <IconButton
+              className="toolbar-icon"
+              icon="delete"
+              tone="danger"
+              label={selected.size ? `Удалить выбранные (${selected.size})` : 'Удалить выбранные'}
+              disabled={!selected.size}
+              onClick={bulkDelete}
+            />
           )}
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
+          <ListViewSettings
+            columns={listColumns}
+            filterOptions={listTable.filterOptions}
+            filters={listTable.filters}
+            sortRules={listTable.sortRules}
+            onApply={listTable.applySettings}
             activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
           />
-          <RefreshButton onClick={load} disabled={loading} />
+          <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={load} disabled={loading} />
         </div>
       </div>
-      {listSettingsOpen && (
-        <ListViewSettingsPanel
-          open={listSettingsOpen}
-          onClose={() => setListSettingsOpen(false)}
-          columns={listColumns}
-          filterOptions={listTable.filterOptions}
-          filters={listTable.filters}
-          sortRules={listTable.sortRules}
-          onApply={listTable.applySettings}
-          onReset={listTable.resetSettings}
-          activeFilterCount={listTable.activeFilterCount}
-        />
-      )}
       {error && !editing && <div className="alert error alert-multiline">{error}</div>}
       {loading ? (
         <p>Загрузка…</p>

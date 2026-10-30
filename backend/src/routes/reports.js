@@ -18,6 +18,7 @@ import {
   filterQualityHistoryReport,
   groupQualityHistoryRows,
 } from '../services/reports.js';
+import { filterStockMovementRows, stockMovementReport } from '../services/stockMovementReport.js';
 
 const router = Router();
 
@@ -514,6 +515,40 @@ router.post('/quality-history.xlsx', requirePermission('report_quality_history',
   const stamp = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="quality-history-${stamp}.xlsx"`);
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+router.get('/stock-movements', requirePermission('report_stock_movements', 'read'), (req, res) => {
+  res.json(stockMovementReport(req.query || {}));
+});
+
+router.post('/stock-movements.xlsx', requirePermission('report_stock_movements', 'read'), async (req, res) => {
+  const report = stockMovementReport(req.body || {});
+  const rows = filterStockMovementRows(report.rows, req.body?.ids);
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Vilar OP';
+  const sheet = wb.addWorksheet('Движения');
+  sheet.columns = [
+    { header: 'Дата', key: 'day', width: 12 },
+    { header: 'Время', key: 'time', width: 8 },
+    { header: 'Документ', key: 'documentNumber', width: 16 },
+    { header: 'Тип документа', key: 'documentTypeLabel', width: 24 },
+    { header: 'Статус', key: 'documentStatusLabel', width: 14 },
+    { header: 'Склад', key: 'warehouseName', width: 22 },
+    { header: 'Материал', key: 'materialName', width: 36 },
+    { header: 'Партия', key: 'lotNumber', width: 16 },
+    { header: 'Идентификатор', key: 'identificationNumber', width: 18 },
+    { header: 'Серия', key: 'seriesNumber', width: 14 },
+    { header: 'Заказ', key: 'orderLabel', width: 14 },
+    { header: 'Вид', key: 'kindLabel', width: 12 },
+    { header: 'Количество', key: 'quantity', width: 14 },
+    { header: 'Остаток после', key: 'balanceAfter', width: 16 },
+  ];
+  for (const row of rows) sheet.addRow(row);
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="stock-movements-${stamp}.xlsx"`);
   await wb.xlsx.write(res);
   res.end();
 });

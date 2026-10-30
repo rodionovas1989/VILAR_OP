@@ -13,7 +13,7 @@ type Props = {
   variants: ReportVariant[];
   variant: string;
   onVariantChange: (id: string) => void;
-  /** Быстрые отборы второй строки (даты и кнопка «Применить»). */
+  /** Быстрые отборы второй строки (даты и прочие поля периода). */
   filters?: ReactNode;
   /** Детальные отборы, разворот дерева, обновление. */
   tools?: ReactNode;

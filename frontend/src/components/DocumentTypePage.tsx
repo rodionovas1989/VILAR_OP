@@ -21,10 +21,9 @@ import CollapsibleSection from './CollapsibleSection';
 import DocumentTraceModal from './DocumentTraceModal';
 import IconButton from './IconButton';
 import { Modal } from './Modal';
-import RefreshButton from './RefreshButton';
 import PageTitle from './PageTitle';
 import ListTableHeader from './ListTableHeader';
-import { ListViewSettingsButton, ListViewSettingsPanel } from './ListViewSettings';
+import { ListViewSettings } from './ListViewSettings';
 import SearchableSelect from './SearchableSelect';
 import DecimalInput from './DecimalInput';
 import { DocumentTypeMeta, DocumentTrace, MaterialMovementRow, StockDocument, StockDocumentLine, StockDocumentType, StockRow } from '../types.documents';
@@ -128,7 +127,6 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
   const [formMode, setFormMode] = useState<FormMode>('create');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [listSettingsOpen, setListSettingsOpen] = useState(false);
   const [trace, setTrace] = useState<DocumentTrace | null>(null);
   const [traceLoading, setTraceLoading] = useState(false);
   const [traceOpen, setTraceOpen] = useState(false);
@@ -1011,32 +1009,25 @@ export default function DocumentTypePage({ documentType, materials, lots, wareho
             </p>
           )}
           {canCreateObject(permissions, objectId) && loggedIn && (
-            <button type="button" onClick={() => startCreate()} disabled={busy}>
-              Создать
-            </button>
+            <IconButton
+              className="toolbar-icon"
+              icon="create"
+              label="Создать"
+              onClick={() => startCreate()}
+              disabled={busy}
+            />
           )}
-          <ListViewSettingsButton
-            open={listSettingsOpen}
-            onOpenChange={setListSettingsOpen}
+          <ListViewSettings
+            columns={listColumns}
+            filterOptions={listTable.filterOptions}
+            filters={listTable.filters}
+            sortRules={listTable.sortRules}
+            onApply={listTable.applySettings}
             activeFilterCount={listTable.activeFilterCount}
-            sortRulesCount={listTable.sortRules.length}
           />
-          <RefreshButton onClick={() => load()} disabled={busy} />
+          <IconButton className="toolbar-icon" icon="refresh" label="Обновить" onClick={() => load()} disabled={busy} />
         </div>
       </div>
-      {listSettingsOpen && (
-        <ListViewSettingsPanel
-          open={listSettingsOpen}
-          onClose={() => setListSettingsOpen(false)}
-          columns={listColumns}
-          filterOptions={listTable.filterOptions}
-          filters={listTable.filters}
-          sortRules={listTable.sortRules}
-          onApply={listTable.applySettings}
-          onReset={listTable.resetSettings}
-          activeFilterCount={listTable.activeFilterCount}
-        />
-      )}
       <p className="hint">
         {documentType === 'inventory'
           ? 'План заполняется из остатков склада. Проведение INV не меняет склад — создаются черновики списания и/или оприходования по разнице.'

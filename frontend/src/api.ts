@@ -375,6 +375,38 @@ export const api = {
       { method: 'POST', body: JSON.stringify(body) }
     ),
   stockReport: () => request<import('./types').StockReportRow[]>('/reports/stock'),
+  stockMovementReport: (params: {
+    from?: string;
+    to?: string;
+    materialId?: string;
+    warehouseId?: string;
+    seriesId?: string;
+    lotId?: string;
+    lotQuery?: string;
+    documentNumber?: string;
+  }) => {
+    const q = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value) q.set(key, value);
+    }
+    const qs = q.toString();
+    return request<import('./types').StockMovementReport>(`/reports/stock-movements${qs ? `?${qs}` : ''}`);
+  },
+  exportStockMovementXlsx: (body: {
+    ids: string[];
+    from?: string;
+    to?: string;
+    materialId?: string;
+    warehouseId?: string;
+    seriesId?: string;
+    lotId?: string;
+    lotQuery?: string;
+    documentNumber?: string;
+  }) =>
+    downloadFile(`/reports/stock-movements.xlsx`, `stock-movements-${new Date().toISOString().slice(0, 10)}.xlsx`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   exportStockReportXlsx: (ids: string[]) =>
     downloadFile(`/reports/stock.xlsx`, `stock-${new Date().toISOString().slice(0, 10)}.xlsx`, {
       method: 'POST',

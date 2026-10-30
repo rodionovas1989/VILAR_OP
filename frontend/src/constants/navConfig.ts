@@ -91,6 +91,7 @@ export const NAV: NavGroup[] = [
       { id: 'report_released_series', label: 'Выпущенные серии продукции', kind: 'report' },
       { id: 'report_plan_fact', label: 'План/Факт производства', kind: 'report' },
       { id: 'report_stock', label: 'Отчет по запасам', kind: 'report' },
+      { id: 'report_stock_movements', label: 'Движения запасов', kind: 'report' },
       { id: 'report_quality_stock', label: 'Качество запасов', kind: 'report' },
       { id: 'report_quality_history', label: 'История качеств', kind: 'report' },
     ],

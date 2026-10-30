@@ -27,6 +27,7 @@ import SeriesPlanningPage from './components/SeriesPlanningPage';
 import ReleasedSeriesReportPage from './components/ReleasedSeriesReportPage';
 import PlanFactReportPage from './components/PlanFactReportPage';
 import StockReportPage from './components/StockReportPage';
+import StockMovementReportPage from './components/StockMovementReportPage';
 import QualityStockReportPage from './components/QualityStockReportPage';
 import QualityHistoryReportPage from './components/QualityHistoryReportPage';
 import QualityScenariosPage from './components/QualityScenariosPage';
@@ -1273,6 +1274,15 @@ export default function App() {
         return <PlanFactReportPage />;
       case 'report_stock':
         return <StockReportPage />;
+      case 'report_stock_movements':
+        return (
+          <StockMovementReportPage
+            materials={materials}
+            lots={lots}
+            warehouses={warehouses}
+            series={series}
+          />
+        );
       case 'report_quality_stock':
         return <QualityStockReportPage />;
       case 'report_quality_history':

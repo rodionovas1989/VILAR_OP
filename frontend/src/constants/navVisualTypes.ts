@@ -71,6 +71,7 @@ export const PAGE_VISUAL_TYPE: Record<string, NavVisualType> = {
   report_released_series: 'report',
   report_plan_fact: 'report',
   report_stock: 'report',
+  report_stock_movements: 'report',
   report_quality_stock: 'report',
   report_quality_history: 'report',
 
