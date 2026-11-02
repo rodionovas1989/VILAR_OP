@@ -83,7 +83,7 @@
 | [order-status-guards](sources/order-status-guards.md) | `docs/ORDER_STATUS_GUARDS.md` |
 | [lot-recalc](sources/lot-recalc.md) | `docs/LOT_RECALC.md` |
 | [stock-documents-spec](sources/stock-documents-spec.md) | `docs/STOCK_DOCUMENTS_SPEC.md` |
-| [roadmap-and-agent-docs](sources/roadmap-and-agent-docs.md) | ROADMAP, AGENT_BRIEF, README, … |
+| [roadmap-and-agent-docs](sources/roadmap-and-agent-docs.md) | ROADMAP + `docs/plans/`, AGENT_BRIEF, README, … |
 | [security-and-https](sources/security-and-https.md) | SECURITY_PUBLIC_VM, HTTPS_SETUP |
 | [legal-pdn](sources/legal-pdn.md) | LEGAL_PDN |
 
@@ -97,3 +97,4 @@
 | [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |
 | [lot-mixing-policy](analyses/lot-mixing-policy.md) | Тогл смешения одного производителя; справочник качества — позже |
 | [stock-movement-inquiry](analyses/stock-movement-inquiry.md) | Отчёт «Движения запасов»: журнал и карточка партии |
+| [pto-manual-form](analyses/pto-manual-form.md) | Разбор бумажного ПТО: программа, показатели, движение сырья |

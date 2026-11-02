@@ -1,0 +1,29 @@
+---
+description: ROADMAP домены + docs/plans; Effort у готово; не канон ~/.cursor/plans
+alwaysApply: true
+---
+
+# ROADMAP и планы (Vilar OP)
+
+Канон: `docs/ROADMAP.md` (домены → Активные сверху / Закрыто снизу).  
+Планы: `docs/plans/*.md` (в git).
+
+## Цикл
+
+1. Новая тема — строка в нужном домене, блок «Активные».
+2. Согласованный план — файл в `docs/plans/` + статус **есть план** + ссылка в колонке «План».
+3. После merge в `main` — **готово**, колонка **Effort** (`~Nh · ~Xk tok` если известно), строку перенести в «Закрыто»; wiki/log по schema.
+
+Не канон: `%USERPROFILE%\.cursor\plans` / `~/.cursor/plans` — только черновик UI.
+
+## Метрики
+
+- Effort в ROADMAP — краткая витрина для человека.
+- Детали: frontmatter плана и/или `local/roadmap-effort.json` (шаблон в `docs/plans/`).
+- Не тащить длинные токен-логи в wiki/index / AGENT_BRIEF.
+- Писать effort только если пользователь попросил или закрываете пункт вместе.
+
+## Обвязка в репо
+
+`.cursor/rules/`, `.cursor/plans/README.md` → `docs/plans/`, `wiki/`.  
+Новые project-правила — в `.cursor/rules/*.mdc`.

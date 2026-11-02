@@ -5,6 +5,7 @@
 | Что | Где | В git? |
 |-----|-----|--------|
 | SSH / IP / шпаргалки пилота | папка `local/` | **нет** (`.gitignore`) |
+| Effort/токены по ROADMAP (опционально) | `local/roadmap-effort.json` (шаблон: `docs/plans/roadmap-effort.example.json`) | **нет**; агент не читает сам |
 | `VILAR_ADMIN_PASSWORD`, unit secrets | EnvironmentFile на ВМ | **нет** |
 | `AUTH_SECRET` | env или `backend/data/auth_secret` | **нет** |
 | Боевая sqlite | `backend/data/*.sqlite`, бэкапы | **нет** |

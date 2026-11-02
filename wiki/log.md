@@ -2,6 +2,29 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-02] query | ПТО: цифры блока сырья + блокеры OP
+
+Углубление: формулы остаток/загрузка/расход/уд.факт; проверка рукописных цифр (спирт: приход≠загрузка; хлороформ/часть фактов — ошибки или плохое чтение).  
+Архитектура: PRI=write-off без НЗП, нет snapshot остатков, дата `at` vs `date`, норма per1000, знаменатель ГП, склад↔РЦ.  
+Обновлён `analyses/pto-manual-form.md`.
+
+## [2026-11-02] query | Разбор бумажного ПТО
+
+По фото бланка «Производственно-технический отчёт» (ВИЛАР, 02.2011): три блока — программа выпуска, оперпоказатели/простои, балансовое движение сырья с нормой и отклонением.  
+Синтез: `analyses/pto-manual-form.md`; index обновлён.
+
+## [2026-11-02] ingest | ROADMAP restructure by domains
+
+`docs/ROADMAP.md`: 9 доменов; в каждом Активные (сверху) / Закрыто; колонки Приоритет · План.дата · Статус · План · Effort.  
+Q7 сохранён (есть план). Старые P/U/A/G/I/Q id по возможности сохранены или помечены «бывш.».  
+Обновлены `docs/plans/README`, `roadmap-plans.mdc`, `sources/roadmap-and-agent-docs`.
+
+## [2026-11-02] ingest | ROADMAP plans + agent tooling in repo
+
+Процесс: ROADMAP ↔ `docs/plans/` (канон в git); Q7 вложения к партиям — **есть план** (`lot-attachments.md`).  
+Указатель `.cursor/plans/README.md`; rule `roadmap-plans.mdc`. Метрики усилий — `local/` / Cursor Usage, не wiki.  
+Обновлены: `sources/roadmap-and-agent-docs`, `concepts/rules-and-docs-lifecycle`, index.
+
 ## [2026-08-26] ingest | Bootstrap from existing docs
 
 Созданы `wiki/` + `raw/README.md`, schema/rules (wiki + karpathy guidelines).  

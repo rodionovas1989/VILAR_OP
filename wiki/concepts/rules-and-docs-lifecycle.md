@@ -40,6 +40,8 @@
 | `docs/GMP_*`, `LOT_RECALC`, `ORDER_STATUS_*`, `STOCK_*`, `LEGAL_*`, `SECURITY_*`, `HTTPS_*` | **да** | Raw-методики / спеки; wiki только саммари |
 | `docs/CHANGELOG.md` | **да** | Лента для людей в UI |
 | `docs/ROADMAP.md` | **да** | План vs факт (человек+агент) |
+| `docs/plans/*.md` | **да** | Канон планов реализации (статус «есть план»); не `~/.cursor/plans` |
+| `.cursor/rules/*.mdc` | **да** | Project rules в git (едут с репо) |
 | `README.md`, `DEPLOYMENT.md` | **да** | Люди, установка, env **имена** |
 | `BRANCH_INFO.md` | **да** | Операционная таблица веток |
 | `PROJECT_CONTEXT.md` | **да, тонкий** | 5–15 строк: ветка + 1 абзац; детали → wiki/log |

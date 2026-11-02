@@ -13,6 +13,8 @@
 ```
 wiki/                    — LLM Wiki (знания агента)
 raw/                     — новые исходники ingest (не секреты)
+docs/ROADMAP.md, docs/plans/ — статус vs план реализации (канон в git)
+.cursor/rules/           — project rules (едут с репо); .cursor/plans/README → docs/plans
 docs/GMP_SERIES_RULES.md, LOT_RECALC.md, ORDER_STATUS_GUARDS.md, STOCK_DOCUMENTS_SPEC.md — raw-методики
 package.json / install.bat / start-*.bat / backup.bat / scripts/*.ps1
 backend/
@@ -40,5 +42,6 @@ frontend/
 ## Правила кода
 - Новые фичи — только в новых ветках  
 - После изменений: sync docs + **wiki** (см. `.cursor/rules/docs-sync-after-main.mdc`)  
+- ROADMAP ↔ планы: `.cursor/rules/roadmap-plans.mdc` (канон `docs/plans/`, не `~/.cursor/plans`)  
 - Числа во фронте — `DecimalInput`  
 - Секреты — `.cursor/rules/secrets-guard.mdc`; `npm run wiki:secrets-lint`

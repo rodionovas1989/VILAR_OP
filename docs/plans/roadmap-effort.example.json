@@ -1,0 +1,12 @@
+{
+  "_comment": "Скопируйте в local/roadmap-effort.json (каталог local/ не в git). Агент не читает сам.",
+  "updated": "2026-11-02",
+  "items": {
+    "Q7": {
+      "title": "Lot attachments / COA",
+      "estimate_h": null,
+      "actual_h": null,
+      "notes": "Токены — из Cursor Usage; сюда вручную при желании"
+    }
+  }
+}
