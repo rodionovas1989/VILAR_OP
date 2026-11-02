@@ -97,4 +97,4 @@
 | [lot-leftover-tails](analyses/lot-leftover-tails.md) | «Хвосты» партий: модалка на подборе (G9 готово) |
 | [lot-mixing-policy](analyses/lot-mixing-policy.md) | Тогл смешения одного производителя; справочник качества — позже |
 | [stock-movement-inquiry](analyses/stock-movement-inquiry.md) | Отчёт «Движения запасов»: журнал и карточка партии |
-| [pto-manual-form](analyses/pto-manual-form.md) | Разбор бумажного ПТО: программа, показатели, движение сырья |
+| [pto-manual-form](analyses/pto-manual-form.md) | ПТО / R9: цифры, блокеры OP, варианты срезов на дату |
