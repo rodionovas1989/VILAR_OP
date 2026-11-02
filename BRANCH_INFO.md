@@ -1,5 +1,7 @@
 ﻿# BRANCH_INFO
 
+Эталон: **`main`**. 2026-11-02: с remote сняты устаревшие `feature/*` / `fix/*` (уже в main); локальный архив веток **сохранён**. Из `docs/bugfix-similar-review` в main взят только concept bugfix.
+
 | Ветка | Описание | Статус |
 |-------|----------|--------|
 | `fix/released-series-linked-tables` | Итого по продукту: клик серия ↔ компонент | **слита** в main |

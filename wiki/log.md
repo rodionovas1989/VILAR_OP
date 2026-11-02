@@ -2,6 +2,11 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-02] ingest | bugfix-similar-review + remote prune
+
+В main перенесён только `concepts/bugfix-similar-review` (из `docs/bugfix-similar-review`; analysis list-filter не брали). Якоря: wiki-schema, SCHEMA, index.  
+Remote: удалены 5 устаревших feature/fix (уже ancestors main). Локальный архив веток сохранён. `.obsidian/` в `.gitignore`.
+
 ## [2026-11-02] ingest | ROADMAP R9 + срезы на дату
 
 В `docs/ROADMAP.md` (§ отчёты): **R9** движение сырья (ПТО) — статус **идея**, колонка План → `analyses/pto-manual-form` (разбор, не `docs/plans`).  

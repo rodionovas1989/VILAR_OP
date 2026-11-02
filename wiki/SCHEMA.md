@@ -74,6 +74,7 @@ wiki/
 | Полезный ответ-синтез | analyses или decision + log |
 | Релиз | CHANGELOG для людей; ops wiki при смене деплоя |
 | Запрос про тикеты / FB-… / обратную связь | Не локальная sqlite. Выгрузка с пилота по [feedback-tickets](entities/feedback-tickets.md); 1 тикет = 1 ветка |
+| Правка ошибки | Ревью похожих сценариев, подсветка и уточнение до правок: [bugfix-similar-review](concepts/bugfix-similar-review.md) |
 
 Пропуск wiki при изменении домена = тот же класс ошибки, что устаревший ROADMAP.
 

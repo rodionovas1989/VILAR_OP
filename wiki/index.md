@@ -29,6 +29,7 @@
 | [ui-scroll-layout](concepts/ui-scroll-layout.md) | Скролл в modal-doc / doc-form-scroll |
 | [ui-kit](concepts/ui-kit.md) | Clinical Ops: токены, ctrl, table |
 | [dictionary-active](concepts/dictionary-active.md) | Soft-flag `active` у справочников |
+| [bugfix-similar-review](concepts/bugfix-similar-review.md) | Перед фиксом: похожие сценарии, список, уточнить объём |
 
 ## Entities
 
