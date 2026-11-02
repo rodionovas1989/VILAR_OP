@@ -2,6 +2,50 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-02] ingest | G12 план UOM
+
+Статус ROADMAP **есть план**: `docs/plans/uom-units-of-measure.md` (G12-a MVP base+снимки на док-тах; G12-b альты). Разбор сохранён в `analyses/uom-units-of-measure`.
+
+## [2026-11-02] query | UOM: задел ЕИ в документах
+
+Идеал — при G12 сразу снимок `uomBaseId` на строке документа (+ слот entry); UX альтов — фазой позже.  
+`analyses/uom-units-of-measure`.
+
+## [2026-11-02] query | UOM: SAP tables vs Vilar, риск без ЕИ в stock
+
+Разбор SAP: MARA/MARM/MARD/MSEG. Vilar R1 ≈ MARD; gap — альты и снимок на документах.  
+`analyses/uom-units-of-measure`.
+
+## [2026-11-02] query | UOM: запрет смены base на API
+
+Блокировка смены учётной ЕИ — серверный инвариант (`materials` beforeUpdate + чеклист), не только UI.  
+Дописано в `analyses/uom-units-of-measure`.
+
+## [2026-11-02] query | UOM: одна учётная ЕИ, регистры, смена base
+
+Зафиксирован сценарий: одна учётная ЕИ, все движения в ней; альты — задел без dual stock. Регистры **R1**. Смена base после движений — запрет (SAP-подобно).  
+Обновлены `analyses/uom-units-of-measure`, G12.
+
+## [2026-11-02] query | UOM: catch weight шт↔кг
+
+Зафиксировано: база ЕИ на карточке материала. Разбор плавающего кг: профили fixed/catch_weight; кейсы CW1–CW10; FW0–FW4, рекомендация FW2.  
+Обновлены `analyses/uom-units-of-measure`, G12 в ROADMAP.
+
+## [2026-11-02] query | UOM: модель учёта и несколько ЕИ
+
+К G12: базовую ЕИ **не** жить в модели учёта (только опц. soft-default); истина на материале.  
+Кейсы «несколько ЕИ»: одна база + system/alt/spec-bridge. Обновлён `analyses/uom-units-of-measure`.
+
+## [2026-11-02] query | UOM: где задаётся ЕИ материала
+
+Уточнение к G12: базовая ЕИ — обязательное поле карточки материала; default по `type` (продукт→уп, иначе→кг); после движений не менять.  
+Дописано в `analyses/uom-units-of-measure`.
+
+## [2026-11-02] ingest | ROADMAP G12 UOM
+
+В `docs/ROADMAP.md` (§ GMP): **G12** единицы измерения — статус **идея**, разбор → `analyses/uom-units-of-measure`.  
+Сейчас `material.unit` — строка; регистры без ЕИ. Варианты A–E; рекомендация: база материала + каталог (MVP — автоперевод массы).
+
 ## [2026-11-02] ingest | bugfix-similar-review + remote prune
 
 В main перенесён только `concepts/bugfix-similar-review` (из `docs/bugfix-similar-review`; analysis list-filter не брали). Якоря: wiki-schema, SCHEMA, index.  
