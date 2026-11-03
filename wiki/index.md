@@ -68,6 +68,7 @@
 | [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на нескольких складах: пока TRN; авто-сплит отложен |
 | [D011](decisions/D011-lot-production-sequence.md) | Sequence партии; маска в модели учёта, не в FEFO |
 | [D012](decisions/D012-relational-then-postgres.md) | Реляционные таблицы в SQLite (STOR1), затем PostgreSQL (I1) |
+| [D013](decisions/D013-storno-new-document.md) | Сторно = новый документ B (черновик→провести); postingDate |
 
 ## Ops
 
@@ -103,3 +104,4 @@
 | [uom-units-of-measure](analyses/uom-units-of-measure.md) | ЕИ (G12): план `docs/plans/…`; SAP MARD/MSEG; R1 |
 | [sap-mm-pp-comparison](analyses/sap-mm-pp-comparison.md) | Сверка со складом/производством SAP (без финансов): зрелость, риски, точки роста |
 | [relational-storage-migration](analyses/relational-storage-migration.md) | Уход от JSON-records: STOR1 SQLite-таблицы → I1 Postgres |
+| [storno-stock-documents](analyses/storno-stock-documents.md) | Сторно как в SAP: документ B; R10 полный / R11 по строкам |

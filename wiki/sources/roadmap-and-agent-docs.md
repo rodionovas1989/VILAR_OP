@@ -5,6 +5,7 @@
 - **Прочие:** [AGENT_BRIEF.md](../../AGENT_BRIEF.md), [README.md](../../README.md), [DEPLOYMENT.md](../../DEPLOYMENT.md), [BRANCH_INFO.md](../../BRANCH_INFO.md)
 - **Выжимка:** [overview](../overview.md), [code-map](../entities/code-map.md), [ops](../ops/local-and-pilot.md), decisions D001–D012  
 - **Хранение:** STOR1 / I1 — [plans/relational-storage-postgres.md](../../docs/plans/relational-storage-postgres.md), [analyses/relational-storage-migration](../analyses/relational-storage-migration.md)
+- **Сторно:** R10 / R11 — [plans/storno-stock-documents.md](../../docs/plans/storno-stock-documents.md), [storno-partial-lines.md](../../docs/plans/storno-partial-lines.md); при планировании — сверка планов (`.cursor/rules/roadmap-plans.mdc`)
 
 ## Цикл
 

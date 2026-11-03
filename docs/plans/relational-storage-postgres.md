@@ -67,10 +67,13 @@ ADR: [D012](../../wiki/decisions/D012-relational-then-postgres.md). Связь �
 | `material_id`, `lot_id`, `warehouse_id` | |
 | `quantity` | со знаком |
 | `type` | `receipt` \| `issue` |
-| `at` | момент проводки |
-| `document_id`, `document_number`, `document_type`, `document_status` | |
+| `posting_date` | учётный день ≈ SAP BUDAT (`YYYY-MM-DD`); канон срезов «на дату» — **R10** |
+| `at` | техническое время ввода ≈ CPUDT |
+| `document_id`, `document_number`, `document_type`, `document_status` | статус шапки на момент строки; **не** выкидывать из наката из‑за legacy `cancelled` |
 | `production_order_id`, `series_id`, `user_id` | nullable |
-| INDEX | `(lot_id, at)`, `(document_id)` |
+| INDEX | `(lot_id, posting_date)`, `(document_id)`; `(lot_id, at)` опционально для аудита |
+
+См. [storno-stock-documents.md](storno-stock-documents.md): сторно = **отдельный документ B**, движения A и B оба в журнале.
 
 **`active_reservations`**
 
@@ -89,11 +92,17 @@ ADR: [D012](../../wiki/decisions/D012-relational-then-postgres.md). Связь �
 Унифицированная шапка (все типы RCP…SHP):
 
 - `id`, `type`, `number` — **UNIQUE `(type, number)`**
-- `date`, `time`, `status` (`draft` \| `posted` \| `cancelled` \| `fulfilled`)
+- `date`, `time`, `status` (`draft` \| `posted` \| `cancelled` \| `fulfilled` \| **`reversed`** после полного сторно — R10)
 - `warehouse_id` / `warehouse_from_id` / `warehouse_to_id` по режиму
-- `production_order_id`, `series_id`, `basis_document_id`, linked WOF/PST для INV
-- audit: created/posted/cancelled/fulfilled + user ids
+- `production_order_id`, `series_id`
+- `basis_document_id` — INV → черновики WOF/PST (**не** путать со сторно)
+- `reverses_document_id` — nullable FK на исходник A (≈ SMBLN); у сторно-документа B
+- `is_reversal` — bool или вывод из `reverses_document_id IS NOT NULL`
+- linked WOF/PST для INV
+- audit: created/posted/cancelled/fulfilled/reversed + user ids
 - `comment`
+
+Правило R10: запрет второго полного сторно A, пока есть draft/posted B с `reverses_document_id = A`. Частичное по строкам — **R11**.
 
 **`document_lines`:** `id`, `document_id` FK, `line_no`?, `material_id`, `lot_id`, `quantity`, опц. `book_quantity` / `actual_quantity` (INV); позже слоты ЕИ (G12).
 

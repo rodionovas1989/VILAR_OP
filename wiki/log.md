@@ -2,6 +2,12 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-03] ingest | R10/R11 сторно-документы + сверка планов в rules
+
+ROADMAP **R10** (полное сторно = новый документ B, draft→post) + **R11** (частичное по строкам). Планы `storno-stock-documents`, `storno-partial-lines`; ADR D013; STOR1 дополнен `posting_date` / `reverses_document_id`.  
+Правило: `.cursor/rules/roadmap-plans.mdc` — при планировании сверять ROADMAP/планы, подсвечивать противоречия, ждать решений.  
+`analyses/storno-stock-documents`; document-lifecycle, stock-registers, pto, sap-mm-pp п.6.
+
 ## [2026-11-03] ingest | STOR1 / I1 реляционное хранение → Postgres
 
 ROADMAP: **STOR1** + **I1** → есть план `docs/plans/relational-storage-postgres.md`. ADR D012; двухэтапный путь (таблицы в SQLite, затем PostgreSQL).  
