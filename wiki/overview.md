@@ -4,7 +4,7 @@
 
 - Пилот: https://vilar-prod.ru  
 - Эталон кода: ветка `main` (см. [BRANCH_INFO.md](../BRANCH_INFO.md))  
-- Стек: React + Vite + TypeScript; Node/Express; SQLite через `node:sqlite` (без native gyp)
+- Стек: React + Vite + TypeScript; Node/Express; SQLite через `node:sqlite` (без native gyp). План: реляционные таблицы в SQLite (**STOR1**), затем PostgreSQL (**I1**) — [relational-storage-migration](analyses/relational-storage-migration.md)
 
 ## Контур продукта
 
@@ -25,7 +25,7 @@
 
 ## Масштаб и ограничения
 
-- Пилот 10–15 пользователей на SQLite WAL — осторожно ок; при росте писателей — Postgres (roadmap)
+- Пилот 10–15 пользователей на SQLite WAL — осторожно ок; дальше — STOR1 (таблицы) → I1 Postgres ([D012](decisions/D012-relational-then-postgres.md))
 - Новые фичи — только в новых ветках
 - Документация после merge в main — sync rule + обновление wiki
 

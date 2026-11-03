@@ -67,6 +67,7 @@
 | [D009](decisions/D009-multi-warehouse-pri.md) | N RES/PRI по складам; склад в строке факта |
 | [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на нескольких складах: пока TRN; авто-сплит отложен |
 | [D011](decisions/D011-lot-production-sequence.md) | Sequence партии; маска в модели учёта, не в FEFO |
+| [D012](decisions/D012-relational-then-postgres.md) | Реляционные таблицы в SQLite (STOR1), затем PostgreSQL (I1) |
 
 ## Ops
 
@@ -100,3 +101,5 @@
 | [stock-movement-inquiry](analyses/stock-movement-inquiry.md) | Отчёт «Движения запасов»: журнал и карточка партии |
 | [pto-manual-form](analyses/pto-manual-form.md) | ПТО / R9: цифры, блокеры OP, варианты срезов на дату |
 | [uom-units-of-measure](analyses/uom-units-of-measure.md) | ЕИ (G12): план `docs/plans/…`; SAP MARD/MSEG; R1 |
+| [sap-mm-pp-comparison](analyses/sap-mm-pp-comparison.md) | Сверка со складом/производством SAP (без финансов): зрелость, риски, точки роста |
+| [relational-storage-migration](analyses/relational-storage-migration.md) | Уход от JSON-records: STOR1 SQLite-таблицы → I1 Postgres |

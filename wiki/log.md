@@ -2,6 +2,16 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-03] ingest | STOR1 / I1 реляционное хранение → Postgres
+
+ROADMAP: **STOR1** + **I1** → есть план `docs/plans/relational-storage-postgres.md`. ADR D012; двухэтапный путь (таблицы в SQLite, затем PostgreSQL).  
+`analyses/relational-storage-migration`; обновлены D001, overview, index.
+
+## [2026-11-03] query | сверка Vilar ↔ SAP (склад + производство)
+
+Синтез: где модель уже в классе SAP IM (документ → qty-остаток), где тонкое PP (нет НЗП, atomic complete), зрелость блоков 0–5, приоритеты роста без правки ROADMAP.  
+`analyses/sap-mm-pp-comparison`. Canvas: `sap-mm-pp-comparison.canvas.tsx`.
+
 ## [2026-11-02] ingest | G12 план UOM
 
 Статус ROADMAP **есть план**: `docs/plans/uom-units-of-measure.md` (G12-a MVP base+снимки на док-тах; G12-b альты). Разбор сохранён в `analyses/uom-units-of-measure`.
