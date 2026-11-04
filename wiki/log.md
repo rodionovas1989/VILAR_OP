@@ -2,6 +2,19 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-04] decision | G13 RES split + Pull list staging
+
+План `docs/plans/reservation-pull-list-staging.md`; ROADMAP **G13** есть план (P1); **G8** superseded; **WP11** / **U5** связаны.  
+ADR [D015](decisions/D015-reservation-pull-list-staging.md); [D010](decisions/D010-same-lot-multi-warehouse.md) → целевой split+Pull list.  
+Без статуса «обеспечен»; `issueWarehouseId`=Производство; PRI только с него; stageGap / enterpriseShortage.  
+Sync: order-status-machine, reservation-res, G2b/Q10 plans conflicts, sap-mm-pp-comparison, analyses/reservation-pull-list-staging.
+
+## [2026-11-04] decision | R9 аналитическое НЗП + A3c история статусов заказа
+
+R9: НЗП для ПТО = Σ нетто PRI открытых заказов (без цехового склада в MVP); формула и mid-month — `analyses/wip-derived-from-orders.md`.  
+A3c: план `docs/plans/order-status-history.md` (рядом с A3b, не JEST-на-всё); ROADMAP обновлён.  
+Sync: pto-manual-form, sap-mm-pp-comparison, G2b plan §1, login-audit, plans/README.
+
 ## [2026-11-04] decision | G2b детальный архитектурный план + риски
 
 План `tech-maps-pp-pi-phases`: модель данных, статусы, API, конфликты (Q10-B исключение для PRI заказа; зависимость R10), риски A–L (over-RES≠over-stock; запрет cancel в работе без сторно).  

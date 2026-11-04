@@ -66,11 +66,12 @@
 | [D007](decisions/D007-llm-wiki.md) | Внедрение LLM Wiki |
 | [D008](decisions/D008-rules-secrets-lifecycle.md) | Rules, секреты, lifecycle wiki |
 | [D009](decisions/D009-multi-warehouse-pri.md) | N RES/PRI по складам; склад в строке факта |
-| [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на нескольких складах: пока TRN; авто-сплит отложен |
+| [D010](decisions/D010-same-lot-multi-warehouse.md) | Одна партия на складах: целевой split+Pull list (G13); interim TRN |
 | [D011](decisions/D011-lot-production-sequence.md) | Sequence партии; маска в модели учёта, не в FEFO |
 | [D012](decisions/D012-relational-then-postgres.md) | Реляционные таблицы в SQLite (STOR1), затем PostgreSQL (I1) |
 | [D013](decisions/D013-storno-new-document.md) | Сторно = новый документ B (черновик→провести); postingDate |
 | [D014](decisions/D014-quality-stock-types.md) | Типы остатка QI/Blocked; смена только документом; Q10 |
+| [D015](decisions/D015-reservation-pull-list-staging.md) | Early RES; issue WH=Производство; Pull list + reassign; без статуса «обеспечен» |
 
 ## Ops
 
@@ -103,8 +104,10 @@
 | [lot-mixing-policy](analyses/lot-mixing-policy.md) | Тогл смешения одного производителя; справочник качества — позже |
 | [stock-movement-inquiry](analyses/stock-movement-inquiry.md) | Отчёт «Движения запасов»: журнал и карточка партии |
 | [pto-manual-form](analyses/pto-manual-form.md) | ПТО / R9: цифры, блокеры OP, варианты срезов на дату |
+| [wip-derived-from-orders](analyses/wip-derived-from-orders.md) | Аналитическое НЗП = Σ PRI открытых заказов; mid-month; R9/A3c |
 | [uom-units-of-measure](analyses/uom-units-of-measure.md) | ЕИ (G12): план `docs/plans/…`; SAP MARD/MSEG; R1 |
 | [sap-mm-pp-comparison](analyses/sap-mm-pp-comparison.md) | Сверка со складом/производством SAP (без финансов): зрелость, риски, точки роста |
+| [reservation-pull-list-staging](analyses/reservation-pull-list-staging.md) | G13: early RES, split, Pull list, stageGap; план `docs/plans/…` |
 | [sap-routing-operations](analyses/sap-routing-operations.md) | SAP routing/recipe + решения G2b; план: `docs/plans/tech-maps-pp-pi-phases.md` |
 | [relational-storage-migration](analyses/relational-storage-migration.md) | Уход от JSON-records: STOR1 SQLite-таблицы → I1 Postgres |
 | [storno-stock-documents](analyses/storno-stock-documents.md) | Сторно как в SAP: документ B; R10 полный / R11 по строкам |

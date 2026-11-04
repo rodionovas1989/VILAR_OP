@@ -5,7 +5,7 @@ estimate_h:
 actual_h:
 tokens_approx:
 depends_on: R10
-conflicts_with: Q10-B
+conflicts_with: Q10-B, G13
 ---
 
 # Техкарты PP-PI: фазы, allocation, закрытие со списанием
@@ -23,7 +23,8 @@ conflicts_with: Q10-B
 2. Создаётся/проводится **PRI** (списание на заказ+фазу) с **ручным фактом** qty — без скрытых проводок.
 3. После закрытия всех фаз — **PRR** (выпуск ГП); заказ → `завершен`.
 
-Отдельный qty-слой «НЗП» **не** вводим: сырьё уходит со склада при PRI; ГП появляется при PRR.
+Отдельный qty-слой «НЗП» **не** вводим: сырьё уходит со склада при PRI; ГП появляется при PRR.  
+**Отчётный WIP (R9):** аналитика Σ нетто PRI по ещё не завершённым заказам — не регистр остатка; см. [wip-derived-from-orders](../../wiki/analyses/wip-derived-from-orders.md).
 
 ---
 
@@ -173,6 +174,7 @@ order.phaseCloseDocs = { [phaseId]: [priDocumentId, ...] } // для сторн�
 | **R11** | Частичное сторно строк | Не требуется для MVP отмены фазы (полное сторно PRI фазы). |
 | **STOR1** | Новые сущности | Волна a в JSON-коллекциях ok; DDL операций/фаз — в STOR1 backlog. |
 | **D009** | N PRI по складам | Сохранить; `phaseId` на каждом. |
+| **G13** | Early RES + Pull list + issue WH=Производство | Согласовано: без статуса «обеспечен»; PRI только с `issueWarehouseId`; withdrawn match по warehouse **после** reassign RES на issue WH; create→RES стыкуется с G13-b (confirm materials не единственный путь). План: [reservation-pull-list-staging.md](reservation-pull-list-staging.md). |
 | **G12** | ЕИ | Duration в минутах (не UOM материала). Сырьё в PRI — после G12 со снимком ЕИ на строке. |
 | **G11** | Мощности | Потребитель duration; не в G2b. |
 | **Atomic complete** | `completeOrder` | Волна b: deprecate; guards запрещают complete если у заказа multi-phase snapshot; однофазный миграционный путь optional. |
@@ -251,7 +253,7 @@ D002 (заказ-оркестратор), D001 sqlite, GMP one-lot (факт п�
 
 ### Вне скоупа
 
-НЗП-регистр; backflush; люди/CRP (G11); production version; PI-sheet; допуски сырья; дробление RES; multi-close одной фазы (K).
+НЗП-регистр (отчётный derived WIP — R9, не этот план); backflush; люди/CRP (G11); production version; PI-sheet; допуски сырья; дробление RES; multi-close одной фазы (K).
 
 ---
 
