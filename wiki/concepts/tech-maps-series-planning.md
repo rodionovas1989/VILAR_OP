@@ -1,8 +1,9 @@
 # Concept: техкарты и планирование серий
 
-- **Техкарта** (`tech_maps`): имя + `workCenterId`.
-- **Плановые объёмы серий:** срез `materialId + workCenterId → quantity`; при создании заказа количество подставляется (можно править).
-- **Планирование серий:** объём на период → массовые заказы со статусом `новый` (`POST /api/planning/plan-series`). В подбор и в `planSeries` не попадают серии, у которых уже есть заказ кроме `отменен` (в том числе `завершен`). Отмена заказа серию освобождает.
-- Отчёт **План/Факт** производства — UI `PlanFactReportPage`.
+- **Сейчас (пилот):** техкарта (`tech_maps`) ≈ имя + `workCenterId`; этапов нет.
+- **Плановые объёмы серий:** сейчас `materialId + workCenterId → quantity`; **цель G2b:** только `materialId → quantity` (РЦ убрать).
+- **Планирование серий:** объём на период → массовые заказы `новый` (`POST /api/planning/plan-series`). Серии с заказом кроме `отменен` не попадают в подбор/`planSeries`.
+- Отчёт **План/Факт** — `PlanFactReportPage`.
+- **Цель G2b (есть план):** PP-PI операции/фазы, allocation в спеке, закрытие фазы→PRI, финал→PRR; [plan](../../docs/plans/tech-maps-pp-pi-phases.md), [sap-routing-operations](../analyses/sap-routing-operations.md).
 
 **Связано:** [entities/production-order.md](../entities/production-order.md), [order-status-machine.md](order-status-machine.md)

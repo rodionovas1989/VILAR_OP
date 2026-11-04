@@ -23,7 +23,8 @@
 | [inv-plan-fact-wof-pst](concepts/inv-plan-fact-wof-pst.md) | INV → черновики WOF/PST |
 | [rules-and-docs-lifecycle](concepts/rules-and-docs-lifecycle.md) | Cursor rules, судьба MD, триггеры wiki |
 | [legal-pdn](concepts/legal-pdn.md) | ПДн, согласие, без саморегистрации |
-| [qbl-soft-block](concepts/qbl-soft-block.md) | QBL мягкий карантин партии |
+| [qbl-soft-block](concepts/qbl-soft-block.md) | QBL мягкий карантин (superseded Q10) |
+| [quality-scenarios-movements](concepts/quality-scenarios-movements.md) | Сценарии = видимые движения, без скрытых проводок |
 | [tech-maps-series-planning](concepts/tech-maps-series-planning.md) | Техкарты, объёмы серий, plan-series |
 | [traceability-reports](concepts/traceability-reports.md) | Прослеживаемость: один отчёт, компоновки, период датами |
 | [ui-scroll-layout](concepts/ui-scroll-layout.md) | Скролл в modal-doc / doc-form-scroll |
@@ -39,7 +40,7 @@
 | [reservation-res](entities/reservation-res.md) | Резерв RES |
 | [pri-prr-complete](entities/pri-prr-complete.md) | Complete: PRI+PRR |
 | [stock-registers](entities/stock-registers.md) | Регистры read-mostly |
-| [qcm-quality](entities/qcm-quality.md) | Документ качества / сценарии |
+| [qcm-quality](entities/qcm-quality.md) | QCM — к снятию в Q10 |
 | [lch-characteristics](entities/lch-characteristics.md) | LCH, регистр, рабочий стол качества |
 | [decimal-input](entities/decimal-input.md) | Единый числовой ввод |
 | [rbac-objects](entities/rbac-objects.md) | Права и objectId |
@@ -69,6 +70,7 @@
 | [D011](decisions/D011-lot-production-sequence.md) | Sequence партии; маска в модели учёта, не в FEFO |
 | [D012](decisions/D012-relational-then-postgres.md) | Реляционные таблицы в SQLite (STOR1), затем PostgreSQL (I1) |
 | [D013](decisions/D013-storno-new-document.md) | Сторно = новый документ B (черновик→провести); postingDate |
+| [D014](decisions/D014-quality-stock-types.md) | Типы остатка QI/Blocked; смена только документом; Q10 |
 
 ## Ops
 
@@ -103,5 +105,9 @@
 | [pto-manual-form](analyses/pto-manual-form.md) | ПТО / R9: цифры, блокеры OP, варианты срезов на дату |
 | [uom-units-of-measure](analyses/uom-units-of-measure.md) | ЕИ (G12): план `docs/plans/…`; SAP MARD/MSEG; R1 |
 | [sap-mm-pp-comparison](analyses/sap-mm-pp-comparison.md) | Сверка со складом/производством SAP (без финансов): зрелость, риски, точки роста |
+| [sap-routing-operations](analyses/sap-routing-operations.md) | SAP routing/recipe + решения G2b; план: `docs/plans/tech-maps-pp-pi-phases.md` |
 | [relational-storage-migration](analyses/relational-storage-migration.md) | Уход от JSON-records: STOR1 SQLite-таблицы → I1 Postgres |
 | [storno-stock-documents](analyses/storno-stock-documents.md) | Сторно как в SAP: документ B; R10 полный / R11 по строкам |
+| [quality-stock-types](analyses/quality-stock-types.md) | Q10: типы остатка QI/Blocked SAP-like; QCM→STT |
+| [sap-inspection-lot](analyses/sap-inspection-lot.md) | Q11: inspection lot (идея) |
+| [sap-physical-samples](analyses/sap-physical-samples.md) | Q13: физ. пробы (дух SAP QPRS) |

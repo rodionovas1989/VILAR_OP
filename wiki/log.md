@@ -2,6 +2,70 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-04] decision | G2b детальный архитектурный план + риски
+
+План `tech-maps-pp-pi-phases`: модель данных, статусы, API, конфликты (Q10-B исключение для PRI заказа; зависимость R10), риски A–L (over-RES≠over-stock; запрет cancel в работе без сторно).  
+Q10 план §B обновлён под исключение G2b.
+
+## [2026-11-04] decision | G2b план: PP-PI фазы + PRI по закрытию
+
+План `docs/plans/tech-maps-pp-pi-phases.md`; ROADMAP G2b → есть план.  
+PRI на заказ+фазу; over-issue RES ok; plan-volumes только материал; baseQty на шапке; сторно закрытий на столе заказа; волны a/b в одном плане.
+
+## [2026-11-04] query | G2b: SAP 261 vs WOF, RES, ошибки; волны 1→2
+
+Волна 1 = техкарта/спека; волна 2 = закрытие фаз+доки. Статус `в работе`; снимок; параллель ok.  
+§15–19: остаток один; 261≠WOF из‑за order+RES; R1 RES; сторно закрытия как CO13/R10; BOM item→одна фаза; plan-volumes = справочник материал×РЦ.  
+`analyses/sap-routing-operations.md`.
+
+## [2026-11-04] decision | G2b: нормы = время+scale; allocation в спеке
+
+Нормы: только duration + baseQty (A), без persons в v1. В спецификациях — привязка строк сырья к phaseId техкарты; backflush/GI по фазам вне v1.  
+Открыто: L1/L2/L3; default пустой привязки; снимок allocation на заказе.  
+`analyses/sap-routing-operations.md` §10–11.5, §13.
+
+## [2026-11-04] query | SAP: сырьё по фазам vs полуфабрикат на этапе
+
+Component allocation + backflush → GI на confirm фазы; GR шапки обычно в конце (Auto GR). Складской полуфабрикат = отдельный материал/BOM/заказ (или phantom/collective); co-product ≠ промежуточный этап.  
+Зафиксировано: много спек на одну техкарту; desktop/отчёты подстроим под этапы.  
+`analyses/sap-routing-operations.md` §11.
+
+## [2026-11-04] decision | G2b развилки: PP-PI, без НЗП; открыты слои/нормы/РЦ
+
+Зафиксировано: метафора **PP-PI** (операции+фазы+параллель); НЗП вне темы; РЦ на этапах с ударом по plan-series/заказу/отчётам; связь спека→техкарта как сейчас (дух SAP material assignment).  
+Расшифрованы слои скоупа L1–L5; за/против норм A–D (рекомендация B: duration+persons).  
+Открыто до плана: L1 vs L1+L2(+L3); A/B/C/D; правило планировочного РЦ.  
+`analyses/sap-routing-operations.md` §7–13.
+
+## [2026-11-04] query | SAP routing / этапы техкарты (база G2b)
+
+Детальный разбор: discrete routing vs PP-PI recipe; header/sequence/operation; standard values; component allocation; confirmation vs статус заказа; пересечение с НЗП; разрыв с `tech_maps` (имя+РЦ).  
+`analyses/sap-routing-operations.md`. Вопросы §8 — до плана `docs/plans` по G2b.
+
+## [2026-11-04] decision | Q10 план реализации: архитектура A–J, фазы, уязвимости
+
+План `quality-stock-types`: RES∩STT, INV=sum/дети UR, TRN тот же type, RCP stockType, cutover до сноса QCM, выравнивание PRI/SHP с freeQty. Анализ рисков обновлён.
+
+## [2026-11-04] ingest | Q13 отбор проб (полноценный)
+
+ROADMAP **Q13** идея: сущность пробы (дух SAP physical samples), не только TRN+причина. Вне скоупа Q10; разбор `analyses/sap-physical-samples` обновлён.
+
+## [2026-11-04] decision | Q10 уточнение: снос QCM, сценарии=движения, Q12 допуски
+
+Зафиксировано: снос lot_qualities/QCM/регистра; единый справочник причин движения; сценарии только как авто-документы без скрытых проводок; inspection lot — Q11; допуски LCH — Q12; пробы — вынесены в **Q13**.  
+D014 и план Q10; concepts/quality-scenarios-movements.
+
+## [2026-11-04] ingest | Q11 контроль качества ↔ остатки + разбор inspection lot
+
+ROADMAP **Q11** (идея): статья про inspection lot; внедрение не в контуре Q10.  
+`analyses/sap-inspection-lot`.
+
+## [2026-11-04] ingest | Q10 типы остатка качества (SAP-like)
+
+Целевая модель: unrestricted / QI / blocked qty; смена типа только документом (STT); QCM → видимые черновики STT (как INV→дети).  
+ROADMAP **Q10** есть план `docs/plans/quality-stock-types.md`; ADR D014.  
+`analyses/quality-stock-types`; sap-mm-pp п.5: ссылка Q9→Q10; Q9 остаётся guards soft-модели.
+
 ## [2026-11-03] ingest | R10/R11 сторно-документы + сверка планов в rules
 
 ROADMAP **R10** (полное сторно = новый документ B, draft→post) + **R11** (частичное по строкам). Планы `storno-stock-documents`, `storno-partial-lines`; ADR D013; STOR1 дополнен `posting_date` / `reverses_document_id`.  

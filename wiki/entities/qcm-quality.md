@@ -1,11 +1,10 @@
-# Entity: качество QCM
+# Entity: качество QCM (к снятию)
 
-Единый документ качества партий; регистры; разрешения Годен / Условно / Не годен.
+**Статус:** текущий код ещё содержит QCM / `lot_qualities` / `quality_register`.  
+**Цель Q10:** **полный снос** — дублируют типы остатка; заказчик не использовал. Решение о доступности = **STT** (+ причины движения); факты = **LCH**.
 
-Карантин/блокировка: [concepts/qbl-soft-block.md](../concepts/qbl-soft-block.md).
+Исторически: единый документ качества; сценарии `onLotCreated` → авто-QCM.  
+После Q10 сценарии → документы остатков: [quality-scenarios-movements](../concepts/quality-scenarios-movements.md).
 
-Сценарии: `onLotCreated` → авто-QCM (отборы материал/контрагент).
-
-**API:** `/api/quality/*`  
-**UI:** `QualityManagementPage`, `QualityScenariosPage`  
-**Связано:** отчёты качества запасов/истории
+**Канон:** [D014](../decisions/D014-quality-stock-types.md), [quality-stock-types](../analyses/quality-stock-types.md).  
+**Идея lot:** [sap-inspection-lot](../analyses/sap-inspection-lot.md) (Q11).

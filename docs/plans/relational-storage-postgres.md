@@ -56,7 +56,8 @@ ADR: [D012](../../wiki/decisions/D012-relational-then-postgres.md). Связь �
 | `material_id` | денормализация; должна совпадать с `lots.material_id` |
 | `lot_id` | FK → lots |
 | `warehouse_id` | FK → warehouses |
-| `quantity` | учётная ЕИ материала (см. G12) |
+| `quantity` | учётная ЕИ материала (см. G12); **до Q10** — единое поле |
+| `quantity_unrestricted` / `quantity_qi` / `quantity_blocked` | **Q10** ([quality-stock-types.md](quality-stock-types.md), D014): три qty вместо одного `quantity`; миграция: старое → unrestricted |
 | UNIQUE | `(lot_id, warehouse_id)` |
 
 **`material_movements`**
@@ -66,6 +67,7 @@ ADR: [D012](../../wiki/decisions/D012-relational-then-postgres.md). Связь �
 | `id` PK | |
 | `material_id`, `lot_id`, `warehouse_id` | |
 | `quantity` | со знаком |
+| `stock_type` / from–to | **Q10:** тип остатка (unrestricted \| qi \| blocked) на дельте; для STT — пара from/to |
 | `type` | `receipt` \| `issue` |
 | `posting_date` | учётный день ≈ SAP BUDAT (`YYYY-MM-DD`); канон срезов «на дату» — **R10** |
 | `at` | техническое время ввода ≈ CPUDT |
