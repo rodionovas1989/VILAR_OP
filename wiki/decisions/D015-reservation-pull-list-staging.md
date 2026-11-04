@@ -8,7 +8,7 @@
 4. Нехватка на issue WH при наличии на Сырье закрывается сущностью **Pull list**: TRN + **переназначение** RES на Производство. Свободный TRN зарезервированного — не «молча», а через политику enforcement.
 5. Статус **«обеспечен» не вводим** (избыточен при early RES). На столах — вычисляемые **`stageGap`** и **`enterpriseShortage`**.
 6. Склад Производство = **staging-буфер** до отпуска; **не** qty-НЗП ([wip-derived-from-orders](../analyses/wip-derived-from-orders.md), R9).
-7. Приоритезация очереди staging — только UX стола (**WP11**), не отдельный движок.
+7. Приоритезация очереди staging — только UX стола (**WP11**, полный план [warehouse-desktop.md](../../docs/plans/warehouse-desktop.md)), не отдельный движок.
 8. **`reservationEnforcement`:** `strict` \| `warn` (дух SAP availability W/E). Default `strict`. Не «игнор резервов»: в `warn` — confirm + причина + audit; RES-механизм не отключается.
 
 **Почему не RES только после подвоза:** иначе до обеспечения нет ATP-hold и FEFO на предприятии; shortage снабжения слепой.

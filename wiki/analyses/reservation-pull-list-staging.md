@@ -23,7 +23,7 @@ ADR: [D015](../decisions/D015-reservation-pull-list-staging.md).
 | Pull list / staging (MF60) | Сущность Pull list → TRN + reassign RES |
 | Available / missing parts | `stageGap` vs `enterpriseShortage` |
 | TECO снимает открытые резервы | Завершение / отмена: fulfill/cancel хвостов RES |
-| Приоритет pull list | Только сортировка UX стола (WP11), не отдельный движок |
+| Приоритет pull list | Только сортировка UX стола ([WP11](warehouse-desktop.md)), не отдельный движок |
 
 Нюанс: в классическом SAP RESB часто сразу на issue SLoc, а staging только двигает qty. У нас split RES по фактическим складам + reassign — тот же конечный инвариант, удобнее для FEFO/мультисклада ([D010](../decisions/D010-same-lot-multi-warehouse.md)).
 
@@ -44,7 +44,7 @@ ADR: [D015](../decisions/D015-reservation-pull-list-staging.md).
 - **a** — issue WH + freeQty-guards + **enforcement** + PRI only Production  
 - **b** — early RES + split; адаптация стола планирования  
 - **c** — Pull list  
-- **d** — WP11 стол, reverse pull list, частичное обеспечение (later)
+- **d** — WP11 полный стол ([warehouse-desktop](warehouse-desktop.md) волна 5 = очередь Pull list), reverse pull list, частичное обеспечение (later)
 
 ---
 

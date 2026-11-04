@@ -108,6 +108,7 @@
 | [uom-units-of-measure](analyses/uom-units-of-measure.md) | ЕИ (G12): план `docs/plans/…`; SAP MARD/MSEG; R1 |
 | [sap-mm-pp-comparison](analyses/sap-mm-pp-comparison.md) | Сверка со складом/производством SAP (без финансов): зрелость, риски, точки роста |
 | [reservation-pull-list-staging](analyses/reservation-pull-list-staging.md) | G13: early RES, split, Pull list, stageGap; план `docs/plans/…` |
+| [warehouse-desktop](analyses/warehouse-desktop.md) | WP11: стол кладовщика (5 операций); план `docs/plans/warehouse-desktop.md` |
 | [sap-routing-operations](analyses/sap-routing-operations.md) | SAP routing/recipe + решения G2b; план: `docs/plans/tech-maps-pp-pi-phases.md` |
 | [relational-storage-migration](analyses/relational-storage-migration.md) | Уход от JSON-records: STOR1 SQLite-таблицы → I1 Postgres |
 | [storno-stock-documents](analyses/storno-stock-documents.md) | Сторно как в SAP: документ B; R10 полный / R11 по строкам |

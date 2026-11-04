@@ -2,6 +2,12 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-04] ingest | WP11 рабочий стол кладовщика
+
+План `docs/plans/warehouse-desktop.md`; ROADMAP **WP11** → есть план (P1); WP7/U5 перекрёстно.  
+Стол: RCP (+партия), свободный TRN, INV→WOF/PST, Pull list (`stageGap`, после G13-c), SHP; журнал остаётся (RBAC).  
+G13-d / §8 → ссылка на warehouse-desktop; analyses [warehouse-desktop](analyses/warehouse-desktop.md); plans/README; sources/roadmap-and-agent-docs.
+
 ## [2026-11-04] decision | G13 §4.5 reservationEnforcement strict|warn
 
 SAP-like availability severity: настройка системы `strict`/`warn`, не «игнор резервов»; warn → ack+причина+`reservation_conflict_audit`.  

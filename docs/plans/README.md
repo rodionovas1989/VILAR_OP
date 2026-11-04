@@ -11,7 +11,7 @@
 2. Проработка → `docs/plans/<slug>.md` + статус **есть план** + ссылка в колонке «План».
 3. После факта в `main` → статус **готово**, заполнить **Effort** (часы · токены), перенести строку в «Закрыто».
 
-Примеры: **Q7** [lot-attachments.md](lot-attachments.md) · **Q10** [quality-stock-types.md](quality-stock-types.md) · **R10** [storno-stock-documents.md](storno-stock-documents.md) · **STOR1** [relational-storage-postgres.md](relational-storage-postgres.md) · **G2b** [tech-maps-pp-pi-phases.md](tech-maps-pp-pi-phases.md) · **G13** [reservation-pull-list-staging.md](reservation-pull-list-staging.md) · **A3c** [order-status-history.md](order-status-history.md).
+Примеры: **Q7** [lot-attachments.md](lot-attachments.md) · **Q10** [quality-stock-types.md](quality-stock-types.md) · **R10** [storno-stock-documents.md](storno-stock-documents.md) · **STOR1** [relational-storage-postgres.md](relational-storage-postgres.md) · **G2b** [tech-maps-pp-pi-phases.md](tech-maps-pp-pi-phases.md) · **G13** [reservation-pull-list-staging.md](reservation-pull-list-staging.md) · **WP11** [warehouse-desktop.md](warehouse-desktop.md) · **A3c** [order-status-history.md](order-status-history.md).
 
 ## Frontmatter плана
 
