@@ -2,6 +2,11 @@
 
 Append-only. Префикс для grep: `## [YYYY-MM-DD]`.
 
+## [2026-11-04] decision | G13 §4.5 reservationEnforcement strict|warn
+
+SAP-like availability severity: настройка системы `strict`/`warn`, не «игнор резервов»; warn → ack+причина+`reservation_conflict_audit`.  
+План G13 §4.5; D015 п.8; Q10-A; ROADMAP G13 описание; analyses sync.
+
 ## [2026-11-04] decision | G13 RES split + Pull list staging
 
 План `docs/plans/reservation-pull-list-staging.md`; ROADMAP **G13** есть план (P1); **G8** superseded; **WP11** / **U5** связаны.  

@@ -37,7 +37,7 @@ SAP-like контур обеспечения сырья под производ�
 2. **Split:** одна GMP-партия / позиция спеки → несколько ног RES по складам (одна партия, разные `warehouseId`).
 3. **Issue WH:** `productionOrder.issueWarehouseId` = склад Производство; PRI `warehouseId` **must** = issue WH (hard-block иначе).
 4. **Pull list:** единственный легальный TRN qty под активным RES с **reassign** `warehouseId` строк RES (и `active_reservations`) Сырьё→Производство.
-5. **freeQty-guard:** свободный TRN / WOF / SHP / чужой PRI ≤ `freeQty` (после Q10: UR − RES). Исключение G2b: свой PRI с `productionOrderId` — сверх RES warn, ниже stock/UR — нельзя.
+5. **freeQty-guard + enforcement:** конфликт с RES (qty сверх `freeQty`) обрабатывается политикой **`reservationEnforcement`**: `strict` | `warn` (дух SAP dynamic availability W/E). Не глобальный «игнор резервов». Исключения без этой политики: Pull list своего заказа; свой PRI (G2b over-RES warn, hard vs stock). См. §4.5.
 6. **Нет статуса «обеспечен».** Машина: `новый` → `спланирован` → `в работе` → `завершен` | `отменен` (G2b). Индикаторы: `stageGap`, `enterpriseShortage`.
 7. **Приоритеты pull list** — только UX стола (G13-d / WP11), без отдельной подсистемы.
 8. **Промежуточные выпуски** не вводим; полуфабрикат = новая спека/заказ (как в идеологии SAP BOM).
@@ -63,8 +63,8 @@ flowchart LR
 | Early RES | Create → posted RES (N документов по складам, дух [D009](../../wiki/decisions/D009-multi-warehouse-pri.md)) |
 | Split | Одна партия на позицию → несколько RES-ног по складам |
 | Issue WH | `issueWarehouseId` на заказе; PRI только с него |
-| freeQty | Исходящие ≤ UR−RES (после Q10); over-issue своего PRI vs RES — warn (G2b) |
-| Pull list | Единственный легальный TRN reserved qty + reassign RES |
+| freeQty | Конкурирующие исходящие: лимит freeQty; при нарушении — §4.5 `strict`/`warn` |
+| Pull list | Штатный легальный TRN reserved qty + reassign RES (вне enforcement) |
 | Обеспеченность | `stageGap` = qty резерва заказа **не** на issue WH (и/или need − stock на issue); **не** статус |
 | Shortage | `enterpriseShortage` если need > free по всем релевантным складам — отдельно от stageGap |
 | НЗП | Производство = staging; WIP отчётный = Σ PRI ([wip-derived-from-orders](../../wiki/analyses/wip-derived-from-orders.md)) |
@@ -102,16 +102,101 @@ flowchart LR
 - `stageGap(order)` ≈ Σ reserved qty заказа на складах ≠ `issueWarehouseId` (или need на issue − UR free на issue — зафиксировать одну формулу в реализации; канон: **остаток RES не на issue WH**).
 - `enterpriseShortage(order)` ≈ max(0, need − Σ freeQty по складам, где FEFO/RES смотрит) по компонентам.
 
+### 4.5 Reservation enforcement (SAP-like availability severity)
+
+Аналог OMCP/OMB1: резервы **всегда** считаются в available; меняется только **строгость** при конфликте. Назначение/снятие/reassign/withdrawn RES **не** отключаются.
+
+#### Настройка системы
+
+- Синглтон-коллекция **`system_settings`** (или одна запись в существующем settings-контуре; UI — «Настройки системы», рядом с моделями учёта).
+- Поле: `reservationEnforcement`: **`strict`** | **`warn`**.
+- Default: **`strict`**.
+- Менять только роль с правом на settings (Admin).
+- Баннер в шапке документов/столов, если `warn` (чтобы режим не «забыли»).
+
+**Не делаем:** чекбокс «Игнорировать резервы» (silent bypass без confirm/audit).
+
+#### Что считается конфликтом
+
+Движение (строка) хочет списать/увезти с склада qty, при которой после проводки `stock` (UR) − Σ чужих/всех RES на ключе material×lot×warehouse < 0 относительно правил freeQty — т.е. затрагивается qty под `active_reservations`.
+
+| Движение | Участвует в enforcement? |
+|----------|---------------------------|
+| Свободный TRN, WOF, SHP | Да |
+| STT из UR (если режет free под RES) | Да (Q10-A) |
+| PRI **другого** заказа / PRI без order | Да |
+| PRI **своего** заказа (`productionOrderId`) | Нет enforcement §4.5: over-RES = warn UI (G2b); hard = не ниже UR/stock на issue WH |
+| Post **Pull list** своего заказа | Нет: штатный reassign |
+| RCP / PST / PRR приход | Нет (не расход reserved) |
+| PRI не с `issueWarehouseId` | Всегда hard-block (правило склада отпуска, не enforcement) |
+
+#### Алгоритм на post (общий helper)
+
+```text
+conflict = analyzeReservationConflict(lines)  // impacts: orderId, resId, lotId, wh, qtyTouched
+if !conflict → post as usual
+if movement in allowlist (pull list / own PRI stock rules) → post as usual
+if settings.reservationEnforcement == strict → reject 409 RESERVATION_CONFLICT
+if warn:
+  if !body.acknowledgeReservationConflict || !body.conflictReason.trim():
+    reject 409 RESERVATION_CONFLICT + { mode: warn, impacts, requiresAck: true }
+  else:
+    write reservation_conflict_audit → post document
+    mark impacted orders (flag / indicator «резерв под давлением»)
+```
+
+Ответ 409 (пример полей): `code`, `mode`, `impacts[]` (`productionOrderId`, `orderNumber`, `lotId`, `warehouseId`, `reservedQty`, `freeQty`, `requestedQty`).
+
+#### Audit
+
+Коллекция **`reservation_conflict_audit`** (append-only), строка на каждый успешный bypass в `warn`:
+
+- `at`, `userId`, `documentType`, `documentId`
+- `conflictReason` (обязателен)
+- `impacts[]` (снимок)
+- опционально `postingDate`
+
+Читается в Админ / отчёт «Обходы резерва» (можно later; запись — в G13-a).
+
+#### UI
+
+1. Пользователь жмёт «Провести».
+2. BE: конфликт + `strict` → toast/error, список impacts.
+3. BE: конфликт + `warn` без ack → модалка: список заказов/партий, поле «Причина», кнопки Отмена / Провести всё равно.
+4. Повторный POST с `acknowledgeReservationConflict: true` + `conflictReason`.
+
+Настройки: radio/select «Соблюдение резервов: Строго / С предупреждением» + краткий help (ссылка на дух SAP W/E).
+
+```mermaid
+flowchart TD
+  post[Post_исходящего] --> calc[analyzeReservationConflict]
+  calc -->|нет| ok[Провести]
+  calc -->|PullList_или_свой_PRI| ok
+  calc -->|конфликт| mode{reservationEnforcement}
+  mode -->|strict| err[409_без_обхода]
+  mode -->|warn| ack{ack_и_причина}
+  ack -->|нет| modal[409_requiresAck_модалка]
+  ack -->|да| audit[reservation_conflict_audit]
+  audit --> ok
+```
+
+#### Согласование с Q10 / G2b
+
+- Q10-A: freeQty = UR − RES; при `warn`+ack допускается уйти ниже free (физический UR ≥ 0 всё равно hard).
+- После bypass RES ног **не** уменьшаются автоматически (как в SAP после GI мимо reservation) — остается процесс: переплан / уменьшение RES / TECO-смысл. Опционально later: предложение «снять RES у impacted» отдельным действием.
+- G2b over-issue своего PRI — ортогонально (уже warn vs RES, hard vs stock).
+
 ---
 
 ## 5. Волны реализации
 
-### G13-a — Guards + issue WH
+### G13-a — Guards + issue WH + enforcement
 
 - Поле `issueWarehouseId` + дефолт Производство.
 - PRI: hard-block если `warehouseId ≠ issueWarehouseId`.
-- freeQty на TRN / WOF / SHP (выровнять с [Q10](quality-stock-types.md) A/B).
-- Запрет свободного TRN qty под чужим/любым RES сверх freeQty.
+- freeQty-check на TRN / WOF / SHP / STT(UR) / чужой PRI (выровнять с [Q10](quality-stock-types.md) A/B).
+- **`system_settings.reservationEnforcement`** + helper conflict + 409/ack + audit + модалка FE.
+- Default `strict`; Pull list allowlist появится в G13-c (до c свободный TRN reserved в `strict` = block, в `warn` = ack).
 - Желательно рядом с Q10 (UR − RES).
 
 ### G13-b — Early RES + split
@@ -146,8 +231,8 @@ flowchart LR
 | **G8 / D010 interim** | Сначала TRN, потом RES; запрет split | Target = split + Pull list; G8 superseded by G13; D010 → целевой путь G13 |
 | **G2b статусы** | Без `обеспечен` | Согласовано; `спланирован` ≠ «всё на цехе» |
 | **G2b withdrawn** | Match order+material+lot(+warehouse) | После reassign PRI гасит ноги на **issue WH** |
-| **Q10-A** | TRN ≤ freeQty | Исключение: post Pull list своего order (TRN + reassign) |
-| **Q10-B / G2b** | Over-issue PRI | Без изменений: warn vs RES; hard vs stock на issue WH |
+| **Q10-A** | TRN ≤ freeQty | Исключение: post Pull list; при `warn`+ack — обход free с audit (§4.5); `strict` — hard |
+| **Q10-B / G2b** | Over-issue PRI | Свой PRI: без изменений (warn vs RES; hard vs stock). Чужой PRI — под §4.5 |
 | **R9** | «Без цехового склада» для WIP | Staging WH ≠ WIP register; формула R9 не меняется |
 | **D009** | N RES/PRI | Сохраняется; reassign меняет warehouse ноги |
 | **R10** | Сторно TRN / reverse reassign | Pull list posted сторнировать через R10 (+ обратный reassign) |
@@ -165,7 +250,9 @@ D002 (заказ-оркестратор), D001, GMP one-lot (split складо�
 |---|------|-----------|
 | A | Ручной «обеспечен» мимо остатков | Статуса нет; только stageGap |
 | B | PRI с Сырья в обход | G13-a hard-block |
-| C | Свободный TRN увозит чужой RES | freeQty + только Pull list |
+| C | Свободный TRN увозит чужой RES | `strict` block; `warn` только с ack+причиной+audit; штатно — Pull list |
+| C2 | Режим `warn` забыли включённым | Баннер в UI; default `strict`; audit обходов |
+| C3 | Bypass не чинит RES | После warn-post RES висят → флаг impacted + переплан вручную (авто-снятие — later) |
 | D | RES > stock после INV | Флаг дефицита; разбор RES/переплан |
 | E | Два заказа, общий буфер Производства | RES режет free; очередь на столе |
 | F | Отмена после staging без возврата | G13-d reverse pull list |
@@ -186,7 +273,7 @@ D002 (заказ-оркестратор), D001, GMP one-lot (split складо�
 
 ## 9. Критерии приёмки по волнам (будущий код)
 
-**G13-a:** нельзя PRI не с issue WH; нельзя TRN/WOF сверх freeQty; issueWarehouseId на заказе.
+**G13-a:** нельзя PRI не с issue WH; `strict` — нельзя TRN/WOF сверх freeQty; `warn` — сверх free только с ack+причиной и строкой audit; issueWarehouseId на заказе; настройка в «Настройки системы».
 
 **G13-b:** новый заказ из плана имеет posted RES; партия 10+10 / need 15 резервируется split; стол планирования работает с early RES.
 

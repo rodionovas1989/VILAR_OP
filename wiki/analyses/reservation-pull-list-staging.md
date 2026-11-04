@@ -29,9 +29,19 @@ ADR: [D015](../decisions/D015-reservation-pull-list-staging.md).
 
 ---
 
+## Reservation enforcement (SAP-like)
+
+Не чекбокс «игнор резервов», а настройка **`reservationEnforcement`**: `strict` | `warn` (как Warning/Error availability check).
+
+- Резервы всегда в available; меняется только реакция на конфликт.
+- `warn` + проведение: обязательные ack + причина → `reservation_conflict_audit`.
+- Вне политики: Pull list своего заказа; свой PRI (G2b); PRI не с issue WH — всегда hard.
+
+Детали: канон-план §4.5.
+
 ## Волны (кратко)
 
-- **a** — issue WH + freeQty-guards + PRI only Production  
+- **a** — issue WH + freeQty-guards + **enforcement** + PRI only Production  
 - **b** — early RES + split; адаптация стола планирования  
 - **c** — Pull list  
 - **d** — WP11 стол, reverse pull list, частичное обеспечение (later)

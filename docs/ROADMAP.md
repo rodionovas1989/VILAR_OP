@@ -68,7 +68,7 @@
 | G10 | Genealogy / прослеживаемость deep | Партия→серия→отгрузка; ЭЦП проведения | — | — | идея | | |
 | G11 | CRP / мощности РЦ | Конечные мощности, переналадки, простои | — | — | идея | | |
 | G12 | Единицы измерения (UOM) | Одна учётная ЕИ на материале; регистры без dual qty; снимок ЕИ на документах; альты позже; смена base — запрет на API | — | — | есть план | [uom-units-of-measure.md](plans/uom-units-of-measure.md) | |
-| G13 | RES split + Pull list staging | Early RES при create (FEFO); split партии по складам; `issueWarehouseId`=Производство; PRI только с него; Pull list → TRN + reassign RES; без статуса «обеспечен» (`stageGap` / `enterpriseShortage`); волны a–d | P1 | — | есть план | [reservation-pull-list-staging.md](plans/reservation-pull-list-staging.md) | |
+| G13 | RES split + Pull list staging | Early RES; split; issue WH=Производство; PRI только с него; Pull list; `reservationEnforcement` strict\|warn (не «игнор RES»); без статуса «обеспечен»; волны a–d | P1 | — | есть план | [reservation-pull-list-staging.md](plans/reservation-pull-list-staging.md) | |
 
 ### Закрыто
 

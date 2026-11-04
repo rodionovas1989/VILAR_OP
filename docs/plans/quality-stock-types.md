@@ -36,7 +36,7 @@ STOR1 / R10: [relational-storage-postgres.md](relational-storage-postgres.md), [
 
 | # | Тема | Решение Q10 |
 |---|------|-------------|
-| A | **RES ∩ STT** | STT/TRN/WOF/SHP/PRI с **unrestricted** не могут затронуть qty под активным RES: лимит = `freeQty` (= UR − RES). Иначе отрицательный «свободный» остаток. Сначала снять/уменьшить RES, потом STT в QI/Blocked. **Исключение G13:** post Pull list своего заказа = TRN + reassign RES (не «свободный» TRN). См. [reservation-pull-list-staging](reservation-pull-list-staging.md). |
+| A | **RES ∩ STT** | STT/TRN/WOF/SHP/PRI с **unrestricted** не могут затронуть qty под активным RES: лимит = `freeQty` (= UR − RES). Иначе отрицательный «свободный» остаток. Сначала снять/уменьшить RES, потом STT в QI/Blocked. **Исключения G13:** (1) post Pull list своего заказа = TRN + reassign; (2) при `reservationEnforcement=warn` + ack + причина — обход free с audit (UR ≥ 0 hard). См. [reservation-pull-list-staging](reservation-pull-list-staging.md) §4.5. |
 | B | **Исходящие списания** | PRI / SHP / WOF всегда минусуют **unrestricted** (не QI/Blocked). SHP/WOF: нельзя уйти ниже RES (freeQty). **Исключение G2b:** PRI с `productionOrderId` (закрытие фазы) — **можно сверх RES** (warn в UI); ниже нуля склада/UR — нельзя. См. [tech-maps-pp-pi-phases](tech-maps-pp-pi-phases.md) §4. |
 | C | **TRN** | MVP: перенос **того же** stock type; по умолчанию в UI — unrestricted. QI/Blocked переносить можно только явно указав тип (иначе карантин «утечёт» в UR на другом складе). |
 | D | **RCP / PRR приход** | Целевой тип на шапке/строке: `stockType` default **unrestricted**. Сценарий или пользователь ставит **qi**. Не хардкодить «весь RCP в QI». |
